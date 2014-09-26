@@ -1,0 +1,150 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>gov.nist.healthcare.tools.core</groupId>
+  <artifactId>nist-healthcare-tools-core-hl7-v2</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <name>nist-healthcare-tools-core</name>
+  <description>nist-healthcare-tools-core-hl7-v2</description>
+  <packaging>pom</packaging>
+  <modules>
+    <module>nist-healthcare-tools-models-hl7-v2</module>
+    <module>nist-healthcare-tools-services-hl7-v2</module>
+  </modules>
+  
+  <properties>
+ 		<junit.version>4.11</junit.version>
+ 		 <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+ 		 <core.version>1.0.49-SNAPSHOT</core.version> 
+ 		 <tools.version>1.0.0-SNAPSHOT</tools.version> 		 
+	</properties>
+  
+  <dependencies>         
+				
+	    <dependency>
+			<groupId>gov.nist.healthcare.core</groupId>
+			<artifactId>core-soap-validation</artifactId>
+			<version>1.0.48</version>
+		</dependency>
+		
+		<dependency>
+                     <groupId>gov.nist.healthcare.core</groupId>
+                     <artifactId>core-message-validation</artifactId>
+                     <version>${core.version}</version>
+                     <exclusions>
+                           <exclusion>
+                                  <groupId>gov.nist.healthcare.core</groupId>
+                                  <artifactId>core-hl7-v3-model-xmlbeans</artifactId>
+                           </exclusion>
+                            <exclusion>
+                                  <groupId>gov.nist.healthcare.core</groupId>
+                                  <artifactId>core-soap-validation</artifactId>
+                           </exclusion>
+                           <exclusion>
+                                  <groupId>log4j</groupId>
+                                  <artifactId>log4j</artifactId>
+                           </exclusion>
+                           <exclusion>
+                                  <groupId>org.apache.commons</groupId>
+                                  <artifactId>commons-io</artifactId>
+                           </exclusion>
+                     </exclusions>
+              </dependency>
+		       
+        <dependency>
+			<groupId>gov.nist.healthcare.core</groupId>
+			<artifactId>core-hl7-v2-message</artifactId>
+			<version>${core.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>gov.nist.healthcare.core</groupId>
+					<artifactId>core-hl7-v3-model-xmlbeans</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>log4j</groupId>
+					<artifactId>log4j</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.commons</groupId>
+					<artifactId>commons-io</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		
+		<dependency>
+			<groupId>gov.nist.healthcare.core</groupId>
+			<artifactId>core-hl7-v2-parser</artifactId>
+			<version>${core.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>gov.nist.healthcare.core</groupId>
+					<artifactId>core-hl7-v3-model-xmlbeans</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>log4j</groupId>
+					<artifactId>log4j</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.commons</groupId>
+					<artifactId>commons-io</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		
+		<dependency>
+    <groupId>com.jayway.jsonpath</groupId>
+    <artifactId>json-path-assert</artifactId>
+    <version>0.8.1</version>
+    <scope>test</scope>
+</dependency>
+
+<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>2.2.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-hibernate4</artifactId>
+			<version>2.2.3</version>
+		</dependency>
+	
+  </dependencies>
+  
+  
+  
+  		<build>
+		<pluginManagement>
+			<plugins>
+				
+				<!-- plugin to handle compile version -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>2.5.1</version>
+					<configuration>
+						<source>1.7</source>
+						<target>1.7</target>
+					</configuration>
+				</plugin>
+
+			<!-- 	<plugin>
+					<artifactId>maven-eclipse-plugin</artifactId>
+					<version>2.9</version>
+					<configuration>
+						<additionalProjectnatures>
+							<projectnature>org.springframework.ide.eclipse.core.springnature</projectnature>
+						</additionalProjectnatures>
+						<additionalBuildcommands>
+							<buildcommand>org.springframework.ide.eclipse.core.springbuilder</buildcommand>
+						</additionalBuildcommands>
+						<downloadSources>true</downloadSources>
+						<downloadJavadocs>true</downloadJavadocs>
+					</configuration>
+				</plugin> -->
+				
+	</plugins>
+	</pluginManagement>
+	</build>
+	
+</project>

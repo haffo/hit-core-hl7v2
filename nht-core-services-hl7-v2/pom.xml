@@ -1,13 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<artifactId>nist-healthcare-tools-core-models-hl7-v2</artifactId>
+	<artifactId>nht-core-services-hl7-v2</artifactId>
 	<packaging>jar</packaging>
-	<name>nist-healthcare-tools-core-models-hl7-v2</name>
+	<name>nht-core-services-hl7-v2</name>
 	<url>http://maven.apache.org</url>
 	<parent>
 		<groupId>gov.nist.healthcare.tools.core</groupId>
-		<artifactId>nist-healthcare-tools-core-hl7-v2</artifactId>
+		<artifactId>nht-core-hl7-v2</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 	<properties>
@@ -16,15 +17,36 @@
 	</properties>
 
 	<dependencies>
-	
+  
 		<dependency>
 			<groupId>gov.nist.healthcare.tools.core</groupId>
-			<artifactId>nist-healthcare-tools-core-models</artifactId>
+			<artifactId>nht-core-models-hl7-v2</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
-		
-	</dependencies>
+		<dependency>
+			<groupId>gov.nist.healthcare.tools.core</groupId>
+			<artifactId>nht-core-services</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
 
+		<dependency>
+			<groupId>org.jdom</groupId>
+			<artifactId>jdom</artifactId>
+			<version>2.0.2</version>
+		</dependency>
+		<dependency>
+			<groupId>com.sun.xsom</groupId>
+			<artifactId>xsom</artifactId>
+			<version>20110809</version>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.11</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 	<build>
 		<pluginManagement>
 			<plugins>
@@ -39,8 +61,8 @@
 						<target>1.7</target>
 					</configuration>
 				</plugin>
-<!-- 
-				<plugin>
+
+				<!-- <plugin>
 					<artifactId>maven-eclipse-plugin</artifactId>
 					<version>2.9</version>
 					<configuration>

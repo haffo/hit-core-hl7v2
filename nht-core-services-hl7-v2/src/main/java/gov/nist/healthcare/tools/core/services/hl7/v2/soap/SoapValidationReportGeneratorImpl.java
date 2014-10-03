@@ -27,9 +27,9 @@ public class SoapValidationReportGeneratorImpl extends SoapValidationReportGener
 	private final static Logger logger = Logger
 			.getLogger(SoapValidationReportGeneratorImpl.class);
 	
-	private static final String HTML_XSL = "/xslt/html.xsl";
+	private static final String HTML_XSL = "/xslt/SOAPHTML.xsl";
 
-	private static final String PDF_XSL = "/xslt/pdf.xsl";
+	private static final String PDF_XSL = "/xslt/SOAPHTML.xsl";
 
 	public SoapValidationReportGeneratorImpl() {
 

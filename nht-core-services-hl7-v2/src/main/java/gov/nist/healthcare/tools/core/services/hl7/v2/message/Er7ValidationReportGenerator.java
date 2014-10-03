@@ -26,9 +26,9 @@ public abstract class Er7ValidationReportGenerator extends ValidationReportGener
 	private final static Logger logger = Logger
 			.getLogger(Er7ValidationReportGenerator.class);
 	
-	private static final String HTML_XSL = "/xslt/html.xsl";
+	private static final String HTML_XSL = "/xslt/HL7V2HTML.xsl";
 
-	private static final String PDF_XSL = "/xslt/pdf.xsl";
+	private static final String PDF_XSL = "/xslt/HL7V2PDF.xsl";
 
 	public Er7ValidationReportGenerator() {
 

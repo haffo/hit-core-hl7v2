@@ -19,7 +19,7 @@ import gov.nist.healthcare.core.hl7.v2.model.GroupModel;
 import gov.nist.healthcare.core.hl7.v2.model.Predicate;
 import gov.nist.healthcare.core.hl7.v2.model.SegmentModel;
 import gov.nist.healthcare.core.hl7.v2.model.SubComponentModel;
-import gov.nist.healthcare.core.hl7.v2.util.MessageModelBuilder; 
+import gov.nist.healthcare.core.hl7.v2.util.MessageModelBuilder;
 import gov.nist.healthcare.tools.core.models.profile.ProfileElement;
 import gov.nist.healthcare.tools.core.models.profile.ProfileModel;
 import gov.nist.healthcare.tools.core.services.profile.ProfileParser;
@@ -187,6 +187,7 @@ public class ProfileParserImpl implements ProfileParser {
 
 	 
 	private void buildAttributes(ElementModel model, ProfileElement element) {
+		
 		element.setUsage(getUsage(model));
 		element.setType(getType(model));
 		Predicate predicateObj = model.getPredicate();
@@ -211,7 +212,10 @@ public class ProfileParserImpl implements ProfileParser {
 			element.setPredicateFalseUsage(data.getPredicateFalseUsage().getCode());
 			element.setPredicateTrueUsage(data.getPredicateTrueUsage().getCode());
 			element.setPosition(data.getPosition() + "");
+	 		element.setPath(getPath(data));
+	 		element.setTitle(element.getPath() + " : " + element.getName());
 		}
+
 		String minLength = element.getMinLength();
 		String maxLength = element.getMaxLength();
 		if (minLength != null && !minLength.equals("-1") && maxLength != null

@@ -19,7 +19,7 @@ import gov.nist.healthcare.tools.core.services.validation.soap.SoapValidationExc
 
 import org.apache.xmlbeans.XmlException;
 
-public class SoapMesageValidatorImpl implements SoapMessageValidator {
+public class SoapMessageValidatorImpl implements SoapMessageValidator {
 
 	@Override  
 	public ValidationResult validate(String soap, String testCaseTitle,
@@ -31,7 +31,7 @@ public class SoapMesageValidatorImpl implements SoapMessageValidator {
 					.validate(
 							message, 
 							SoapMessageValidator.class
-									.getResourceAsStream("/SOAPvalidation/schematron/schematron.sch"));
+									.getResourceAsStream("/soap/schematron.sch"));
 			return new gov.nist.healthcare.tools.core.models.hl7.v2.soap.SoapValidationResult(
 					tmp, testCaseTitle);
 		} catch (XmlException e) {

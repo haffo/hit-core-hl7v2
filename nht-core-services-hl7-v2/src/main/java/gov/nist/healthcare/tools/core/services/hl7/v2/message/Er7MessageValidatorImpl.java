@@ -48,14 +48,14 @@ public class Er7MessageValidatorImpl implements Er7MessageValidator {
 			if (options[1] instanceof String) {
 				v2Result = validator.validate(new Er7Message(er7Message),
 						new Profile(xmlProfile), context,
-						getTableLibraries((String) options[1]));
+						getTableLibraries((String) options[1]), true);
 			} else if (options[1] instanceof List<?>) {
 				v2Result = validator.validate(new Er7Message(er7Message),
 						new Profile(xmlProfile), context,
-						getTableLibraries((List<String>) options[1]));
+						getTableLibraries((List<String>) options[1]), true);
 			}
-			return new Er7ValidationResult(v2Result, title); 
-		} catch (RuntimeException e) {
+			return  new Er7ValidationResult(v2Result, title);
+ 		} catch (RuntimeException e) {
 			throw new ValidationException(e);
 		} catch (Exception e) {
 			throw new ValidationException(e);

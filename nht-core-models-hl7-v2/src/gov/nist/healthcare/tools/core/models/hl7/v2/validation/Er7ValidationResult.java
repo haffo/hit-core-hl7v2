@@ -40,8 +40,7 @@ public class Er7ValidationResult extends gov.nist.healthcare.tools.core.models.v
 	public Er7ValidationResult( MessageValidationResultV2 result,
 			String title) {
 		if (result != null) {
-
-			xml = generateXml(title, result.getReport().toString());
+ 			xml = generateXml(title, result.getReport());
 			errors = new ArrayList<ValidationResultItem>();
 			Iterator<gov.nist.healthcare.core.validation.message.v2.MessageFailureV2> it = result
 					.getErrors();
@@ -80,21 +79,14 @@ public class Er7ValidationResult extends gov.nist.healthcare.tools.core.models.v
 	/**
 	 * update testcase and testing tool meta data information
 	 */
-	private String generateXml(String title, String xml) {
-		try {
-			HL7V2MessageValidationReportDocument report = HL7V2MessageValidationReportDocument.Factory
-					.parse(xml);
-			MetaData metaData = report.getHL7V2MessageValidationReport().getSpecificReport().getMetaData();
-			TestCase tc = metaData.addNewTestCase();
-			tc.setName(title);
-  			ReportHeader header = report.getHL7V2MessageValidationReport()
-					.getHeaderReport();
-			header.setServiceProvider("NIST HL7 V2 Validation tool");
-			xml = report.toString();
-		} catch (XmlException e) {
-			logger.error("Failed to get the test story xml content");
-			logger.error(e, e);
-		}
+	private String generateXml(String title, HL7V2MessageValidationReportDocument report) {
+		MetaData metaData = report.getHL7V2MessageValidationReport().getSpecificReport().getMetaData();
+		TestCase tc = metaData.addNewTestCase();
+		tc.setName(title);
+		ReportHeader header = report.getHL7V2MessageValidationReport()
+				.getHeaderReport();
+		header.setServiceProvider("NIST HL7 V2 Validation tool");
+		xml = report.toString();
 		return xml;
 	}
 		

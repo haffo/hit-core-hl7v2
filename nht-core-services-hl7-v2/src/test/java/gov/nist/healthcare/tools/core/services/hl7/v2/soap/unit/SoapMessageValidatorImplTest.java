@@ -1,17 +1,18 @@
-package gov.nist.healthcare.tools.core.services.hl7.v2.soap;
+package gov.nist.healthcare.tools.core.services.hl7.v2.soap.unit;
 
-import java.io.*;
+import gov.nist.healthcare.tools.core.services.hl7.v2.soap.SoapMessageValidatorImpl;
 
-import javax.xml.transform.stream.StreamSource;
+import java.io.File;
+import java.io.FileReader;
 
 import org.apache.commons.io.IOUtils;
+import org.xml.sax.SAXException;
 
-public class SoapMessageValidatorImpl2Test {
+public class SoapMessageValidatorImplTest {
 
-	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws SAXException {
 		
-		SoapMessageValidatorImpl2 tmp = new SoapMessageValidatorImpl2();
+		SoapMessageValidatorImpl tmp = new SoapMessageValidatorImpl();
 		File f = new File("/Users/indovina/XMLValidator/soap_msg2.xml");
 		String soapMsg=null;
 		
@@ -28,6 +29,5 @@ public class SoapMessageValidatorImpl2Test {
 				+ tmp.validate(soapMsg, "Basic SOAP 1.2 Validation").toString());
 	}	
 
-	
-}
 
+}

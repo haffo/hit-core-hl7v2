@@ -16,28 +16,49 @@ import gov.nist.healthcare.core.validation.soap.SoapValidationResult;
 import gov.nist.healthcare.tools.core.models.validation.ValidationResult;
 import gov.nist.healthcare.tools.core.services.validation.soap.SoapMessageValidator;
 import gov.nist.healthcare.tools.core.services.validation.soap.SoapValidationException;
+import gov.nist.healthcare.tools.core.services.xml.XMLValidator;
 
-import org.apache.xmlbeans.XmlException;
+import javax.xml.XMLConstants;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+
+import org.apache.log4j.Logger;
+import org.xml.sax.SAXException;
 
 public class SoapMessageValidatorImpl implements SoapMessageValidator {
-
+ 	
+	private final static Logger logger = Logger
+			.getLogger(SoapMessageValidatorImpl.class);
+	
+	private  Schema  schema; 
+	
+	public SoapMessageValidatorImpl()  {
+		init("/soap/soap12_cdc-iisb-2011.xsd");
+	}
+	
+	public void init(String schemaPath){
+		try{
+		logger.info("Loading the soap validator schema");
+		SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        this.schema = factory.newSchema(SoapMessageValidatorImpl.class.getResource(schemaPath));
+		}catch(SAXException e){
+			logger.error("Failed to load the soap validator schema", e);
+			throw new RuntimeException(e);
+		}
+	}
+	
+	
 	@Override  
 	public ValidationResult validate(String soap, String testCaseTitle,
 			Object... options) {
-		try {
-			SoapMessage message = new SoapMessage(soap);
-			gov.nist.healthcare.core.validation.soap.SoapValidation validation = new gov.nist.healthcare.core.validation.soap.SoapValidation();
-			SoapValidationResult tmp = validation
-					.validate(
-							message, 
-							SoapMessageValidator.class
-									.getResourceAsStream("/soap/schematron.sch"));
-			return new gov.nist.healthcare.tools.core.models.hl7.v2.soap.SoapValidationResult(
-					tmp, testCaseTitle);
-		} catch (XmlException e) {
-			throw new SoapValidationException(e);
-		} catch (MalformedMessageException e) {
-			throw new SoapValidationException(e);
-		}
+			try {
+				SoapMessage message = new SoapMessage(soap);
+				XMLValidator validator = new XMLValidator();
+				SoapValidationResult tmp = validator.validate(message, schema);
+				return new gov.nist.healthcare.tools.core.models.hl7.v2.soap.SoapValidationResult(tmp, testCaseTitle);
+			} catch (MalformedMessageException e) {
+				throw new SoapValidationException(e);
+			}
+		
 	}
 }

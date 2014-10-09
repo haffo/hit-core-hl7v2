@@ -10,6 +10,11 @@
  */
 package gov.nist.healthcare.tools.core.services.hl7.v2.message;
 
+import gov.nist.healthcare.tools.core.services.validation.ValidationReportException;
+
+import java.io.IOException;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
 /**
@@ -19,11 +24,36 @@ import org.apache.log4j.Logger;
 public class Er7ValidationReportGeneratorImpl extends Er7ValidationReportGenerator {
 	private final static Logger logger = Logger
 			.getLogger(Er7ValidationReportGeneratorImpl.class);
- 
+	
+	private static final String HTML_XSL = "/xslt/HL7V2HTML.xsl";
+
+	private static final String PDF_XSL = "/xslt/HL7V2PDF.xsl";
+	
 	public Er7ValidationReportGeneratorImpl() {
 
 	}
+	
+	
 
+	@Override
+	public String getPdfConversionXslt() {
+		try {
+			return IOUtils.toString(Er7ValidationReportGenerator.class
+					.getResourceAsStream(PDF_XSL));
+		} catch (IOException e) {
+			throw new ValidationReportException(e.getMessage());
+		}
+	}
+
+	@Override
+	public String getHtmlConversionXslt() {
+		try {
+			return IOUtils.toString(Er7ValidationReportGenerator.class
+					.getResourceAsStream(HTML_XSL));
+		} catch (IOException e) {
+			throw new ValidationReportException(e.getMessage());
+		}
+	}
 	 
  
 

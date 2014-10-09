@@ -10,12 +10,8 @@
  */
 package gov.nist.healthcare.tools.core.services.hl7.v2.message;
 
-import gov.nist.healthcare.tools.core.services.validation.ValidationReportException;
 import gov.nist.healthcare.tools.core.services.validation.ValidationReportGenerator;
 
-import java.io.IOException;
-
-import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
 /**
@@ -26,9 +22,7 @@ public abstract class Er7ValidationReportGenerator extends ValidationReportGener
 	private final static Logger logger = Logger
 			.getLogger(Er7ValidationReportGenerator.class);
 	
-	private static final String HTML_XSL = "/xslt/HL7V2HTML.xsl";
 
-	private static final String PDF_XSL = "/xslt/HL7V2PDF.xsl";
 
 	public Er7ValidationReportGenerator() {
 
@@ -43,7 +37,7 @@ public abstract class Er7ValidationReportGenerator extends ValidationReportGener
 		StringBuffer sb = new StringBuffer();
 		sb.append("<html xmlns='http://www.w3.org/1999/xhtml'>");
 		sb.append("<head>");
-		sb.append("<title>Message Validation Report</title>");
+		sb.append("<title>HL7 V2 Message Validation Report</title>");
 		sb.append("<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />");
 		sb.append("<style>.row4 a, .row3 a {color: #003399; text-decoration: underline;}");
 		sb.append(".row4 a:hover, .row3 a:hover { color: #000000; text-decoration: underline;}");
@@ -60,36 +54,6 @@ public abstract class Er7ValidationReportGenerator extends ValidationReportGener
 		sb.append(htmlReport);
 		sb.append("</body></html>");
 		return sb.toString();
-	}
-
-	@Override
-	public String getPdfConversionXslt() {
-		try {
-			return IOUtils.toString(Er7ValidationReportGenerator.class
-					.getResourceAsStream(PDF_XSL));
-		} catch (IOException e) {
-			throw new ValidationReportException(e.getMessage());
-		}
-	}
-
-	@Override
-	public String getHtmlConversionXslt() {
-		try {
-			return IOUtils.toString(Er7ValidationReportGenerator.class
-					.getResourceAsStream(HTML_XSL));
-		} catch (IOException e) {
-			throw new ValidationReportException(e.getMessage());
-		}
-	}
-
-	private String getFileName(String title, String extension) {
-		String fileName = null;
-		if (title != null) {
-			fileName = title + "-ValidationReport";
-		} else {
-			fileName = "MessageValidationReport";
-		}
-		return fileName + "." + extension;
 	}
 
 }

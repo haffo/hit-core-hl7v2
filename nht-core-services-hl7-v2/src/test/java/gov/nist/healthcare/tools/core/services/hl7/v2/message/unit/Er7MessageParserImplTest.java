@@ -11,6 +11,7 @@
 
 package gov.nist.healthcare.tools.core.services.hl7.v2.message.unit;
 
+import static org.junit.Assert.assertEquals;
 import gov.nist.healthcare.tools.core.models.message.MessageElement;
 import gov.nist.healthcare.tools.core.models.message.MessageElementData;
 import gov.nist.healthcare.tools.core.models.message.MessageModel;
@@ -21,11 +22,8 @@ import gov.nist.healthcare.tools.core.services.message.MessageParserException;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-
 import org.apache.commons.io.IOUtils;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 public class Er7MessageParserImplTest {
 
@@ -41,7 +39,7 @@ public class Er7MessageParserImplTest {
 		xmlProfile = getProfile();
 	}
 
-	@Test
+	//@Test
 	public void testIndex() throws MessageParserException {
 		MessageModel model = parser.parse(er7Message, xmlProfile);
 		List<MessageElement> elements = model.getElements();
@@ -73,6 +71,6 @@ public class Er7MessageParserImplTest {
 
 	private static String getProfile() throws IOException {
 		return IOUtils.toString(Er7MessageParserImplTest.class
-				.getResourceAsStream("/profiles/ELR.xml"));
+				.getResourceAsStream("/profiles/IZ_VXU_1.5_IZ22-PROFILE-NIST.xml"));
 	}
 }

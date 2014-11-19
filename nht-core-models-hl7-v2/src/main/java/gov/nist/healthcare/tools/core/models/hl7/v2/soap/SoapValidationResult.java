@@ -11,8 +11,8 @@
 package gov.nist.healthcare.tools.core.models.hl7.v2.soap;
 
 import gov.nist.healthcare.core.validation.message.v3.MessageFailureV3;
-import gov.nist.healthcare.tools.core.models.validation.ValidationResult;
-import gov.nist.healthcare.tools.core.models.validation.ValidationResultItem;
+import gov.nist.healthcare.tools.core.models.ValidationResult;
+import gov.nist.healthcare.tools.core.models.ValidationResultItem;
 import gov.nist.healthcare.validation.message.ReportHeader;
 import gov.nist.healthcare.validation.message.hl7.v3.report.HL7V3MessageValidationReportDocument;
 

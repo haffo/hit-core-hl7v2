@@ -11,7 +11,7 @@
 
 package gov.nist.healthcare.tools.core.services.hl7.v2.soap.unit;
 
-import gov.nist.healthcare.tools.core.models.message.MessageModel;
+import gov.nist.healthcare.tools.core.models.MessageModel;
 import gov.nist.healthcare.tools.core.services.hl7.v2.soap.SoapMessageParserImpl;
 import gov.nist.healthcare.tools.core.services.message.MessageParserException;
 import gov.nist.healthcare.tools.core.services.soap.SoapMessageParser;

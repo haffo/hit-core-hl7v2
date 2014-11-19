@@ -11,7 +11,7 @@
 package gov.nist.healthcare.tools.core.models.hl7.v2.validation;
 
 import gov.nist.healthcare.core.validation.message.v2.MessageValidationResultV2;
-import gov.nist.healthcare.tools.core.models.validation.ValidationResultItem;
+import gov.nist.healthcare.tools.core.models.ValidationResultItem;
 import gov.nist.healthcare.validation.message.ReportHeader;
 import gov.nist.healthcare.validation.message.hl7.v2.report.HL7V2MessageReport.MetaData;
 import gov.nist.healthcare.validation.message.hl7.v2.report.HL7V2MessageReport.MetaData.TestCase;
@@ -29,7 +29,7 @@ import org.apache.xmlbeans.XmlException;
  * 
  * @author Harold Affo (NIST)
  */ 
-public class Er7ValidationResult extends gov.nist.healthcare.tools.core.models.validation.ValidationResult {
+public class Er7ValidationResult extends gov.nist.healthcare.tools.core.models.ValidationResult {
 
 	private static Logger logger = Logger.getLogger(Er7ValidationResult.class);
  

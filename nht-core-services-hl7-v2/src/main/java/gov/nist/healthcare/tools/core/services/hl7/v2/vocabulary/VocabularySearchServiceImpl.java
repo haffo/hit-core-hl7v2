@@ -10,7 +10,7 @@
  */
 package gov.nist.healthcare.tools.core.services.hl7.v2.vocabulary;
 
-import gov.nist.healthcare.tools.core.models.vocabulary.VocabularyCollection;
+import gov.nist.healthcare.tools.core.models.VocabularyCollection;
 import gov.nist.healthcare.tools.core.services.vocabulary.TableLibraryUnmarshaller;
 import gov.nist.healthcare.tools.core.services.vocabulary.VocabularySearchService;
 

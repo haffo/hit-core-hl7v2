@@ -1,7 +1,7 @@
 package gov.nist.healthcare.tools.core.services.hl7.v2.profile.unit;
 
-import gov.nist.healthcare.tools.core.models.profile.ProfileElement;
-import gov.nist.healthcare.tools.core.models.profile.ProfileModel;
+import gov.nist.healthcare.tools.core.models.ProfileElement;
+import gov.nist.healthcare.tools.core.models.ProfileModel;
 import gov.nist.healthcare.tools.core.services.hl7.v2.profile.ProfileParserImpl;
 import gov.nist.healthcare.tools.core.services.profile.ProfileParser;
 import gov.nist.healthcare.tools.core.services.profile.ProfileParserException;

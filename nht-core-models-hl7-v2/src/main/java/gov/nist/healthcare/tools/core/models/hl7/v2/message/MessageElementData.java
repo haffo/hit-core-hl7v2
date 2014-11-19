@@ -27,7 +27,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *  
  */
 
-public class MessageElementData extends gov.nist.healthcare.tools.core.models.message.MessageElementData implements Serializable {
+public class MessageElementData extends gov.nist.healthcare.tools.core.models.MessageElementData implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 

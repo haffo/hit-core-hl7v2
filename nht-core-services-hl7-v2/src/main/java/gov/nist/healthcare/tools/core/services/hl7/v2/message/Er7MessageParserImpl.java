@@ -17,9 +17,9 @@ import gov.nist.healthcare.core.hl7.v2.instance.DataElement;
 import gov.nist.healthcare.core.hl7.v2.instance.Element;
 import gov.nist.healthcare.core.hl7.v2.parser.ParserException;
 import gov.nist.healthcare.core.hl7.v2.parser.ParserImpl;
-import gov.nist.healthcare.tools.core.models.message.MessageElement;
-import gov.nist.healthcare.tools.core.models.message.MessageElementData;
-import gov.nist.healthcare.tools.core.models.message.MessageModel;
+import gov.nist.healthcare.tools.core.models.MessageElement;
+import gov.nist.healthcare.tools.core.models.MessageElementData;
+import gov.nist.healthcare.tools.core.models.MessageModel;
 import gov.nist.healthcare.tools.core.services.message.MessageParserException;
 
 import java.util.List;

@@ -16,8 +16,8 @@ import gov.nist.healthcare.core.validation.message.v2.MessageValidationContextV2
 import gov.nist.healthcare.core.validation.message.v2.MessageValidationResultV2;
 import gov.nist.healthcare.core.validation.message.v2.MessageValidationV2;
 import gov.nist.healthcare.data.TableLibraryDocument;
+import gov.nist.healthcare.tools.core.models.ValidationResult;
 import gov.nist.healthcare.tools.core.models.hl7.v2.validation.Er7ValidationResult;
-import gov.nist.healthcare.tools.core.models.validation.ValidationResult;
 import gov.nist.healthcare.tools.core.services.validation.ValidationException;
 
 import java.util.ArrayList;

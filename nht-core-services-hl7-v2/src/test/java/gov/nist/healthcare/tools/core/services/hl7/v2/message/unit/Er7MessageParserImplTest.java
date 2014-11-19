@@ -12,9 +12,9 @@
 package gov.nist.healthcare.tools.core.services.hl7.v2.message.unit;
 
 import static org.junit.Assert.assertEquals;
-import gov.nist.healthcare.tools.core.models.message.MessageElement;
-import gov.nist.healthcare.tools.core.models.message.MessageElementData;
-import gov.nist.healthcare.tools.core.models.message.MessageModel;
+import gov.nist.healthcare.tools.core.models.MessageElement;
+import gov.nist.healthcare.tools.core.models.MessageElementData;
+import gov.nist.healthcare.tools.core.models.MessageModel;
 import gov.nist.healthcare.tools.core.services.hl7.v2.message.Er7MessageParserImpl;
 import gov.nist.healthcare.tools.core.services.message.MessageParser;
 import gov.nist.healthcare.tools.core.services.message.MessageParserException;

@@ -13,7 +13,7 @@
  */
 package gov.nist.healthcare.tools.core.services.hl7.v2.soap;
 
-import gov.nist.healthcare.tools.core.models.message.MessageModel;
+import gov.nist.healthcare.tools.core.models.MessageModel;
 import gov.nist.healthcare.tools.core.services.soap.SoapMessageParser;
 import gov.nist.healthcare.tools.core.services.soap.SoapMessageParserException;
 import gov.nist.healthcare.tools.core.services.xml.XmlMessageParser;

@@ -15,9 +15,9 @@ import static org.junit.Assert.assertEquals;
 import gov.nist.healthcare.tools.core.models.MessageElement;
 import gov.nist.healthcare.tools.core.models.MessageElementData;
 import gov.nist.healthcare.tools.core.models.MessageModel;
+import gov.nist.healthcare.tools.core.services.MessageParser;
+import gov.nist.healthcare.tools.core.services.exception.MessageParserException;
 import gov.nist.healthcare.tools.core.services.hl7.v2.message.Er7MessageParserImpl;
-import gov.nist.healthcare.tools.core.services.message.MessageParser;
-import gov.nist.healthcare.tools.core.services.message.MessageParserException;
 
 import java.io.IOException;
 import java.util.List;

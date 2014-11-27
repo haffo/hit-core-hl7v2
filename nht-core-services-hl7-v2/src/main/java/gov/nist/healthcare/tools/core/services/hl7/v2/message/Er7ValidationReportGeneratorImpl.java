@@ -10,7 +10,7 @@
  */
 package gov.nist.healthcare.tools.core.services.hl7.v2.message;
 
-import gov.nist.healthcare.tools.core.services.validation.ValidationReportException;
+import gov.nist.healthcare.tools.core.services.exception.ValidationReportException;
 
 import java.io.IOException;
 

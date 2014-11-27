@@ -12,8 +12,8 @@ package gov.nist.healthcare.tools.core.services.hl7.v2.message;
 
 
 import gov.nist.healthcare.tools.core.models.MessageModel;
-import gov.nist.healthcare.tools.core.services.message.MessageParser;
-import gov.nist.healthcare.tools.core.services.message.MessageParserException;
+import gov.nist.healthcare.tools.core.services.MessageParser;
+import gov.nist.healthcare.tools.core.services.exception.MessageParserException;
 
 public interface Er7MessageParser  extends MessageParser{
 

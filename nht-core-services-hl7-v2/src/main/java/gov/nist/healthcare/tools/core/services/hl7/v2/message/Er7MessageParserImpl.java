@@ -20,7 +20,7 @@ import gov.nist.healthcare.core.hl7.v2.parser.ParserImpl;
 import gov.nist.healthcare.tools.core.models.MessageElement;
 import gov.nist.healthcare.tools.core.models.MessageElementData;
 import gov.nist.healthcare.tools.core.models.MessageModel;
-import gov.nist.healthcare.tools.core.services.message.MessageParserException;
+import gov.nist.healthcare.tools.core.services.exception.MessageParserException;
 
 import java.util.List;
 import java.util.TreeMap;

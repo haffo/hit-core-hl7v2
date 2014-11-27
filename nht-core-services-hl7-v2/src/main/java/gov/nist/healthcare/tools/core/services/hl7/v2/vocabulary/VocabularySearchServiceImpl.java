@@ -11,8 +11,8 @@
 package gov.nist.healthcare.tools.core.services.hl7.v2.vocabulary;
 
 import gov.nist.healthcare.tools.core.models.VocabularyCollection;
-import gov.nist.healthcare.tools.core.services.vocabulary.TableLibraryUnmarshaller;
-import gov.nist.healthcare.tools.core.services.vocabulary.VocabularySearchService;
+import gov.nist.healthcare.tools.core.services.TableLibraryUnmarshaller;
+import gov.nist.healthcare.tools.core.services.VocabularySearchService;
 
 import java.util.List;
 

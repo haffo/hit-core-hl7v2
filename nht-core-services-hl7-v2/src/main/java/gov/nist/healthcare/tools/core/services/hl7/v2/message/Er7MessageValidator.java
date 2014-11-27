@@ -11,7 +11,7 @@
 package gov.nist.healthcare.tools.core.services.hl7.v2.message;
 
 import gov.nist.healthcare.tools.core.models.ValidationResult;
-import gov.nist.healthcare.tools.core.services.validation.Validator;
+import gov.nist.healthcare.tools.core.services.Validator;
 
 public interface Er7MessageValidator extends Validator {
 

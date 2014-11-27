@@ -2,9 +2,9 @@ package gov.nist.healthcare.tools.core.services.hl7.v2.profile.unit;
 
 import gov.nist.healthcare.tools.core.models.ProfileElement;
 import gov.nist.healthcare.tools.core.models.ProfileModel;
+import gov.nist.healthcare.tools.core.services.ProfileParser;
+import gov.nist.healthcare.tools.core.services.exception.ProfileParserException;
 import gov.nist.healthcare.tools.core.services.hl7.v2.profile.ProfileParserImpl;
-import gov.nist.healthcare.tools.core.services.profile.ProfileParser;
-import gov.nist.healthcare.tools.core.services.profile.ProfileParserException;
 
 import java.io.IOException;
 import java.util.List;

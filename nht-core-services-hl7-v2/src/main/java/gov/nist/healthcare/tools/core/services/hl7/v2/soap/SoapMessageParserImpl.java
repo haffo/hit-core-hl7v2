@@ -14,10 +14,10 @@
 package gov.nist.healthcare.tools.core.services.hl7.v2.soap;
 
 import gov.nist.healthcare.tools.core.models.MessageModel;
-import gov.nist.healthcare.tools.core.services.soap.SoapMessageParser;
-import gov.nist.healthcare.tools.core.services.soap.SoapMessageParserException;
-import gov.nist.healthcare.tools.core.services.xml.XmlMessageParser;
-import gov.nist.healthcare.tools.core.services.xml.XmlParserException;
+import gov.nist.healthcare.tools.core.services.SoapMessageParser;
+import gov.nist.healthcare.tools.core.services.XmlMessageParser;
+import gov.nist.healthcare.tools.core.services.exception.SoapMessageParserException;
+import gov.nist.healthcare.tools.core.services.exception.XmlParserException;
 
 public class SoapMessageParserImpl implements SoapMessageParser {
 		

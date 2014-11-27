@@ -12,10 +12,10 @@
 package gov.nist.healthcare.tools.core.services.hl7.v2.soap.unit;
 
 import gov.nist.healthcare.tools.core.models.MessageModel;
+import gov.nist.healthcare.tools.core.services.SoapMessageParser;
+import gov.nist.healthcare.tools.core.services.XmlMessageParserImpl;
+import gov.nist.healthcare.tools.core.services.exception.MessageParserException;
 import gov.nist.healthcare.tools.core.services.hl7.v2.soap.SoapMessageParserImpl;
-import gov.nist.healthcare.tools.core.services.message.MessageParserException;
-import gov.nist.healthcare.tools.core.services.soap.SoapMessageParser;
-import gov.nist.healthcare.tools.core.services.xml.XmlMessageParserImpl;
 
 import java.io.IOException;
 

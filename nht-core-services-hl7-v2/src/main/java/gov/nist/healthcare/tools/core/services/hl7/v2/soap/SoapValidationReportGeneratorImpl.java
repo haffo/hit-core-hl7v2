@@ -10,8 +10,8 @@
  */
 package gov.nist.healthcare.tools.core.services.hl7.v2.soap;
 
-import gov.nist.healthcare.tools.core.services.validation.soap.SoapValidationReportException;
-import gov.nist.healthcare.tools.core.services.validation.soap.SoapValidationReportGenerator;
+import gov.nist.healthcare.tools.core.services.SoapValidationReportGenerator;
+import gov.nist.healthcare.tools.core.services.exception.SoapValidationReportException;
 
 import java.io.IOException;
 

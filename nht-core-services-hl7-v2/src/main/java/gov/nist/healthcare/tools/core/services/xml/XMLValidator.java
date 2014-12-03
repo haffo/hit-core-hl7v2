@@ -35,12 +35,13 @@ public class XMLValidator {
         try {
            // validate xml (soap msg)
             Validator validator = schema.newValidator();
-            validator.validate(new StreamSource(IOUtils.toInputStream(soapMessage.getMessageAsString(), "UTF-8")));
+            String message = soapMessage.getMessageAsString();
+            validator.validate(new StreamSource(IOUtils.toInputStream(message, "UTF-8")));
         } catch (IOException e) {
             System.out.println("Exception: "+e.getMessage());
             MessageFailureV3 mf = new MessageFailureV3();
             mf.setFailureType(AssertionTypeV3Constants.SOAP);
-            mf.setFailureSeverity(ErrorSeverityConstants.FATAL);
+            mf.setFailureSeverity(ErrorSeverityConstants.NORMAL);
             mf.setDescription(e.getMessage());
             soapFailures.add(mf);
         } catch (SAXException e) {

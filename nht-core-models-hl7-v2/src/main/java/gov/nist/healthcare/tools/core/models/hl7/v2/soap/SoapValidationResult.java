@@ -22,7 +22,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.apache.xmlbeans.XmlException;
-
+  
 /**
  * Represents the data associated to a message validation.
  * 
@@ -31,10 +31,10 @@ import org.apache.xmlbeans.XmlException;
 public class SoapValidationResult extends ValidationResult {
 
 	private static Logger logger = Logger.getLogger(SoapValidationResult.class);
- 
+  
 
-	public SoapValidationResult() {
-	}
+	public SoapValidationResult() { 
+	} 
 
 	public SoapValidationResult( gov.nist.healthcare.core.validation.soap.SoapValidationResult result,
 			String title) {

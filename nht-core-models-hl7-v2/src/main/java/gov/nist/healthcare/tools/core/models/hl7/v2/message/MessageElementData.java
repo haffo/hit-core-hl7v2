@@ -13,25 +13,22 @@
  */
 package gov.nist.healthcare.tools.core.models.hl7.v2.message;
 
-import gov.nist.healthcare.core.hl7.v2.enumeration.ElementType;
 import gov.nist.healthcare.core.hl7.v2.instance.Element;
 import gov.nist.healthcare.core.hl7.v2.instance.impl.Segment;
 
 import java.io.Serializable;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 /**
  * 
  * @author Harold Affo (NIST)
- *  
+ * 
  */
 
-public class MessageElementData extends gov.nist.healthcare.tools.core.models.MessageElementData implements Serializable {
+public class MessageElementData extends
+		gov.nist.healthcare.tools.core.models.MessageElementData implements
+		Serializable {
 
 	private static final long serialVersionUID = 1L;
-
-	 
 
 	public MessageElementData(Element element, String path, String name,
 			String usage, Integer minOccurs, Integer maxOccurs) {
@@ -41,7 +38,7 @@ public class MessageElementData extends gov.nist.healthcare.tools.core.models.Me
 		this.value = null;
 		this.usage = usage;
 		this.minOccurs = minOccurs;
-		this.maxOccurs = maxOccurs; 
+		this.maxOccurs = maxOccurs;
 	}
 
 	public MessageElementData(Element element, String value) {
@@ -72,60 +69,72 @@ public class MessageElementData extends gov.nist.healthcare.tools.core.models.Me
 						.length() : 0);
 	}
 
+	@Override
 	public String getPath() {
 
 		return this.path;
 	}
 
+	@Override
 	public void setPath(String path) {
 
 		this.path = path;
 	}
 
+	@Override
 	public String getName() {
 
 		return this.name;
 	}
 
+	@Override
 	public void setName(String name) {
 
 		this.name = name;
 	}
 
+	@Override
 	public String getUsage() {
 
 		return this.usage;
 	}
 
+	@Override
 	public void setUsage(String usage) {
 
 		this.usage = usage;
 	}
 
+	@Override
 	public Integer getMinOccurs() {
 
 		return this.minOccurs;
 	}
 
+	@Override
 	public void setMinOccurs(Integer minOccurs) {
 
 		this.minOccurs = minOccurs;
 	}
 
+	@Override
 	public Integer getMaxOccurs() {
 
 		return this.maxOccurs;
 	}
 
+	@Override
 	public void setMaxOccurs(Integer maxOccurs) {
 
 		this.maxOccurs = maxOccurs;
 	}
 
+	@Override
 	public String getDescription() {
 		return description;
 	}
 
+	@Override
 	public void setDescription(String description) {
 		this.description = description;
 	}
@@ -150,6 +159,4 @@ public class MessageElementData extends gov.nist.healthcare.tools.core.models.Me
 		}
 	}
 
- 
-	 
 }

@@ -384,13 +384,12 @@ public class XMLValidator {
 		SAXBuilder jdomBuilder = new SAXBuilder();
 		jdomBuilder.setJDOMFactory(new LocatedJDOMFactory());
 		Iterator<MessageFailureV3> iterator = soapFailures.iterator();
-		Integer i = 0;
-		while (iterator.hasNext()) {
-			String targetPath = soapFailures.get(i).getPath();
+ 		while (iterator.hasNext()) {
+			MessageFailureV3 failure = iterator.next();
+			String targetPath = failure.getPath();
 			if (targetPath == null) {
-				System.out.println("No location available for #" + i);
-				i++;
-				continue;
+				System.out.println("No location available for #" + soapFailures.indexOf(failure));
+ 				continue;
 			}
 
 			String tp1 = normalizeErrPath(targetPath);
@@ -410,14 +409,13 @@ public class XMLValidator {
 					System.out.println("Element value = " + child.getValue());
 					System.out.println("Element location = "
 							+ ((LocatedElement) child).getLine());
-					soapFailures.get(i).setLine(
+					failure.setLine(
 							((LocatedElement) child).getLine());
 				} catch (JDOMException | IOException e) {
 					System.out.println("Exception: " + e.getMessage());
 				}
 			}
-			i++;
-		}
+ 		}
 
 	}
 

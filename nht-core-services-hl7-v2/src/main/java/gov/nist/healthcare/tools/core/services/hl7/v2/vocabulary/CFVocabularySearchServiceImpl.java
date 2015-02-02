@@ -41,17 +41,17 @@ import org.apache.log4j.Logger;
 /**
  * @author Harold Affo (NIST)
  */
- public class VocabularySearchServiceImpl extends VocabularySearchService {
+ public class CFVocabularySearchServiceImpl extends VocabularySearchService {
 
  
   	private TableLibraryUnmarshaller umarshaller;
   
  	private VocabularyCollectionRepository vocabularyCollectionRepository;
 
-	public VocabularySearchServiceImpl() {
+	public CFVocabularySearchServiceImpl() {
 	} 
 	
-	public VocabularySearchServiceImpl(TableLibraryUnmarshaller umarshaller,
+	public CFVocabularySearchServiceImpl(TableLibraryUnmarshaller umarshaller,
 			VocabularyCollectionRepository vocabularyCollectionRepository) {
 		super();
 		this.umarshaller = umarshaller;
@@ -102,7 +102,7 @@ import org.apache.log4j.Logger;
 //	}
 
 	private static Logger logger = Logger
-			.getLogger(VocabularySearchServiceImpl.class);
+			.getLogger(CFVocabularySearchServiceImpl.class);
 
 	/**
 	 * This searchTableElementByCodeAndDescription method takes searchValue and
@@ -793,14 +793,12 @@ import org.apache.log4j.Logger;
 				String content = vocabLibrary.getContent();
 				VocabularyLibrary tLibrary = umarshaller.unmarshall(IOUtils
 						.toInputStream(content));
-				if(tLibrary != null){
 				vocabLibrary.load(tLibrary.getTableDefinition(),
 						tLibrary.getDescription(), tLibrary.getHL7Version(),
 						tLibrary.getName(), tLibrary.getOrganizationName(),
 						tLibrary.getStatus(),
 						tLibrary.getTableLibraryIdentifier(),
 						tLibrary.getTableLibraryVersion());
-				}
 			}
 		}
 		return collection;

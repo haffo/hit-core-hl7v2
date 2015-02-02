@@ -25,9 +25,21 @@ public interface Er7MessageValidator extends Validator {
 	 * @return
 	 */
  	@Override
+ 	@Deprecated
 	public ValidationResult validate(String message, String title,
-			Object... options);
-
-	 
+			Object... options); 
+ 	
+ 	
+ 	/**
+ 	 * Validate the message and return a json representation of the report
+ 	 * @param message
+ 	 * @param title
+ 	 * @param options
+ 	 * @return
+ 	 */
+ 	public String validatetoJson(String title, String message,
+			String profile, String constraints);
+ 	
+	
 
 }

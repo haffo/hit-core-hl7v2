@@ -11,60 +11,32 @@
 
 package gov.nist.healthcare.tools.core.services.hl7.v2.message.unit;
 
-import gov.nist.healthcare.tools.core.models.MessageElement;
-import gov.nist.healthcare.tools.core.models.MessageElementData;
-import gov.nist.healthcare.tools.core.models.MessageModel;
-import gov.nist.healthcare.tools.core.services.MessageParser;
 import gov.nist.healthcare.tools.core.services.exception.MessageParserException;
-import gov.nist.healthcare.tools.core.services.hl7.v2.message.Er7MessageParserImpl;
+import gov.nist.healthcare.tools.core.services.hl7.v2.message.Er7MessageValidatorImpl;
 
 import java.io.IOException;
-import java.util.List;
-
-import junit.framework.Assert;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class Er7MessageParserImplTest {
+public class Er7MessageValidatorImplTest {
 
-	private static String er7Message;
 
-	private static String xmlProfile;
-
-	MessageParser parser = new Er7MessageParserImpl();
+	Er7MessageValidatorImpl validator = new Er7MessageValidatorImpl();
 
 	@BeforeClass
 	public static void setUp() throws IOException {
-		er7Message = getEr7Message();
-		xmlProfile = getProfile();
+ 
 	}
 
 	@Test
-	public void testParse() throws MessageParserException {
-		MessageModel model = parser.parse(er7Message, xmlProfile);
-		List<MessageElement> elements = model.getElements();
-		for (int index = 0; index < elements.size(); index++) {
-			MessageElement element = elements.get(index);
-			assertEndIndex(element);
-		}
+	public void testValidateWithProfile() throws MessageParserException, IOException {
+   		String report = validator.validatetoJson( "JunitTest", getEr7Message(), getProfile(), getConstraints()); 
+ 	    System.out.println(report);
 	}
 
-	/**
-	 * 
-	 * @param element
-	 */
-	private void assertEndIndex(MessageElement element) {
-		MessageElementData elementData = element.getData();
-		Assert.assertTrue(elementData.getStartIndex() > 0);
-		List<MessageElement> children = element.getChildren();
-		if (children != null) {
-			for (MessageElement child : children) {
-				assertEndIndex(child);
-			}
-		}
-	}
+	 
 	
 	/**
 	 * 
@@ -72,7 +44,7 @@ public class Er7MessageParserImplTest {
 	 * @throws IOException
 	 */
 	private static String getEr7Message() throws IOException {
-		return IOUtils.toString(Er7MessageParserImplTest.class
+		return IOUtils.toString(Er7MessageValidatorImplTest.class
 				.getResourceAsStream("/messages/ELR.txt"));
 	}
 	
@@ -82,7 +54,14 @@ public class Er7MessageParserImplTest {
 	 * @throws IOException
 	 */
 	private static String getProfile() throws IOException {
-		return IOUtils.toString(Er7MessageParserImplTest.class
+		return IOUtils.toString(Er7MessageValidatorImplTest.class
 				.getResourceAsStream("/new_validation/Profile.xml"));
 	}
+	
+	
+	private static String getConstraints() throws IOException {
+		return IOUtils.toString(Er7MessageValidatorImplTest.class
+				.getResourceAsStream("/new_validation/Constraints.xml"));
+	}
+	
 }

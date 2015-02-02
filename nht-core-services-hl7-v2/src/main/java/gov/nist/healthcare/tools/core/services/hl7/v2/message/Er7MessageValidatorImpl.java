@@ -10,20 +10,23 @@
  */
 package gov.nist.healthcare.tools.core.services.hl7.v2.message;
 
-import gov.nist.healthcare.core.message.v2.er7.Er7Message;
-import gov.nist.healthcare.core.profile.Profile;
-import gov.nist.healthcare.core.validation.message.v2.MessageValidationContextV2;
-import gov.nist.healthcare.core.validation.message.v2.MessageValidationResultV2;
-import gov.nist.healthcare.core.validation.message.v2.MessageValidationV2;
-import gov.nist.healthcare.data.TableLibraryDocument;
 import gov.nist.healthcare.tools.core.models.ValidationResult;
-import gov.nist.healthcare.tools.core.models.hl7.v2.validation.Er7ValidationResult;
 import gov.nist.healthcare.tools.core.services.exception.ValidationException;
+import hl7.v2.instance.Element;
+import hl7.v2.instance.Separators;
+import hl7.v2.profile.XMLDeserializer;
+import hl7.v2.validation.SyncHL7Validator;
+import hl7.v2.validation.content.ConstraintManager;
+import hl7.v2.validation.content.DefaultConstraintManager;
+import hl7.v2.validation.report.Report;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.apache.commons.io.IOUtils;
 
-import org.apache.xmlbeans.XmlException;
+import scala.Function3;
+import scala.collection.immutable.Map;
+import scala.collection.immutable.Map$;
+import expression.EvalResult;
+import expression.Plugin;
 
 public class Er7MessageValidatorImpl implements Er7MessageValidator {
 
@@ -37,75 +40,33 @@ public class Er7MessageValidatorImpl implements Er7MessageValidator {
 	 * @return
 	 */
 	@Override
-	public ValidationResult validate(String er7Message, String title,
-			Object... options) {
-		String xmlProfile = (String) options[0];
-		String validationContext = (String) options[2];
-		MessageValidationContextV2 context = getValidationContext(validationContext);
-		MessageValidationV2 validator = new MessageValidationV2();
-		MessageValidationResultV2 v2Result = null;
+	public String validatetoJson(String title, String er7Message,
+			String profileXml, String constraintsXml) {
 		try {
-			if (options[1] instanceof String) {
-				v2Result = validator.validate(new Er7Message(er7Message),
-						new Profile(xmlProfile), context,
-						getTableLibraries((String) options[1]), true);
-			} else if (options[1] instanceof List<?>) {
-				v2Result = validator.validate(new Er7Message(er7Message),
-						new Profile(xmlProfile), context,
-						getTableLibraries((List<String>) options[1]), true);
-			}
-			return  new Er7ValidationResult(v2Result, title);
- 		} catch (RuntimeException e) {
+			hl7.v2.profile.Profile profile = XMLDeserializer.deserialize(
+					IOUtils.toInputStream(profileXml)).get();
+			ConstraintManager c = DefaultConstraintManager.apply(IOUtils.toInputStream(constraintsXml)).get();
+			// The plugin map. This should be empty if no plugin is used
+			Map<String, Function3<Plugin, Element, Separators, EvalResult>> pluginMap = Map$.MODULE$
+					.empty();
+			SyncHL7Validator validator = new SyncHL7Validator(profile, c,
+					pluginMap);
+			scala.collection.Iterable<String> keys = profile.messages().keys();
+			String key = keys.iterator().next();
+			Report report = validator.check(er7Message, key);
+			String res = report.toJson();
+			return res;
+		} catch (RuntimeException e) {
 			throw new ValidationException(e);
 		} catch (Exception e) {
 			throw new ValidationException(e);
 		}
 	}
 
-	private List<TableLibraryDocument> getTableLibraries(String xmlTableLibrary) {
-		if (xmlTableLibrary != null) {
-			List<TableLibraryDocument> tableLibrary = new ArrayList<TableLibraryDocument>();
-			try {
-
-				tableLibrary.add(TableLibraryDocument.Factory
-						.parse(xmlTableLibrary));
-				return tableLibrary;
-
-			} catch (XmlException e) {
-				throw new ValidationException(
-						"Cannot parse the table library content");
-			}
-		}
-		return null;
-	}
-
-	private List<TableLibraryDocument> getTableLibraries(
-			List<String> xmlTableLibraries) {
-		List<TableLibraryDocument> tableLibraryDocuments = new ArrayList<TableLibraryDocument>();
-		try {
-			for (String xmlTableLibrary : xmlTableLibraries) {
-				tableLibraryDocuments.add(TableLibraryDocument.Factory
-						.parse(xmlTableLibrary));
-			}
-		} catch (XmlException e) {
-			throw new ValidationException(
-					"Cannot parse the table library content");
-		}
-		return tableLibraryDocuments;
-	}
-
-	private MessageValidationContextV2 getValidationContext(
-			String validationContext) {
-		MessageValidationContextV2 mvc = new MessageValidationContextV2();
-		try {
-			if (validationContext != null)
-				mvc.load(validationContext);
-
-		} catch (XmlException e) {
-			throw new ValidationException(
-					"Cannot parse the table validation context");
-		}
-		return mvc;
+	@Override
+	public ValidationResult validate(String message, String title,
+			Object... options) {
+		throw new UnsupportedOperationException();
 	}
 
 }

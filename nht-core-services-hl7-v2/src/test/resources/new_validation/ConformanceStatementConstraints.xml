@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ConformanceContext UUID="2dea7289-e51b-4f41-9522-c0d4b12c1405" xsi:noNamespaceSchemaLocation="ConformanceContext.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <MetaData>
+        <Description>Conformance context for RSP_K11</Description>
+    </MetaData>
+    <Segment>
+        <ByID ID="MSH">
+            <Constraint ID="IZ-12">
+                <Description>The value of MSH_IZ 1.5_Z31.1 (Field Separator) SHALL be '|'.</Description>
+                <Assertion>
+                    <PlainText Path="1[1]" Text="|" IgnoreCase="true"/>
+                </Assertion>
+            </Constraint>
+            <Constraint ID="IZ-13">
+                <Description>The value of MSH_IZ 1.5_Z31.2 (Encoding Characters) SHALL be '^~\&amp;'.</Description>
+                <Assertion>
+                    <PlainText Path="2[1]" Text="^~\&amp;" IgnoreCase="true"/>
+                </Assertion>
+            </Constraint>
+            <Constraint ID="IZ-53">
+                <Description>The value of MSH_IZ31.15 (Accept Acknowledgment Type) SHALL be 'NE'.</Description>
+                <Assertion>
+                    <PlainText Path="15[1]" Text="NE" IgnoreCase="true"/>
+                </Assertion>
+            </Constraint>
+            <Constraint ID="IZ-52">
+                <Description>The value of MSH_IZ31.16 (Application Acknowledgment Type) SHALL be 'NE'.</Description>
+                <Assertion>
+                    <PlainText Path="16[1]" Text="NE" IgnoreCase="true"/>
+                </Assertion>
+            </Constraint>
+        </ByID>
+    </Segment>
+    <Datatype>
+        <ByID ID="HD">
+            <Constraint ID="IZ-5">
+                <Description>The value of HD_IZ.2 (Universal ID) SHALL be formatted with ISO compliant OID.</Description>
+                <Assertion>
+                    <Format Path="2[1]" Regex="ISO compliant OID"/>
+                </Assertion>
+            </Constraint>
+            <Constraint ID="IZ-6">
+                <Description>If HD_IZ.2 (Universal ID) valued., then The value of HD_IZ.3 (Universal ID Type) SHALL be 'ISO'..</Description>
+                <Assertion>
+                    <IMPLY>
+                        <Presence Path="2"/>
+                        <PlainText Path="3[1]" Text="ISO" IgnoreCase="true"/>
+                    </IMPLY>
+                </Assertion>
+            </Constraint>
+        </ByID>
+    </Datatype>
+</ConformanceContext>

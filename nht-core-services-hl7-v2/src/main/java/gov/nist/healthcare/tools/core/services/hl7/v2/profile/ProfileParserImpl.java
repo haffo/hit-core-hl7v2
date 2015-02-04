@@ -15,8 +15,6 @@ import gov.nist.healthcare.tools.core.services.ProfileParser;
 import gov.nist.healthcare.tools.core.services.exception.ProfileParserException;
 import hl7.v2.profile.Profile;
 import hl7.v2.profile.XMLDeserializer;
-import hl7.v2.validation.content.ConstraintManager;
-import hl7.v2.validation.content.DefaultConstraintManager;
 
 import java.io.InputStream;
 
@@ -37,16 +35,14 @@ public class ProfileParserImpl implements ProfileParser {
 	public ProfileModel parse(String content, Object... options)
 			throws ProfileParserException {
 		try {
-			String constraints  = options != null && options.length > 0  ? (String) options[0]: null;
-			InputStream constraintsStream = constraints != null ? IOUtils.toInputStream(constraints) : null;
- 			ConstraintManager c = constraintsStream != null ? DefaultConstraintManager.apply(
-					constraintsStream).get():null;
+			String confStatementXml  = options != null && options.length > 0  ? (String) options[0]: null;
+			String predicateXml  = options != null && options.length > 1  ? (String) options[1]: null;
  			InputStream profileStream = IOUtils.toInputStream(content);
 			Profile p = XMLDeserializer.deserialize(profileStream).get();
 			scala.collection.Iterable<String> keys = p.messages().keys();
 			String key = keys.iterator().next();
 			hl7.v2.profile.Message m = p.messages().apply(key);
-			return new MessageParser().parse(m, c);
+			return new MessageParser().parse(m, confStatementXml,predicateXml);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new ProfileParserException(e.getMessage());

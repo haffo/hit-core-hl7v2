@@ -2,8 +2,8 @@ package gov.nist.healthcare.tools.core.services.hl7.v2.profile;
 
 import gov.nist.healthcare.tools.core.models.ProfileElement;
 import gov.nist.healthcare.tools.core.models.ProfileModel;
+import gov.nist.healthcare.tools.core.models.ProfileRef;
 import gov.nist.healthcare.tools.core.models.hl7.v2.util.Util;
-import hl7.v2.instance.SegOrGroup;
 import hl7.v2.profile.Component;
 import hl7.v2.profile.Composite;
 import hl7.v2.profile.Datatype;
@@ -16,10 +16,11 @@ import hl7.v2.profile.SegRefOrGroup;
 import hl7.v2.profile.Segment;
 import hl7.v2.profile.SegmentRef;
 import hl7.v2.profile.Usage;
-import hl7.v2.validation.content.ConstraintManager;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import javax.xml.xpath.XPathExpressionException;
 
 import scala.collection.Iterator;
 
@@ -35,38 +36,34 @@ public class MessageParser {
 	private final static String ICON_FIELD = "field.png";
 	private final static String ICON_COMPONENT = "component.png";
 
-	private Message message;
-	private ConstraintManager constraintManager;
+ 	private ConstraintManager predicateManager;
+	private ConstraintManager confStatementManager;
+
 	private ProfileModel model;
-	private Set<String> tracker;
+	private Map<String, ProfileElement> tracker;
 
-	public Message getMessage() {
-		return message;
-	}
-
-	public void setMessage(Message message) {
-		this.message = message;
-	}
-
+ 
 	public MessageParser() {
 	}
 
-	public ProfileModel parse(Message message,
-			ConstraintManager constraintManager) {
-		this.message = message;
-		this.constraintManager = constraintManager;
-		this.tracker = new HashSet<String>();
+	public ProfileModel parse(Message message, String confStatementXml,
+			String predicatesXml) throws XPathExpressionException {
+ 		this.confStatementManager = new ConstraintManager(confStatementXml);
+		this.predicateManager = new ConstraintManager(predicatesXml);
+		this.tracker = new LinkedHashMap<String, ProfileElement>();
 		model = new ProfileModel();
-		ProfileElement full = new ProfileElement("FULL");
-		model.getElements().add(full);
-		scala.collection.immutable.List<SegRefOrGroup> children = this.message
+		ProfileElement structure = new ProfileElement("Message Structure");
+		structure.setType("MESSAGE");
+		scala.collection.immutable.List<SegRefOrGroup> children =  message
 				.structure();
 		if (children != null && !children.isEmpty()) {
 			Iterator<SegRefOrGroup> it = children.iterator();
 			while (it.hasNext()) {
-				process(it.next(), full);
+				process(it.next(), structure);
 			}
 		}
+		model.getElements().add(structure);
+		model.getElements().addAll(this.tracker.values());
 		return model;
 	}
 
@@ -77,18 +74,51 @@ public class MessageParser {
 	 * @param parentElement
 	 * @param model
 	 * @param tracker
+	 * @throws XPathExpressionException
 	 */
 	private ProfileElement process(SegRefOrGroup ref,
-			ProfileElement parentElement) {
+			ProfileElement parentElement) throws XPathExpressionException {
 		if (ref == null)
-			return parentElement;
+ 			return parentElement;
 		if (ref instanceof SegmentRef) {
-			return process(((SegmentRef) ref).ref(), ((SegmentRef) ref).req(),
+			return process((SegmentRef) ref, ((SegmentRef) ref).req(),
 					parentElement);
 		} else if (ref instanceof Group) {
 			return process((Group) ref, ((Group) ref).req(), parentElement);
+		} else {
+			throw new IllegalArgumentException("Unknown type of SegRefOrGroup");
 		}
-		return parentElement;
+	}
+
+	private ProfileElement process(SegmentRef ref, Req req,
+			ProfileElement parentElement) throws XPathExpressionException {
+		ProfileElement element = process(req, new ProfileElement());
+		Segment s = ref.ref();
+//		element.setTitle(s.name() + ":" + s.desc());
+		element.setName(s.name());
+		element.setType(SEGMENT);
+		element.setLongName(s.desc());
+		element.setIcon(ICON_SEGMENT);
+
+		// element.getConformanceStatements().addAll(confStatementManager.findById("Segment",s.id()));
+		// element.getConformanceStatements().addAll(confStatementManager.findByName("Segment",
+		// s.name()));
+		// element.getPredicates().addAll(predicateManager.findById("Segment",
+		// s.id()));
+		// element.getPredicates().addAll(predicateManager.findByName("Segment",
+		// s.name()));
+		//
+		ProfileElement pe = null;
+		if (tracker.containsKey(s.id())) {
+			pe = tracker.get(s.id());
+		} else {
+			pe = process(ref.ref(), ref.req());
+			tracker.put(pe.getId(), pe);
+		}
+		element.setReference(new ProfileRef(pe.getId(), "Segment", pe.getName()));
+		parentElement.getChildren().add(element);
+		
+		return element;
 	}
 
 	/**
@@ -99,16 +129,17 @@ public class MessageParser {
 	 * @param model
 	 * @param tracker
 	 * @return
+	 * @throws XPathExpressionException
 	 */
-	private ProfileElement process(Segment s, Req req,
-			ProfileElement parentElement) {
-		ProfileElement element = process(req, new ProfileElement());		
-		element.setTitle(s.name() + ":" + s.desc());
+	private ProfileElement process(Segment s, Req req)
+			throws XPathExpressionException {
+		ProfileElement element = new ProfileElement();
+//		element.setTitle(s.name() + ":" + s.desc());
 		element.setName(s.name());
 		element.setType(SEGMENT);
 		element.setLongName(s.desc());
 		element.setIcon(ICON_SEGMENT);
-		parentElement.getChildren().add(element);
+		element.setId(s.id());
 		scala.collection.immutable.List<Field> children = s.fields();
 		if (children != null && !children.isEmpty()) {
 			Iterator<Field> it = children.iterator();
@@ -116,10 +147,16 @@ public class MessageParser {
 				process(it.next(), element);
 			}
 		}
-		if (!tracker.contains(element.getName())) {
-			model.getElements().add(element);
-			tracker.add(element.getName());
-		}
+
+		element.getConformanceStatements().addAll(
+				confStatementManager.findById("Segment", s.id()));
+		element.getConformanceStatements().addAll(
+				confStatementManager.findByName("Segment", s.name()));
+		element.getPredicates().addAll(
+				predicateManager.findById("Segment", s.id()));
+		element.getPredicates().addAll(
+				predicateManager.findByName("Segment", s.name()));
+
 		return element;
 	}
 
@@ -131,16 +168,23 @@ public class MessageParser {
 	 * @param model
 	 * @param tracker
 	 * @return
+	 * @throws XPathExpressionException
 	 */
 	private ProfileElement process(Group g, Req req,
-			ProfileElement parentElement) {
+			ProfileElement parentElement) throws XPathExpressionException {
 		ProfileElement element = process(req, new ProfileElement());
 		element.setType(GROUP);
 		element.setIcon(ICON_GROUP);
 		element.setName(g.name());
 		element.setLongName(g.name());
-		element.setTitle(element.getName());
- 		parentElement.getChildren().add(element);
+//		element.setTitle(element.getName());
+
+		element.getConformanceStatements().addAll(
+				confStatementManager.findByName("Group", g.name()));
+		element.getPredicates().addAll(
+				predicateManager.findByName("Group", g.name()));
+
+		parentElement.getChildren().add(element);
 		scala.collection.immutable.List<SegRefOrGroup> children = g.structure();
 		if (children != null) {
 			Iterator<SegRefOrGroup> it = children.iterator();
@@ -151,25 +195,7 @@ public class MessageParser {
 		return element;
 	}
 
-	/**
-	 * 
-	 * @param ref
-	 * @param parentElement
-	 * @param model
-	 * @param tracker
-	 * @return
-	 */
-	private ProfileElement process(SegOrGroup ref, ProfileElement parentElement) {
-		if (ref == null)
-			return parentElement;
-		if (ref instanceof Segment) {
-			return process((Segment) ref, ref.req(), parentElement);
-		} else if (ref instanceof Group) {
-			return process((Group) ref, ref.req(), parentElement);
-		}
-		return parentElement;
-	}
-
+ 
 	/**
 	 * 
 	 * @param req
@@ -181,29 +207,17 @@ public class MessageParser {
 			return element;
 		Range card = Util.getOption(req.cardinality());
 		Usage usage = req.usage();
-		if(usage != null){
+		if (usage != null) {
 			element.setUsage(req.usage().toString());
 		}
 		if (card != null) {
 			element.setMinOccurs(card.min());
 			element.setMaxOccurs(card.max());
-			element.setCardinality("[" + card.min() + "," + card.max() + "]");
-		}
+ 		}
 		Range length = Util.getOption(req.length());
 		if (length != null) {
-			int minLength = length.min();
-			String maxLength = length.max();
-			element.setMinLength(minLength + "");
-			element.setMaxLength(maxLength);
-			if (minLength != 0 && maxLength != null && !maxLength.equals("")) {
-				if (!maxLength.equals("65K")) {
-					element.setLength("[" + minLength + "," + maxLength + "]");
-				} else {
-					element.setLength("[" + minLength + ",*]");
-				}
-			} else {
-				element.setLength("");
-			}
+ 			element.setMinLength(length.min() + "");
+			element.setMaxLength( length.max());
 		}
 		return element;
 	}
@@ -212,26 +226,28 @@ public class MessageParser {
 	 * 
 	 * @param f
 	 * @param parentElement
+	 * @throws XPathExpressionException
 	 */
-	private void process(Field f, ProfileElement parentElement) {
+	private void process(Field f, ProfileElement parentElement)
+			throws XPathExpressionException {
 		if (f == null)
 			return;
 		ProfileElement element = process(f.req(), new ProfileElement());
-		element.setTitle(f.name());
-		element.setName(f.name());
+ 		element.setName(f.name());
 		element.setType(FIELD);
-		element.setDataTypeUsage("O".equals(element.getUsage()) ? "-" : element
-				.getUsage());
+//		element.setDataTypeUsage("O".equals(element.getUsage()) ? "-" : element
+//				.getUsage());
 		element.setIcon(ICON_FIELD);
 		String table = Util.getOption(f.req().table());
 		if (table != null)
 			element.setTable(table);
 		element.setDataType(f.datatype().name());
 		element.setPosition(f.req().position() + "");
-		element.setPath(parentElement.getName() + "." + f.req().position());
-		element.setTitle(element.getPath() + " : " + element.getName());
-		element.setDataTypeUsage("O".equals(element.getUsage()) ? "-" : element
-				.getUsage());
+ 		element.setPath(parentElement.getName() + "." + f.req().position());
+//		element.setTitle(element.getPath() + " : " + element.getName());
+//		element.setDataTypeUsage("O".equals(element.getUsage()) ? "-" : element
+//				.getUsage());
+
 		parentElement.getChildren().add(element);
 		process(f.datatype(), element);
 	}
@@ -240,8 +256,21 @@ public class MessageParser {
 	 * 
 	 * @param d
 	 * @param parentElement
+	 * @throws XPathExpressionException
 	 */
-	private void process(Datatype d, ProfileElement parentElement) {
+	private ProfileElement process(Datatype d, ProfileElement belongTo)
+			throws XPathExpressionException {
+
+		belongTo.getConformanceStatements().addAll(
+				confStatementManager.findById("Datatype", d.id()));
+		belongTo.getConformanceStatements().addAll(
+				confStatementManager.findByName("Datatype", d.name()));
+
+		belongTo.getPredicates().addAll(
+				predicateManager.findById("Datatype", d.id()));
+		belongTo.getPredicates().addAll(
+				predicateManager.findByName("Datatype", d.name()));
+
 		if (d instanceof Composite) {
 			Composite c = (Composite) d;
 			scala.collection.immutable.List<Component> children = c
@@ -249,36 +278,42 @@ public class MessageParser {
 			if (children != null) {
 				Iterator<Component> it = children.iterator();
 				while (it.hasNext()) {
-					process(it.next(), parentElement);
+					process(it.next(), belongTo);
 				}
 			}
 		}
+		
+		return belongTo;
 	}
 
 	/**
 	 * 
 	 * @param c
 	 * @param parentElement
+	 * @throws XPathExpressionException
 	 */
-	private void process(Component c, ProfileElement parentElement) {
+	private ProfileElement process(Component c, ProfileElement parentElement)
+			throws XPathExpressionException {
 		if (c == null)
-			return;
+			return parentElement;
 		ProfileElement element = new ProfileElement();
 		process(c.req(), element);
 		element.setName(c.name());
 		element.setType(COMPONENT);
-		element.setDataTypeUsage(element.getUsage());
+//		element.setDataTypeUsage(element.getUsage());
 		element.setIcon(ICON_COMPONENT);
- 		String table = Util.getOption(c.req().table());
+		String table = Util.getOption(c.req().table());
 		if (table != null)
 			element.setTable(table);
-		
+
 		element.setDataType(c.datatype().name());
 		element.setPosition(c.req().position() + "");
 		element.setPath(parentElement.getPath() + "." + c.req().position());
-		element.setTitle(element.getPath() + " : " + element.getName());
+//		element.setTitle(element.getPath() + " : " + element.getName());
 		parentElement.getChildren().add(element);
 		process(c.datatype(), element);
+		
+		return element;
 	}
 
 }

@@ -20,6 +20,11 @@ import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
 
+/**
+ * 
+ * @author Harold Affo
+ *
+ */
 public class ProfileParserImpl implements ProfileParser {
 
 

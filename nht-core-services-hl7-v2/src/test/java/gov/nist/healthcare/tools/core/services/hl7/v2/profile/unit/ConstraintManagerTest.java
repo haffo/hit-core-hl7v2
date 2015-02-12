@@ -22,7 +22,7 @@ public class ConstraintManagerTest {
 	public void testFind() throws ProfileParserException, IOException, XPathExpressionException{
  		String constraints =  IOUtils.toString(ConstraintManagerTest.class.getResourceAsStream("/new_validation/ConformanceStatementConstraints.xml"));
  		manager = new ConstraintManager(constraints);
- 		Set<Constraint> cols = manager.findById("Segment", "MSH_IZ31");
+ 		Set<Constraint> cols = manager.findById("Segment", "MSH");
  		assertFalse(cols.isEmpty());
  		assertTrue(cols.size() == 4);		
 	}

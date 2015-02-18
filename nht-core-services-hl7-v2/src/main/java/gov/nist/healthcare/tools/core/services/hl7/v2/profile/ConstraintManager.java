@@ -48,51 +48,61 @@ public class ConstraintManager {
 
 	public Set<Constraint> findById(String type, String id)
 			throws XPathExpressionException {
-		Set<Constraint> constraints = new HashSet<Constraint>();
-		if (doc != null) {
-			XPathFactory xPathfactory = XPathFactory.newInstance();
-			XPath xpath = xPathfactory.newXPath();
-			XPathExpression expr = xpath.compile("/ConformanceContext/" + type
-					+ "/ByID[@ID='" + id + "']/Constraint");
-			NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
-			if (nl != null && nl.getLength() > 0) {
-				for (int i = 0; i < nl.getLength(); i++) {
-					Node node = nl.item(i);
-					Constraint c = getConstraint(node);
-					constraints.add(c);
-				}
-			}
-		}
-		return constraints;
+		return find("/ConformanceContext/" + type
+				+ "/ByID[@ID='" + id + "']/Constraint");
 	}
 
 	public Set<Constraint> findByName(String type, String name)
+			throws XPathExpressionException {
+		return find("/ConformanceContext/" + type
+				+ "/ByName[@Name='" + name + "']/Constraint");
+	}
+
+	public Set<Constraint> findByIdAndPath(String type, String id,String path)
+			throws XPathExpressionException {
+		return find("/ConformanceContext/"+ type +"/ByID[@ID='" + id + "']/*[descendant::*[@Path='"
+				+ path + "']]");
+	}
+	
+	
+	public Set<Constraint> findByNameAndPath(String type, String name,String path)
+			throws XPathExpressionException {
+		System.out.println("Type=" + type + " , name="+ name + " ,path=" + path);
+		return find("/ConformanceContext/"+ type +"/ByName[@Name='" + name + "']/*[descendant::*[@Path='"
+				+ path + "']]");
+	} 
+	
+	
+	public Set<Constraint> find(String query)
 			throws XPathExpressionException {
 		Set<Constraint> constraints = new HashSet<Constraint>();
 		if (doc != null) {
 			XPathFactory xPathfactory = XPathFactory.newInstance();
 			XPath xpath = xPathfactory.newXPath();
-			XPathExpression expr = xpath.compile("/ConformanceContext/" + type
-					+ "/ByName[@Name='" + name + "']/Constraint");
+			XPathExpression expr = xpath.compile(query);
 			NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
 			if (nl != null && nl.getLength() > 0) {
 				for (int i = 0; i < nl.getLength(); i++) {
 					Node node = nl.item(i);
-					Constraint c = getConstraint(node);
-					constraints.add(c);
+					if ("Constraint".equals(node.getNodeName())) {
+						Constraint c = getConstraint(node);
+						constraints.add(c);
+					}
 				}
 			}
 		}
 		return constraints;
 	}
+	
+	
 
 	private Constraint getConstraint(Node node) {
 		String id = getAttributeValue(node, "ID");
 		if (id == null)
 			throw new IllegalArgumentException("ID is null");
 		String desc = getChildContent(node, "Description");
-//		if (desc == null)
-//			throw new IllegalArgumentException("Description is null");
+		// if (desc == null)
+		// throw new IllegalArgumentException("Description is null");
 		return new Constraint(id, desc);
 	}
 

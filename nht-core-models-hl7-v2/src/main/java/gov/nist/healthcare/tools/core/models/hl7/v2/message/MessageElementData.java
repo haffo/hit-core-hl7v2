@@ -31,12 +31,29 @@ public class MessageElementData extends
 		super();
 	}
 
+	/**
+	 * 
+	 * @param path
+	 * @param name
+	 * @param usage
+	 * @param minOccurs
+	 * @param maxOccurs
+	 * @param lineNumber
+	 * @param startIndex
+	 * @param endIndex
+	 * @param column
+	 * @param position
+	 * @param instanceNumber
+	 * @param value
+	 * @param type
+	 * @param stringRepresentation
+	 */
 	public MessageElementData(String path, String name, String usage,
 			Integer minOccurs, String maxOccurs, int lineNumber,
 			int startIndex, int endIndex, int position, int instanceNumber,
-			String value, String type, String stringRepresentation) {
+			String value, String type) {
 		super(path, name, usage, minOccurs, maxOccurs, lineNumber, startIndex,
-				endIndex, position, instanceNumber, null, value, type, "");
+				endIndex, position, instanceNumber, null, value, type);
 		setDescription(toString());
 	}
 

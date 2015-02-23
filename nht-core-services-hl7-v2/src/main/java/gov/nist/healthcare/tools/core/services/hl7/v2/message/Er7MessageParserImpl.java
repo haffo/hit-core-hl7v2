@@ -46,9 +46,11 @@ public class Er7MessageParserImpl implements Er7MessageParser {
 	private final static String SEGMENT = "SEGMENT";
 	private final static String FIELD = "FIELD";
 	private final static String COMPONENT = "COMPONENT";
-	private final static String GROUP = "GROUP";
-	private final static String SUB_COMPONENT = "SUB_COMPONENT";
-	
+ 	private final static String SUB_COMPONENT = "SUB_COMPONENT";
+	private final static String NODE_SEGMENT = "segment";
+	private final static String NODE_FIELD = "field";
+	private final static String NODE_COMPONENT = "component";
+ 	private final static String NODE_SUB_COMPONENT = "subcomponent";
 	/**
 	 * 
 	 */
@@ -59,10 +61,12 @@ public class Er7MessageParserImpl implements Er7MessageParser {
 			String profileXml = (String) options[0];
 			if (!"".equals(er7Message) && er7Message != null) {
 				InputStream profileStream = IOUtils.toInputStream(profileXml);
-				Profile profile = XMLDeserializer.deserialize(profileStream).get();
-				scala.collection.Iterable<String> keys = profile.messages().keys();
+				Profile profile = XMLDeserializer.deserialize(profileStream)
+						.get();
+				scala.collection.Iterable<String> keys = profile.messages()
+						.keys();
 				String key = keys.iterator().next();
- 				JParser p = new JParser();
+				JParser p = new JParser();
 				Message message = p.jparse(er7Message, profile.messages()
 						.apply(key));
 				return toModel(message);
@@ -79,17 +83,17 @@ public class Er7MessageParserImpl implements Er7MessageParser {
 	 * @return
 	 */
 	private MessageModel toModel(Message message) {
- 		MessageElement root = new MessageElement();
- 		List<SegOrGroup> children = message.children();
- 		if (children != null && !children.isEmpty()) {
- 			scala.collection.Iterator<SegOrGroup> it = children.iterator();
- 			while (it.hasNext()) {
- 				process(it.next(), "", root);
- 			}			
- 		}
-		return  new MessageModel(root);
+		MessageElement root = new MessageElement();
+		List<SegOrGroup> children = message.children();
+		if (children != null && !children.isEmpty()) {
+			scala.collection.Iterator<SegOrGroup> it = children.iterator();
+			while (it.hasNext()) {
+				process(it.next(), "", root);
+			}
+		}
+		return new MessageModel(root);
 	}
-	
+
 	/**
 	 * 
 	 * @param c
@@ -97,21 +101,16 @@ public class Er7MessageParserImpl implements Er7MessageParser {
 	 */
 	private void process(Component c, MessageElement parent) {
 		Location loc = c.location();
-		Req req = c.req();
- 		String rep = c.toString();
+		Req req = c.req();				
 		MessageElementData data = new MessageElementData(loc.path(),
-				loc.desc(), req.usage().toString(), null, null,
-				loc.line(), loc.column(), loc.column()
-						+ (rep != null ? rep.length() : 0), loc.column(), c.instance(),
-				 null, COMPONENT, rep);
-		MessageElement el = new MessageElement("component", data, parent);
+				loc.desc(), req.usage().toString(),-1, null,loc.line(),  loc.column(),-1,Er7Util.getPosition(loc.path()),
+				c.instance(), null, COMPONENT);
+		MessageElement el = new MessageElement(NODE_COMPONENT, data, parent);
 		if (c instanceof SimpleComponent) {
 			SimpleComponent s = (SimpleComponent) c;
 			MessageElementData value = new MessageElementData(loc.path(),
-					loc.desc(), req.usage().toString(),null,null,
-					loc.line(), loc.column(), loc.column()
-							+ (rep != null ? rep.length() : 0), loc.column(),
-					c.instance(), s.value().raw(), COMPONENT, rep);
+					loc.desc(), req.usage().toString(), -1, null, loc.line(),
+					loc.column(),-1, Er7Util.getPosition(loc.path()), c.instance(), s.value().raw(), COMPONENT);
 			new MessageElement("value", value, el);
 		} else {
 			ComplexComponent cc = (ComplexComponent) c;
@@ -119,12 +118,12 @@ public class Er7MessageParserImpl implements Er7MessageParser {
 			if (children != null && !children.isEmpty()) {
 				Iterator<SimpleComponent> it = children.iterator();
 				while (it.hasNext()) {
- 					process(it.next(), el);
+					process(it.next(), el);
 				}
 			}
 		}
 	}
-	
+
 	/**
 	 * 
 	 * @param s
@@ -133,41 +132,39 @@ public class Er7MessageParserImpl implements Er7MessageParser {
 	private void process(SimpleComponent s, MessageElement parent) {
 		Location loc = s.location();
 		Req req = s.req();
-		String rep = s.toString();
 		MessageElementData data = new MessageElementData(loc.path(),
-				loc.desc(), req.usage().toString(), null,null,
-				loc.line(), loc.column(), loc.column()
-						+ (rep != null ? rep.length() : 0), loc.column(), s.instance() , null, FIELD, rep);
-		MessageElement el = new MessageElement("subcomponent", data, parent);
+				loc.desc(), req.usage().toString(),-1, null,loc.line(),  loc.column(),-1,Er7Util.getPosition(loc.path()),
+				s.instance(), null, SUB_COMPONENT);
+		MessageElement el = new MessageElement(NODE_SUB_COMPONENT, data, parent);		
 		MessageElementData value = new MessageElementData(loc.path(),
-				loc.desc(), req.usage().toString(), null,null,
-				loc.line(), loc.column(), loc.column()
-						+ (rep != null ? rep.length() : 0), loc.column(), s.instance(), s.value().raw(), SUB_COMPONENT, rep);
+				loc.desc(), req.usage().toString(),-1, null,loc.line(),  loc.column(),-1,Er7Util.getPosition(loc.path()),
+				s.instance(), s.value().raw(), SUB_COMPONENT);
 		new MessageElement("value", value, el);
 	}
 
 	/**
 	 * 
-	 * @param f: field 
-	 * @param parent: parent
+	 * @param f
+	 *            : field
+	 * @param parent
+	 *            : parent
 	 */
 	private void process(Field f, MessageElement parent) {
 		Location loc = f.location();
 		Req req = f.req();
- 		Range card = Util.getOption(req.cardinality());
-		String rep = f.toString();
+		Range card = Util.getOption(req.cardinality());
+		String rep = f.toString();		
 		MessageElementData data = new MessageElementData(loc.path(),
-				loc.desc(), req.usage().toString(), card.min(), card.max(),
-				loc.line(), loc.column(), loc.column()
-						+ (rep != null ? rep.length() : 0), loc.column(), f.instance(), null, FIELD, rep);
-		MessageElement el = new MessageElement("field", data, parent);
+				loc.desc(), req.usage().toString(),card.min(), card.max(),loc.line(),  loc.column(),-1,Er7Util.getPosition(loc.path()),
+				f.instance(), null, FIELD);
+		
+		
+		MessageElement el = new MessageElement(NODE_FIELD, data, parent);
 		if (f instanceof SimpleField) {
 			SimpleField s = (SimpleField) f;
 			MessageElementData value = new MessageElementData(loc.path(),
-					loc.desc(), req.usage().toString(), card.min(), card.max(),
-					loc.line(), loc.column(), loc.column()
-							+ (rep != null ? rep.length() : 0), loc.column(),
-					f.instance(), s.value().raw(), FIELD, rep);
+					loc.desc(), req.usage().toString(),card.min(), card.max(),loc.line(),  loc.column(),-1,Er7Util.getPosition(loc.path()),
+					f.instance(), s.value().raw(), FIELD);
 			new MessageElement("value", value, el);
 		} else {
 			ComplexField c = (ComplexField) f;
@@ -175,10 +172,10 @@ public class Er7MessageParserImpl implements Er7MessageParser {
 			if (children != null && !children.isEmpty()) {
 				Iterator<Component> it = children.iterator();
 				while (it.hasNext()) {
- 					process(it.next(), el);
+					process(it.next(), el);
 				}
 			}
-			
+
 		}
 	}
 
@@ -188,35 +185,30 @@ public class Er7MessageParserImpl implements Er7MessageParser {
 	 * @param parentName
 	 * @param parent
 	 */
-	private void process(SegOrGroup e, String parentName,
-			MessageElement parent) {
+	private void process(SegOrGroup e, String parentName, MessageElement parent) {
 		if (e == null) {
 			return;
 		}
 		if (e instanceof Segment) {
 			Segment s = (Segment) e;
- 			Location loc = s.location();
+			Location loc = s.location();
 			Req req = s.req();
- 			Range card = Util.getOption(req.cardinality());
-			String rep = s.toString();
-			MessageElementData data = new MessageElementData(loc.path(),
-					loc.desc(), req.usage().toString(), card.min(), card.max(),
-					loc.line(), loc.column(), loc.column()
-							+ (rep != null ? rep.length() : 0), loc.column(),
-					s.instance(), null, SEGMENT, rep);
-			MessageElement el = new MessageElement("segment", data,
-					parent);
+			Range card = Util.getOption(req.cardinality());
+ 			MessageElementData data = new MessageElementData(loc.path(),
+					loc.desc(), req.usage().toString(),card.min(), card.max(),loc.line(),  loc.column(),-1,Er7Util.getPosition(loc.path()),
+					s.instance(),null, SEGMENT);
+			MessageElement el = new MessageElement(NODE_SEGMENT, data, parent);
 			List<Field> children = s.children();
 			if (children != null && !children.isEmpty()) {
 				Iterator<Field> it = children.iterator();
 				while (it.hasNext()) {
- 					process(it.next(), el);
+					process(it.next(), el);
 				}
 			}
-			
+
 		} else if (e instanceof Group) {
 			Group g = (Group) e;
-			List<SegOrGroup>  children = g.children();
+			List<SegOrGroup> children = g.children();
 			if (children != null && !children.isEmpty()) {
 				scala.collection.Iterator<SegOrGroup> it = children.iterator();
 				while (it.hasNext()) {
@@ -224,7 +216,8 @@ public class Er7MessageParserImpl implements Er7MessageParser {
 				}
 			}
 		}
-	} 
+	}
+
 	
 
 }

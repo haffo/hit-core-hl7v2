@@ -1,6 +1,7 @@
 package gov.nist.healthcare.tools.core.services.hl7.v2.profile;
 
 import gov.nist.healthcare.tools.core.models.Constraint;
+import gov.nist.healthcare.tools.core.models.Predicate;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -48,32 +49,38 @@ public class ConstraintManager {
 
 	public Set<Constraint> findById(String type, String id)
 			throws XPathExpressionException {
-		return find("/ConformanceContext/" + type
+		return findConstraints("/ConformanceContext/" + type
 				+ "/ByID[@ID='" + id + "']/Constraint");
 	}
 
 	public Set<Constraint> findByName(String type, String name)
 			throws XPathExpressionException {
-		return find("/ConformanceContext/" + type
+		return findConstraints("/ConformanceContext/" + type
 				+ "/ByName[@Name='" + name + "']/Constraint");
 	}
 
 	public Set<Constraint> findByIdAndPath(String type, String id,String path)
 			throws XPathExpressionException {
-		return find("/ConformanceContext/"+ type +"/ByID[@ID='" + id + "']/*[descendant::*[@Path='"
+		return findConstraints("/ConformanceContext/"+ type +"/ByID[@ID='" + id + "']/*[descendant::*[@Path='"
 				+ path + "']]");
 	}
+	
+	public Set<Predicate> findPredicatesByIdAndTarget(String type, String id,String targetPath)
+			throws XPathExpressionException {
+		return findPredicates("/ConformanceContext/"+ type +"/ByID[@ID='" + id + "']/*[descendant::*[@Target='"
+				+ targetPath + "']]");
+	}
+	
 	
 	
 	public Set<Constraint> findByNameAndPath(String type, String name,String path)
 			throws XPathExpressionException {
-		System.out.println("Type=" + type + " , name="+ name + " ,path=" + path);
-		return find("/ConformanceContext/"+ type +"/ByName[@Name='" + name + "']/*[descendant::*[@Path='"
+ 		return findConstraints("/ConformanceContext/"+ type +"/ByName[@Name='" + name + "']/*[descendant::*[@Path='"
 				+ path + "']]");
 	} 
 	
 	
-	public Set<Constraint> find(String query)
+	public Set<Constraint> findConstraints(String query)
 			throws XPathExpressionException {
 		Set<Constraint> constraints = new HashSet<Constraint>();
 		if (doc != null) {
@@ -94,6 +101,27 @@ public class ConstraintManager {
 		return constraints;
 	}
 	
+	public Set<Predicate> findPredicates(String query)
+			throws XPathExpressionException {
+		Set<Predicate> predicates = new HashSet<Predicate>();
+		if (doc != null) {
+			XPathFactory xPathfactory = XPathFactory.newInstance();
+			XPath xpath = xPathfactory.newXPath();
+			XPathExpression expr = xpath.compile(query);
+			NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
+			if (nl != null && nl.getLength() > 0) {
+				for (int i = 0; i < nl.getLength(); i++) {
+					Node node = nl.item(i);
+					if ("Predicate".equals(node.getNodeName())) {
+						Predicate c = getPredicate(node);
+						predicates.add(c);
+					}
+				}
+			}
+		}
+		return predicates;
+	}
+	
 	
 
 	private Constraint getConstraint(Node node) {
@@ -105,6 +133,21 @@ public class ConstraintManager {
 		// throw new IllegalArgumentException("Description is null");
 		return new Constraint(id, desc);
 	}
+	
+	
+	private Predicate getPredicate(Node node) {
+		String id = getAttributeValue(node, "ID");
+		if (id == null)
+			throw new IllegalArgumentException("ID is null");
+		String desc = getChildContent(node, "Description"); 
+		String trueUsage = getAttributeValue(node, "TrueUsage");
+		String falseUsage = getAttributeValue(node, "FalseUsage");
+		// if (desc == null)
+		// throw new IllegalArgumentException("Description is null");
+		return new Predicate(id, desc,trueUsage,falseUsage);
+	}
+
+	
 
 	private String getAttributeValue(Node node, String attName) {
 		NamedNodeMap attrs = node.getAttributes();

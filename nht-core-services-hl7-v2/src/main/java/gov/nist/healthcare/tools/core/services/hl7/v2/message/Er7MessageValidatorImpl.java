@@ -16,8 +16,8 @@ import hl7.v2.instance.Element;
 import hl7.v2.instance.Separators;
 import hl7.v2.profile.XMLDeserializer;
 import hl7.v2.validation.SyncHL7Validator;
-import hl7.v2.validation.content.ConstraintManager;
-import hl7.v2.validation.content.DefaultConstraintManager;
+import hl7.v2.validation.content.ConformanceContext;
+import hl7.v2.validation.content.DefaultConformanceContext;
 import hl7.v2.validation.report.Report;
 
 import org.apache.commons.io.IOUtils;
@@ -45,10 +45,12 @@ public class Er7MessageValidatorImpl implements Er7MessageValidator {
 		try {
 			hl7.v2.profile.Profile profile = XMLDeserializer.deserialize(
 					IOUtils.toInputStream(profileXml)).get();
-			ConstraintManager c = DefaultConstraintManager.apply(IOUtils.toInputStream(constraintsXml)).get();
+ 			
+			ConformanceContext c = DefaultConformanceContext.apply(IOUtils.toInputStream(constraintsXml)).get();
+			
 			// The plugin map. This should be empty if no plugin is used
-			Map<String, Function3<Plugin, Element, Separators, EvalResult>> pluginMap = Map$.MODULE$
-					.empty();
+			Map<String, Function3<Plugin, Element, Separators, EvalResult>> pluginMap = Map$.MODULE$.empty();
+
 			SyncHL7Validator validator = new SyncHL7Validator(profile, c,
 					pluginMap);
 			scala.collection.Iterable<String> keys = profile.messages().keys();

@@ -1,6 +1,7 @@
 package gov.nist.healthcare.tools.core.services.hl7.v2.profile;
 
 import gov.nist.healthcare.tools.core.models.Constraint;
+import gov.nist.healthcare.tools.core.models.Predicate;
 import gov.nist.healthcare.tools.core.models.ProfileElement;
 import gov.nist.healthcare.tools.core.models.ProfileModel;
 import gov.nist.healthcare.tools.core.models.hl7.v2.util.Util;
@@ -107,11 +108,11 @@ public class MessageParser {
 		return constraints;
 	}
 
-	private Set<Constraint> findPredicates(String type, String id, String name,
+	private Set<Predicate> findPredicates(String type, String id, String name,
 			String constraintPath) throws XPathExpressionException {
-		Set<Constraint> constraints = new HashSet<Constraint>();
+		Set<Predicate> constraints = new HashSet<Predicate>();
 		if (id != null)
-			constraints.addAll(predicateManager.findByIdAndPath(type, id,
+			constraints.addAll(predicateManager.findPredicatesByIdAndTarget(type, id,
 					constraintPath));
 //		if (name != null)
 //			constraints.addAll(predicateManager.findByNameAndPath(type, name,
@@ -454,7 +455,6 @@ public class MessageParser {
 		element.getPredicates().addAll(
 				findPredicates(NODE_DATATYPE, d.id(), d.name(),
 						constraintPath));
-
 		// element.getConformanceStatements().addAll(
 		// confStatementManager.findByIdAndPath(NODE_DATATYPE, d.id(),
 		// constraintContext));

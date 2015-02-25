@@ -46,38 +46,38 @@ public class ConstraintManager {
 		}
 
 	}
+//
+//	public Set<Constraint> findById(String type, String id)
+//			throws XPathExpressionException {
+//		return findConstraints("/ConformanceContext/Constraints/" + type
+//				+ "/ByID[@ID='" + id + "']/Constraint");
+//	}
+//
+//	public Set<Constraint> findByName(String type, String name)
+//			throws XPathExpressionException {
+//		return findConstraints("/ConformanceContext/Constraints/" + type
+//				+ "/ByName[@Name='" + name + "']/Constraint");
+//	}
 
-	public Set<Constraint> findById(String type, String id)
+	public Set<Constraint> findConfStatementsByIdAndPath(String type, String id,String targetPath)
 			throws XPathExpressionException {
-		return findConstraints("/ConformanceContext/" + type
-				+ "/ByID[@ID='" + id + "']/Constraint");
-	}
-
-	public Set<Constraint> findByName(String type, String name)
-			throws XPathExpressionException {
-		return findConstraints("/ConformanceContext/" + type
-				+ "/ByName[@Name='" + name + "']/Constraint");
-	}
-
-	public Set<Constraint> findByIdAndPath(String type, String id,String path)
-			throws XPathExpressionException {
-		return findConstraints("/ConformanceContext/"+ type +"/ByID[@ID='" + id + "']/*[descendant::*[@Path='"
-				+ path + "']]");
+		return findConstraints("/ConformanceContext/Constraints/"+ type +"/ByID[@ID='" + id + "']/Constraint[@Target='"
+				+ targetPath + "']");
 	}
 	
 	public Set<Predicate> findPredicatesByIdAndTarget(String type, String id,String targetPath)
 			throws XPathExpressionException {
-		return findPredicates("/ConformanceContext/"+ type +"/ByID[@ID='" + id + "']/*[descendant::*[@Target='"
-				+ targetPath + "']]");
+		return findPredicates("/ConformanceContext/Predicates/"+ type +"/ByID[@ID='" + id + "']/Predicate[@Target='"
+				+ targetPath + "']");
 	}
 	
 	
-	
-	public Set<Constraint> findByNameAndPath(String type, String name,String path)
-			throws XPathExpressionException {
- 		return findConstraints("/ConformanceContext/"+ type +"/ByName[@Name='" + name + "']/*[descendant::*[@Path='"
-				+ path + "']]");
-	} 
+//	
+//	public Set<Constraint> findByNameAndPath(String type, String name,String path)
+//			throws XPathExpressionException {
+// 		return findConstraints("/ConformanceContext/"+ type +"/ByName[@Name='" + name + "']/*[descendant::*[@Path='"
+//				+ path + "']]");
+//	} 
 	
 	
 	public Set<Constraint> findConstraints(String query)

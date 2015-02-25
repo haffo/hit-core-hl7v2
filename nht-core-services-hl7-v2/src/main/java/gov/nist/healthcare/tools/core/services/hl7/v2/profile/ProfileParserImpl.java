@@ -40,14 +40,13 @@ public class ProfileParserImpl implements ProfileParser {
 	public ProfileModel parse(String content, Object... options)
 			throws ProfileParserException {
 		try {
-			String confStatementXml  = options != null && options.length > 0  ? (String) options[0]: null;
-			String predicateXml  = options != null && options.length > 1  ? (String) options[1]: null;
- 			InputStream profileStream = IOUtils.toInputStream(content);
+			String constraintsXml  = options != null && options.length > 0  ? (String) options[0]: null;
+  			InputStream profileStream = IOUtils.toInputStream(content);
 			Profile p = XMLDeserializer.deserialize(profileStream).get();
 			scala.collection.Iterable<String> keys = p.messages().keys();
 			String key = keys.iterator().next();
 			hl7.v2.profile.Message m = p.messages().apply(key);
-			return new MessageParser().parse(m, confStatementXml,predicateXml);
+			return new MessageParser().parse(m, constraintsXml);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new ProfileParserException(e.getMessage());

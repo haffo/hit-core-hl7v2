@@ -42,8 +42,7 @@ public class MessageParser {
 	private final static String ICON_FIELD = "field.png";
 	private final static String ICON_COMPONENT = "component.png";
 
-	private ConstraintManager predicateManager;
-	private ConstraintManager confStatementManager;
+ 	private ConstraintManager constraintManager;
 
 	private ProfileModel model;
 	private Map<String, ProfileElement> tracker;
@@ -51,11 +50,9 @@ public class MessageParser {
 	public MessageParser() {
 	}
 
-	public ProfileModel parse(Message message, String confStatementXml,
-			String predicatesXml) throws XPathExpressionException {
-		this.confStatementManager = new ConstraintManager(confStatementXml);
-		this.predicateManager = new ConstraintManager(predicatesXml);
-		this.tracker = new LinkedHashMap<String, ProfileElement>();
+	public ProfileModel parse(Message message, String constraintsXml) throws XPathExpressionException {
+		this.constraintManager = new ConstraintManager(constraintsXml);
+ 		this.tracker = new LinkedHashMap<String, ProfileElement>();
 		model = new ProfileModel();
 		ProfileElement structure = new ProfileElement("Message Structure");
 		structure.setType("MESSAGE");
@@ -100,7 +97,7 @@ public class MessageParser {
 			String name, String constraintPath) throws XPathExpressionException {
 		Set<Constraint> constraints = new HashSet<Constraint>();
 		if (id != null)
-			constraints.addAll(confStatementManager.findByIdAndPath(type, id,
+			constraints.addAll(constraintManager.findConfStatementsByIdAndPath(type, id,
 					constraintPath));
 //		if (name != null)
 //			constraints.addAll(confStatementManager.findByNameAndPath(type,
@@ -112,7 +109,7 @@ public class MessageParser {
 			String constraintPath) throws XPathExpressionException {
 		Set<Predicate> constraints = new HashSet<Predicate>();
 		if (id != null)
-			constraints.addAll(predicateManager.findPredicatesByIdAndTarget(type, id,
+			constraints.addAll(constraintManager.findPredicatesByIdAndTarget(type, id,
 					constraintPath));
 //		if (name != null)
 //			constraints.addAll(predicateManager.findByNameAndPath(type, name,

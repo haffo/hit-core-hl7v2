@@ -85,9 +85,9 @@ public class Er7MessageParserImpl implements Er7MessageParser {
 	private MessageModel toModel(Message message) {
 		MessageElement root = new MessageElement();
 		List<SegOrGroup> children = message.children();
-		if (children != null && !children.isEmpty()) {
+ 		if (children != null && !children.isEmpty()) {
 			scala.collection.Iterator<SegOrGroup> it = children.iterator();
-			while (it.hasNext()) {
+ 			while (it.hasNext()) {
 				process(it.next(), "", root);
 			}
 		}

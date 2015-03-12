@@ -32,7 +32,7 @@ public class Er7MessageValidatorImplTest {
 
 	@Test
 	public void testValidateWithProfile() throws MessageParserException, IOException {
-   		String report = validator.validatetoJson( "JunitTest", getEr7Message(), getProfile(), getConstraints()); 
+   		String report = validator.validatetoJson( "JunitTest", getEr7Message(), getProfile(), getConstraints(), null); 
  	    System.out.println(report);
 	}
 

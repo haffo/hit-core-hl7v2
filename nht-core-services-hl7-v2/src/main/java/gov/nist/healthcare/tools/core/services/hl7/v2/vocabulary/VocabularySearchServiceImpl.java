@@ -761,7 +761,7 @@ import org.apache.log4j.Logger;
 				vocabularyLibraryId);
 		if (library == null) {
 			throw new VocabularySearchException(
-					"We cannot find the vocabulary specified. Please refresh adn try again");
+					"We cannot find the vocabulary specified. Please refresh and try again");
 		}
 		return VocabularySearchUtils.searchTable(tableNumber, valueSetName,
 				library);

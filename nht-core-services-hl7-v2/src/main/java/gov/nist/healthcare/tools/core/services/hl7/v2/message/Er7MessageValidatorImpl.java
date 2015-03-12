@@ -41,17 +41,18 @@ public class Er7MessageValidatorImpl implements Er7MessageValidator {
 	 */
 	@Override
 	public String validatetoJson(String title, String er7Message,
-			String profileXml, String constraintsXml) {
+			String profileXml, String constraintsXml, String valueSets) {
 		try {
 			hl7.v2.profile.Profile profile = XMLDeserializer.deserialize(
 					IOUtils.toInputStream(profileXml)).get();
  			
 			ConformanceContext c = DefaultConformanceContext.apply(IOUtils.toInputStream(constraintsXml)).get();
+	
 			
 			// The plugin map. This should be empty if no plugin is used
 			Map<String, Function3<Plugin, Element, Separators, EvalResult>> pluginMap = Map$.MODULE$.empty();
 
-			SyncHL7Validator validator = new SyncHL7Validator(profile, c,
+			SyncHL7Validator validator = new SyncHL7Validator(profile,ValueSetLibGenerator.getValueSetLib(valueSets), c,
 					pluginMap);
 			scala.collection.Iterable<String> keys = profile.messages().keys();
 			String key = keys.iterator().next();
@@ -63,7 +64,9 @@ public class Er7MessageValidatorImpl implements Er7MessageValidator {
 		} catch (Exception e) {
 			throw new ValidationException(e);
 		}
-	}
+	} 
+	
+ 
 
 	@Override
 	public ValidationResult validate(String message, String title,

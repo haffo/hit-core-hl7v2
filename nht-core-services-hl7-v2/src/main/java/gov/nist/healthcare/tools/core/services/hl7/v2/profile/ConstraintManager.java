@@ -46,83 +46,85 @@ public class ConstraintManager {
 		}
 
 	}
-//
-//	public Set<Constraint> findById(String type, String id)
-//			throws XPathExpressionException {
-//		return findConstraints("/ConformanceContext/Constraints/" + type
-//				+ "/ByID[@ID='" + id + "']/Constraint");
-//	}
-//
-//	public Set<Constraint> findByName(String type, String name)
-//			throws XPathExpressionException {
-//		return findConstraints("/ConformanceContext/Constraints/" + type
-//				+ "/ByName[@Name='" + name + "']/Constraint");
-//	}
 
-	public Set<Constraint> findConfStatementsByIdAndPath(String type, String id,String targetPath)
-			throws XPathExpressionException {
-		return findConstraints("/ConformanceContext/Constraints/"+ type +"/ByID[@ID='" + id + "']/Constraint[@Target='"
+	public Set<Constraint> findConfStatementsByIdAndPath(String type,
+			String id, String targetPath) throws XPathExpressionException {
+		return findConstraints("/ConformanceContext/Constraints/" + type
+				+ "/ByID[@ID='" + id + "']/Constraint[@Target='" + targetPath
+				+ "']");
+	}
+
+	public Set<Constraint> findConfStatementsByNameAndPath(String type,
+			String name, String targetPath) throws XPathExpressionException {
+		return findConstraints("/ConformanceContext/Constraints/" + type
+				+ "/ByName[@Name='" + name + "']/Constraint[@Target='"
 				+ targetPath + "']");
 	}
-	
-	public Set<Predicate> findPredicatesByIdAndTarget(String type, String id,String targetPath)
-			throws XPathExpressionException {
-		return findPredicates("/ConformanceContext/Predicates/"+ type +"/ByID[@ID='" + id + "']/Predicate[@Target='"
+
+	public Set<Predicate> findPredicatesByIdAndTarget(String type, String id,
+			String targetPath) throws XPathExpressionException {
+		return findPredicates("/ConformanceContext/Predicates/" + type
+				+ "/ByID[@ID='" + id + "']/Predicate[@Target='" + targetPath
+				+ "']");
+	}
+
+	public Set<Predicate> findPredicatesByNameAndTarget(String type,
+			String name, String targetPath) throws XPathExpressionException {
+		return findPredicates("/ConformanceContext/Predicates/" + type
+				+ "/ByName[@Name='" + name + "']/Predicate[@Target='"
 				+ targetPath + "']");
 	}
-	
-	
-//	
-//	public Set<Constraint> findByNameAndPath(String type, String name,String path)
-//			throws XPathExpressionException {
-// 		return findConstraints("/ConformanceContext/"+ type +"/ByName[@Name='" + name + "']/*[descendant::*[@Path='"
-//				+ path + "']]");
-//	} 
-	
-	
+
+	//
+	// public Set<Constraint> findByNameAndPath(String type, String name,String
+	// path)
+	// throws XPathExpressionException {
+	// return findConstraints("/ConformanceContext/"+ type +"/ByName[@Name='" +
+	// name + "']/*[descendant::*[@Path='"
+	// + path + "']]");
+	// }
+
 	public Set<Constraint> findConstraints(String query)
 			throws XPathExpressionException {
-		Set<Constraint> constraints = new HashSet<Constraint>();
-		if (doc != null) {
-			XPathFactory xPathfactory = XPathFactory.newInstance();
-			XPath xpath = xPathfactory.newXPath();
-			XPathExpression expr = xpath.compile(query);
-			NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
-			if (nl != null && nl.getLength() > 0) {
-				for (int i = 0; i < nl.getLength(); i++) {
-					Node node = nl.item(i);
-					if ("Constraint".equals(node.getNodeName())) {
-						Constraint c = getConstraint(node);
-						constraints.add(c);
-					}
+  		Set<Constraint> constraints = new HashSet<Constraint>();
+		NodeList nl = find(query);
+		if (nl != null && nl.getLength() > 0) {
+			for (int i = 0; i < nl.getLength(); i++) {
+				Node node = nl.item(i);
+				if ("Constraint".equals(node.getNodeName())) {
+					Constraint c = getConstraint(node);
+					constraints.add(c);
 				}
 			}
 		}
 		return constraints;
 	}
-	
+
 	public Set<Predicate> findPredicates(String query)
 			throws XPathExpressionException {
 		Set<Predicate> predicates = new HashSet<Predicate>();
-		if (doc != null) {
-			XPathFactory xPathfactory = XPathFactory.newInstance();
-			XPath xpath = xPathfactory.newXPath();
-			XPathExpression expr = xpath.compile(query);
-			NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
-			if (nl != null && nl.getLength() > 0) {
-				for (int i = 0; i < nl.getLength(); i++) {
-					Node node = nl.item(i);
-					if ("Predicate".equals(node.getNodeName())) {
-						Predicate c = getPredicate(node);
-						predicates.add(c);
-					}
+		NodeList nl = find(query);
+		if (nl != null && nl.getLength() > 0) {
+			for (int i = 0; i < nl.getLength(); i++) {
+				Node node = nl.item(i);
+				if ("Predicate".equals(node.getNodeName())) {
+					Predicate c = getPredicate(node);
+					predicates.add(c);
 				}
 			}
 		}
 		return predicates;
 	}
-	
-	
+
+	public NodeList find(String query) throws XPathExpressionException {
+		if (doc != null) {
+			XPathFactory xPathfactory = XPathFactory.newInstance();
+			XPath xpath = xPathfactory.newXPath();
+			XPathExpression expr = xpath.compile(query); // FIX ME. Escape single and double quote from query
+			return (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
+ 		}
+		return null;
+	}
 
 	private Constraint getConstraint(Node node) {
 		String id = getAttributeValue(node, "ID");
@@ -133,22 +135,56 @@ public class ConstraintManager {
 		// throw new IllegalArgumentException("Description is null");
 		return new Constraint(id, desc);
 	}
-	
-	
+
 	private Predicate getPredicate(Node node) {
 		String id = getAttributeValue(node, "ID");
 		if (id == null)
 			throw new IllegalArgumentException("ID is null");
-		String desc = getChildContent(node, "Description"); 
+		String desc = getChildContent(node, "Description");
 		String trueUsage = getAttributeValue(node, "TrueUsage");
 		String falseUsage = getAttributeValue(node, "FalseUsage");
 		// if (desc == null)
 		// throw new IllegalArgumentException("Description is null");
-		return new Predicate(id, desc,trueUsage,falseUsage);
+		return new Predicate(id, desc, trueUsage, falseUsage);
 	}
 
 	
-
+//	private   String concat(String query)
+//	{
+//		String returnString = "";
+//		String searchString = query;
+//	    char[] quoteChars = new char[] { '\'', '"' };
+//	 
+//	    int quotePos = searchString.indexOf(String.valueOf(quoteChars));
+//	    if (quotePos == -1)
+//	    {
+//	        returnString = "'" + searchString + "'";
+//	    }
+//	    else
+//	    {
+//	        returnString = "concat(";
+//	        while (quotePos != -1)
+//	        {
+//	        	String subString = searchString.substring(0, quotePos);
+//	            returnString += "'" + subString + "', ";
+//	            if (searchString.substring(quotePos, 1) == "'")
+//	            {
+//	                returnString += "\"'\", ";
+//	            }
+//	            else
+//	            {
+//	                //must be a double quote
+//	                returnString += "'\"', ";
+//	            }
+//	            searchString = searchString.substring(quotePos + 1,
+//	                             searchString.length() - quotePos - 1);
+//	            quotePos = searchString.indexOf(String.valueOf(quoteChars));
+//	        }
+//	        returnString += "'" + searchString + "')";
+//	    }
+//	    return returnString;
+//	}
+//	
 	private String getAttributeValue(Node node, String attName) {
 		NamedNodeMap attrs = node.getAttributes();
 		if (attrs != null) {

@@ -36,11 +36,14 @@ public class MessageParser {
 	private final static String NODE_SEGMENT = "Segment";
 	private final static String NODE_DATATYPE = "Datatype";
 	private final static String NODE_GROUP = "Group";
+	private final static String TYPE_SUBCOMPONENT = "SUB_COMPONENT";
+
 
 	private final static String ICON_GROUP = "group.png";
 	private final static String ICON_SEGMENT = "segment.png";
 	private final static String ICON_FIELD = "field.png";
 	private final static String ICON_COMPONENT = "component.png";
+	private final static String ICON_SUBCOMPONENT = "subcomponent.png";
 
  	private ConstraintManager constraintManager;
 
@@ -99,11 +102,14 @@ public class MessageParser {
 		if (id != null)
 			constraints.addAll(constraintManager.findConfStatementsByIdAndPath(type, id,
 					constraintPath));
-//		if (name != null)
-//			constraints.addAll(confStatementManager.findByNameAndPath(type,
-//					name, constraintPath));
+		if (name != null)
+			constraints.addAll(constraintManager.findConfStatementsByNameAndPath(type,
+					name, constraintPath));
 		return constraints;
 	}
+	
+ 
+	
 
 	private Set<Predicate> findPredicates(String type, String id, String name,
 			String constraintPath) throws XPathExpressionException {
@@ -111,9 +117,9 @@ public class MessageParser {
 		if (id != null)
 			constraints.addAll(constraintManager.findPredicatesByIdAndTarget(type, id,
 					constraintPath));
-//		if (name != null)
-//			constraints.addAll(predicateManager.findByNameAndPath(type, name,
-//					constraintPath));
+		if (name != null)
+			constraints.addAll(constraintManager.findPredicatesByNameAndTarget(type, name,
+					constraintPath));
 		return constraints;
 	}
 
@@ -322,7 +328,7 @@ public class MessageParser {
 		String table = Util.getOption(f.req().table());
 		if (table != null)
 			element.setTable(table);
-		element.setDataType(f.datatype().name());
+		element.setDataType(f.datatype().id()); // use id for flavors
 		element.setPosition(f.req().position() + "");
 		element.setPath(parent.getName() + "." + f.req().position());
 		String constraintPath = f.req().position() + "[1]";
@@ -377,10 +383,10 @@ public class MessageParser {
 					// handle 7[1].2[1]
 					element.getConformanceStatements().addAll(
 							findConfStatements(NODE_SEGMENT, segmentId,
-									segmentName, constraintPath));
+									null, constraintPath));
 					element.getPredicates().addAll(
 							findPredicates(NODE_SEGMENT, segmentId,
-									segmentName, constraintPath));
+									null, constraintPath));
 
 					if (belongTo.getType().equals(TYPE_COMPONENT)) {
 						segmentId = belongTo.getParent().getParent().getId();
@@ -395,10 +401,10 @@ public class MessageParser {
 								+ element.getPosition() + "[1]";
 						element.getConformanceStatements().addAll(
 								findConfStatements(NODE_SEGMENT, segmentId,
-										segmentName, constraintPath));
+										null, constraintPath));
 						element.getPredicates().addAll(
 								findPredicates(NODE_SEGMENT, segmentId,
-										segmentName, constraintPath));
+										null, constraintPath));
 					}
 
 					// element.getConformanceStatements().addAll(
@@ -433,9 +439,8 @@ public class MessageParser {
 		ProfileElement element = new ProfileElement();
 		process(c.req(), element,parent);
 		element.setName(c.name());
-		element.setType(TYPE_COMPONENT);
-		// element.setDataTypeUsage(element.getUsage());
-		element.setIcon(ICON_COMPONENT);
+		element.setType(c.datatype() instanceof Composite ? TYPE_COMPONENT:TYPE_SUBCOMPONENT);
+		element.setIcon(c.datatype() instanceof Composite ? ICON_COMPONENT:ICON_SUBCOMPONENT);
 		String table = Util.getOption(c.req().table());
 		if (table != null)
 			element.setTable(table);
@@ -452,19 +457,6 @@ public class MessageParser {
 		element.getPredicates().addAll(
 				findPredicates(NODE_DATATYPE, d.id(), d.name(),
 						constraintPath));
-		// element.getConformanceStatements().addAll(
-		// confStatementManager.findByIdAndPath(NODE_DATATYPE, d.id(),
-		// constraintContext));
-		// element.getConformanceStatements().addAll(
-		// confStatementManager.findByNameAndPath(NODE_DATATYPE, d.name(),
-		// constraintContext));
-		// element.getConformanceStatements().addAll(
-		// predicateManager.findByIdAndPath(NODE_DATATYPE, d.id(),
-		// constraintContext));
-		// element.getConformanceStatements().addAll(
-		// predicateManager.findByNameAndPath(NODE_DATATYPE, d.name(),
-		// constraintContext));
-		// element.setTitle(element.getPath() + " : " + element.getName());
 		parent.getChildren().add(element);
 		process(c.datatype(), element);
 

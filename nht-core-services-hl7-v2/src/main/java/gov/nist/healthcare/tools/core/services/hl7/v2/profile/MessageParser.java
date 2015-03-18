@@ -36,7 +36,7 @@ public class MessageParser {
 	private final static String NODE_SEGMENT = "Segment";
 	private final static String NODE_DATATYPE = "Datatype";
 	private final static String NODE_GROUP = "Group";
-	private final static String TYPE_SUBCOMPONENT = "SUB_COMPONENT";
+	private final static String TYPE_SUBCOMPONENT = "SUBCOMPONENT";
 
 
 	private final static String ICON_GROUP = "group.png";

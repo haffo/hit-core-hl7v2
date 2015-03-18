@@ -27,7 +27,7 @@ public interface Er7MessageValidator extends Validator {
  	@Override
  	@Deprecated
 	public ValidationResult validate(String message, String title,
-			Object... options); 
+			String... options); 
  	
  	
  	/**

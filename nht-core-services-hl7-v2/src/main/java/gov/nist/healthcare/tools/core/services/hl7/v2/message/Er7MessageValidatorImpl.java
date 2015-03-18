@@ -78,7 +78,7 @@ public class Er7MessageValidatorImpl implements Er7MessageValidator {
 
 	@Override
 	public ValidationResult validate(String message, String title,
-			Object... options) {
+			String... options) {
 		throw new UnsupportedOperationException();
 	}
 

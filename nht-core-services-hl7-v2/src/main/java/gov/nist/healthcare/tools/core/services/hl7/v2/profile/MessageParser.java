@@ -17,6 +17,7 @@ import hl7.v2.profile.SegRefOrGroup;
 import hl7.v2.profile.Segment;
 import hl7.v2.profile.SegmentRef;
 import hl7.v2.profile.Usage;
+import hl7.v2.profile.ValueSetSpec;
 
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -26,10 +27,12 @@ import java.util.Set;
 import javax.xml.xpath.XPathExpressionException;
 
 import scala.collection.Iterator;
+import scala.collection.immutable.List;
 
 public class MessageParser {
 
 	private final static String TYPE_GROUP = "GROUP";
+	private final static String TYPE_DT = "DATATYPE";
 	private final static String TYPE_SEGMENT = "SEGMENT";
 	private final static String TYPE_FIELD = "FIELD";
 	private final static String TYPE_COMPONENT = "COMPONENT";
@@ -42,20 +45,23 @@ public class MessageParser {
 	private final static String ICON_GROUP = "group.png";
 	private final static String ICON_SEGMENT = "segment.png";
 	private final static String ICON_FIELD = "field.png";
+	private final static String ICON_DATATYPE = ICON_FIELD;
 	private final static String ICON_COMPONENT = "component.png";
 	private final static String ICON_SUBCOMPONENT = "subcomponent.png";
 
  	private ConstraintManager constraintManager;
 
 	private ProfileModel model;
-	private Map<String, ProfileElement> tracker;
+	private Map<String, ProfileElement> segmentTracker;
+	private Map<String, ProfileElement> datatypeTracker;
 
 	public MessageParser() {
 	}
 
 	public ProfileModel parse(Message message, String constraintsXml) throws XPathExpressionException {
 		this.constraintManager = new ConstraintManager(constraintsXml);
- 		this.tracker = new LinkedHashMap<String, ProfileElement>();
+ 		this.segmentTracker = new LinkedHashMap<String, ProfileElement>();
+ 		this.datatypeTracker = new LinkedHashMap<String, ProfileElement>();
 		model = new ProfileModel();
 		ProfileElement structure = new ProfileElement("Message Structure");
 		structure.setType("MESSAGE");
@@ -70,7 +76,14 @@ public class MessageParser {
 			}
 		}
 		model.getElements().add(structure);
-		model.getElements().addAll(this.tracker.values());
+		model.getElements().addAll(this.segmentTracker.values()); 
+		
+		ProfileElement datatypes = new ProfileElement("Datatypes");
+		datatypes.setType("DATATYPE");
+		datatypes.setRelevent(true);
+		datatypes.setConstraintPath(null);
+		datatypes.getChildren().addAll(this.datatypeTracker.values());
+		model.getElements().add(datatypes);
 		return model;
 	}
 
@@ -79,7 +92,7 @@ public class MessageParser {
 	 * @param ref
 	 * @param parentElement
 	 * @param model
-	 * @param tracker
+	 * @param segmentTracker
 	 * @throws XPathExpressionException
 	 */
 	private ProfileElement process(SegRefOrGroup ref,
@@ -155,11 +168,11 @@ public class MessageParser {
 		}
 
 		ProfileElement pe = null;
-		if (tracker.containsKey(s.id())) {
-			pe = tracker.get(s.id());
+		if (segmentTracker.containsKey(s.id())) {
+			pe = segmentTracker.get(s.id());
 		} else {
 			pe = process(ref.ref(), ref.req());
-			tracker.put(pe.getId(), pe);
+			segmentTracker.put(pe.getId(), pe);
 		}
 		pe.setRelevent(pe.isRelevent() || element.isRelevent());
  		element.setReference(new gov.nist.healthcare.tools.core.models.SegmentRef(
@@ -189,7 +202,7 @@ public class MessageParser {
 	 * @param req
 	 * @param parentElement
 	 * @param model
-	 * @param tracker
+	 * @param segmentTracker
 	 * @return
 	 * @throws XPathExpressionException
 	 */
@@ -229,7 +242,7 @@ public class MessageParser {
 	 * @param req
 	 * @param parentElement
 	 * @param model
-	 * @param tracker
+	 * @param segmentTracker
 	 * @return
 	 * @throws XPathExpressionException
 	 */
@@ -325,7 +338,7 @@ public class MessageParser {
 		// .getUsage());
 		element.setIcon(ICON_FIELD);
 		element.setParent(parent);
-		String table = Util.getOption(f.req().table());
+		String table = table( f.req());
 		if (table != null)
 			element.setTable(table);
 		element.setDataType(f.datatype().id()); // use id for flavors
@@ -343,6 +356,19 @@ public class MessageParser {
 
 		parent.getChildren().add(element);
 		process(f.datatype(), element);
+	} 
+	
+	
+	private String table(Req req) {
+		List<ValueSetSpec> vsSpec= req.vsSpec();
+		if (vsSpec != null && !vsSpec.isEmpty()) {
+			Iterator<ValueSetSpec> it = vsSpec.iterator();
+			while (it.hasNext()) {
+				return it.next().valueSetId();
+			}
+		}
+		
+		return null;
 	}
 
 	/**
@@ -351,19 +377,9 @@ public class MessageParser {
 	 * @param parentElement
 	 * @throws XPathExpressionException
 	 */
-	private ProfileElement process(Datatype d, ProfileElement belongTo)
+	@SuppressWarnings("unchecked")
+	private ProfileElement process(Datatype d, ProfileElement fieldOrComponent)
 			throws XPathExpressionException {
-
-		// belongTo.getConformanceStatements().addAll(
-		// confStatementManager.findById("Datatype", d.id()));
-		// belongTo.getConformanceStatements().addAll(
-		// confStatementManager.findByName("Datatype", d.name()));
-		//
-		// belongTo.getPredicates().addAll(
-		// predicateManager.findById("Datatype", d.id()));
-		// belongTo.getPredicates().addAll(
-		// predicateManager.findByName("Datatype", d.name()));
-
 		if (d instanceof Composite) {
 			Composite c = (Composite) d;
 			scala.collection.immutable.List<Component> children = c
@@ -371,59 +387,62 @@ public class MessageParser {
 			if (children != null) {
 				Iterator<Component> it = children.iterator();
 				while (it.hasNext()) {
-					ProfileElement element = process(it.next(), d, belongTo);
-					// get conformance statements and predicates from a segment
-					// context
-					// context. ex location: 7[1].2[1] or 7[1].2[1].2[1]
-					// handles 7[1].2[1]
-					String segmentId = belongTo.getParent().getId();
-					String segmentName = belongTo.getParent().getName();
-					String constraintPath = belongTo.getConstraintPath() + "."
-							+ element.getConstraintPath();
-					// handle 7[1].2[1]
-					element.getConformanceStatements().addAll(
+					ProfileElement componentElement = process(it.next(), d, fieldOrComponent);
+					String segmentId = fieldOrComponent.getParent().getId();
+					String segmentName = fieldOrComponent.getParent().getName();
+					String constraintPath = fieldOrComponent.getConstraintPath() + "."
+							+ componentElement.getConstraintPath();
+					componentElement.getConformanceStatements().addAll(
 							findConfStatements(NODE_SEGMENT, segmentId,
 									null, constraintPath));
-					element.getPredicates().addAll(
+					componentElement.getPredicates().addAll(
 							findPredicates(NODE_SEGMENT, segmentId,
 									null, constraintPath));
 
-					if (belongTo.getType().equals(TYPE_COMPONENT)) {
-						segmentId = belongTo.getParent().getParent().getId();
-						segmentName = belongTo.getParent().getParent()
+					if (fieldOrComponent.getType().equals(TYPE_COMPONENT)) {
+						segmentId = fieldOrComponent.getParent().getParent().getId();
+						segmentName = fieldOrComponent.getParent().getParent()
 								.getName();
-						// handle 7[1].2[1].2[1]
-						constraintPath = belongTo.getParent()
+ 						constraintPath = fieldOrComponent.getParent()
 								.getConstraintPath()
 								+ "."
-								+ belongTo.getConstraintPath()
+								+ fieldOrComponent.getConstraintPath()
 								+ "."
-								+ element.getPosition() + "[1]";
-						element.getConformanceStatements().addAll(
+								+ componentElement.getPosition() + "[1]";
+ 						componentElement.getConformanceStatements().addAll(
 								findConfStatements(NODE_SEGMENT, segmentId,
 										null, constraintPath));
-						element.getPredicates().addAll(
+ 						componentElement.getPredicates().addAll(
 								findPredicates(NODE_SEGMENT, segmentId,
 										null, constraintPath));
 					}
-
-					// element.getConformanceStatements().addAll(
-					// confStatementManager.findByIdAndPath(NODE_SEGMENT,
-					// segmentId, constraintPath));
-					// element.getConformanceStatements().addAll(
-					// confStatementManager.findByNameAndPath(
-					// NODE_SEGMENT, segmentName, constraintPath));
-					// element.getPredicates().addAll(
-					// predicateManager.findByIdAndPath(NODE_SEGMENT,
-					// segmentId, constraintPath));
-					// element.getPredicates().addAll(
-					// predicateManager.findByNameAndPath(NODE_SEGMENT,
-					// segmentName, constraintPath));
 				}
 			}
-		}
+		} 
+		
+ 		if (!datatypeTracker.containsKey(d.id())) {
+			ProfileElement element = new ProfileElement();
+			element.setName(d.name());
+			element.setLongName(d.desc());
+			element.setType(TYPE_DT);
+			element.setIcon(ICON_DATATYPE);
+			element.setRelevent(true); 
+			element.getChildren().addAll(fieldOrComponent.getChildren());
+			datatypeTracker.put(d.id(), element);
+ 		}
 
-		return belongTo;
+		return fieldOrComponent;
+	} 
+	
+	
+	private void setSubComponentTypes(ProfileElement subComponent){
+		subComponent.setType(TYPE_SUBCOMPONENT);
+		subComponent.setIcon(ICON_SUBCOMPONENT);
+		if( subComponent.getChildren() != null && ! subComponent.getChildren().isEmpty()){
+			for(ProfileElement  child: subComponent.getChildren()){
+				setSubComponentTypes(child);
+			}
+		}
 	}
 
 	/**
@@ -439,9 +458,9 @@ public class MessageParser {
 		ProfileElement element = new ProfileElement();
 		process(c.req(), element,parent);
 		element.setName(c.name());
-		element.setType(c.datatype() instanceof Composite ? TYPE_COMPONENT:TYPE_SUBCOMPONENT);
-		element.setIcon(c.datatype() instanceof Composite ? ICON_COMPONENT:ICON_SUBCOMPONENT);
-		String table = Util.getOption(c.req().table());
+		element.setType(parent.getType().equals(TYPE_FIELD) ? TYPE_COMPONENT:TYPE_SUBCOMPONENT);
+		element.setIcon(parent.getType().equals(TYPE_FIELD) ? ICON_COMPONENT:ICON_SUBCOMPONENT);
+		String table = table( c.req());
 		if (table != null)
 			element.setTable(table);
 		element.setDataType(c.datatype().name());

@@ -37,7 +37,7 @@ public class ProfileParserImpl implements ProfileParser {
 	 * Determine if we should parse all messages in a profile.
 	 * 
 	 */
-	public ProfileModel parse(String content, Object... options)
+	public ProfileModel parse(String content, Object... options) 
 			throws ProfileParserException {
 		try {
 			String constraintsXml  = options != null && options.length > 0  ? (String) options[0]: null;

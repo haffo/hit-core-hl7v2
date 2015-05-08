@@ -19,10 +19,7 @@ import hl7.v2.validation.SyncHL7Validator;
 import hl7.v2.validation.content.ConformanceContext;
 import hl7.v2.validation.content.DefaultConformanceContext;
 import hl7.v2.validation.report.Report;
-import hl7.v2.validation.vs.ValueSet;
 import hl7.v2.validation.vs.ValueSetLibrary;
-
-import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
 
@@ -52,12 +49,7 @@ public class Er7MessageValidatorImpl implements Er7MessageValidator {
 			ConformanceContext c = DefaultConformanceContext.apply(IOUtils.toInputStream(constraintsXml)).get();		
 			// The plugin map. This should be empty if no plugin is used
 			Map<String, Function3<Plugin, Element, Separators, EvalResult>> pluginMap = Map$.MODULE$.empty();
-			Map<String, ValueSet> valueSetLibrary =Map$.MODULE$.empty();
-			InputStream io = null;
-			if(valueSets != null){
-				io = IOUtils.toInputStream(valueSets);
-				valueSetLibrary = ValueSetLibrary.apply(io).get();
-			}
+			ValueSetLibrary valueSetLibrary =valueSets != null ?ValueSetLibrary.apply(IOUtils.toInputStream(valueSets)).get():null;	
 			SyncHL7Validator validator = new SyncHL7Validator(profile,valueSetLibrary, c,
 					pluginMap);
 			scala.collection.Iterable<String> keys = profile.messages().keys();

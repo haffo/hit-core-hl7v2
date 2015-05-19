@@ -88,8 +88,8 @@ public class TableLibrarySerializer {
 				for (TableElement c : t.getTableElements()) {
 					nu.xom.Element elmTableElement = new nu.xom.Element(
 							"TableElement");
-					elmTableElement.addAttribute(new Attribute("Code", (c
-							.getCode() == null) ? "" : c.getCode()));
+					elmTableElement.addAttribute(new Attribute("Code", c
+							.getCode() == null ? "" : c.getCode()));
 					elmTableElement.addAttribute(new Attribute("DisplayName",
 							(c.getDisplayName() == null) ? "" : c.getDisplayName()));
 					elmTableElement.addAttribute(new Attribute("Codesys", (c

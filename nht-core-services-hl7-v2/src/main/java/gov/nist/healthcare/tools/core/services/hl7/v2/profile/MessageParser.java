@@ -422,6 +422,7 @@ public class MessageParser {
 		
  		if (!datatypeTracker.containsKey(d.id())) {
 			ProfileElement element = new ProfileElement();
+			element.setId(d.id());
 			element.setName(d.name());
 			element.setLongName(d.desc());
 			element.setType(TYPE_DT);
@@ -463,7 +464,7 @@ public class MessageParser {
 		String table = table( c.req());
 		if (table != null)
 			element.setTable(table);
-		element.setDataType(c.datatype().name());
+		element.setDataType(c.datatype().id());
 		element.setPosition(c.req().position() + "");
 		element.setParent(parent);
 		element.setPath(parent.getPath() + "." + c.req().position());

@@ -71,6 +71,8 @@ public class Er7MessageParserImpl implements Er7MessageParser {
 						.apply(key));
 				return toModel(message);
 			}
+		} catch (RuntimeException e) {
+			throw new MessageParserException(e.getMessage());
 		} catch (Exception e) {
 			throw new MessageParserException(e.getMessage());
 		}

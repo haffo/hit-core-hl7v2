@@ -10,6 +10,8 @@
  */
 package gov.nist.healthcare.tools.core.services.hl7.v2.message;
 
+import expression.EvalResult;
+import expression.Plugin;
 import gov.nist.healthcare.tools.core.models.ValidationResult;
 import gov.nist.healthcare.tools.core.services.exception.ValidationException;
 import hl7.v2.instance.Element;
@@ -26,8 +28,6 @@ import org.apache.commons.io.IOUtils;
 import scala.Function3;
 import scala.collection.immutable.Map;
 import scala.collection.immutable.Map$;
-import expression.EvalResult;
-import expression.Plugin;
 
 public class Er7MessageValidatorImpl implements Er7MessageValidator {
 
@@ -39,10 +39,11 @@ public class Er7MessageValidatorImpl implements Er7MessageValidator {
 	 *            : options[0]: xmlProfile, options[1]: tableLibraries contents,
 	 *            options[2]: validation context
 	 * @return
+	 * @throws ValidationException 
 	 */
 	@Override
 	public String validatetoJson(String title, String er7Message,
-			String profileXml, String constraintsXml, String valueSets) {
+			String profileXml, String constraintsXml, String valueSets) throws ValidationException {
 		try {
 			hl7.v2.profile.Profile profile = XMLDeserializer.deserialize(
 					IOUtils.toInputStream(profileXml)).get();
@@ -56,8 +57,6 @@ public class Er7MessageValidatorImpl implements Er7MessageValidator {
 			String key = keys.iterator().next();
 			Report report = validator.check(er7Message, key);
 			String res = report.toJson();
-			
-	
 			return res;
 		} catch (RuntimeException e) {
 			throw new ValidationException(e);

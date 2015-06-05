@@ -12,6 +12,7 @@ package gov.nist.healthcare.tools.core.services.hl7.v2.message;
 
 import gov.nist.healthcare.tools.core.models.ValidationResult;
 import gov.nist.healthcare.tools.core.services.Validator;
+import gov.nist.healthcare.tools.core.services.exception.ValidationException;
 
 public interface Er7MessageValidator extends Validator {
 
@@ -36,9 +37,10 @@ public interface Er7MessageValidator extends Validator {
  	 * @param title
  	 * @param options
  	 * @return
+ 	 * @throws ValidationException 
  	 */
  	public String validatetoJson(String title, String message,
-			String profile, String constraints,String valueSets);
+			String profile, String constraints,String valueSets) throws ValidationException;
  	
 	
 

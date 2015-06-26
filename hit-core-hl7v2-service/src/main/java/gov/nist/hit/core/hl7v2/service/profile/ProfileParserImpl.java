@@ -90,9 +90,12 @@ public class ProfileParserImpl implements ProfileParser {
    * Determine if we should parse all messages in a profile.
    * 
    */
-  public ProfileModel parse(String content, Object... options) throws ProfileParserException {
+  public ProfileModel parse(String content, Object... constraints) throws ProfileParserException {
     try {
-      String constraintsXml = options != null && options.length > 0 ? (String) options[0] : null;
+      String constraintsXml =
+          constraints != null && constraints.length > 0 ? (String) constraints[0] : null;
+      String additionalConstraintsXml =
+          constraints != null && constraints.length > 1 ? (String) constraints[1] : null;
       InputStream profileStream = IOUtils.toInputStream(content);
       Profile p = XMLDeserializer.deserialize(profileStream).get();
       scala.collection.Iterable<String> keys = p.messages().keys();

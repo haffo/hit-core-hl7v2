@@ -12,10 +12,10 @@
 package gov.nist.hit.core.hl7v2.service.soap;
 
 import gov.nist.hit.core.domain.MessageModel;
-import gov.nist.hit.core.service.SoapMessageParser;
-import gov.nist.hit.core.service.XmlMessageParser;
 import gov.nist.hit.core.service.exception.SoapMessageParserException;
 import gov.nist.hit.core.service.exception.XmlParserException;
+import gov.nist.hit.iz.service.XmlMessageParser;
+import gov.nist.hit.iz.service.soap.SoapMessageParser;
 
 public class SoapMessageParserImpl implements SoapMessageParser {
 

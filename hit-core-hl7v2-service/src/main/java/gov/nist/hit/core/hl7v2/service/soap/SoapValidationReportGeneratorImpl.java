@@ -12,7 +12,7 @@
 package gov.nist.hit.core.hl7v2.service.soap;
 
 import gov.nist.hit.core.service.exception.SoapValidationReportException;
-import gov.nist.hit.core.service.impl.SoapValidationReportGenerator;
+import gov.nist.hit.iz.service.SoapValidationReportGenerator;
 
 import java.io.IOException;
 

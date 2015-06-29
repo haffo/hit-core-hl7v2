@@ -96,6 +96,6 @@ public class Er7MessageParserImplTest {
    */
   private static String getProfile() throws IOException {
     return IOUtils.toString(Er7MessageParserImplTest.class
-        .getResourceAsStream("/new_validation/Profile.xml"));
+        .getResourceAsStream("/new_validation/IntegrationProfile.xml"));
   }
 }

@@ -57,7 +57,7 @@ public class Er7MessageValidatorImplTest {
    */
   private static String getProfile() throws IOException {
     return IOUtils.toString(Er7MessageValidatorImplTest.class
-        .getResourceAsStream("/new_validation/Profile.xml"));
+        .getResourceAsStream("/new_validation/IntegrationProfile.xml"));
   }
 
   private static String getConstraints() throws IOException {

@@ -86,21 +86,20 @@ public class ProfileParserImpl implements ProfileParser {
 
   @Override
   /**
-   * TODO: we are only parsing one message. 
-   * Determine if we should parse all messages in a profile.
-   * 
+   * integrationProfileXml: integration profile xml content 
+   * conformanceProfileId: conformance profile id
+   * Options: constraints xml content
    */
-  public ProfileModel parse(String content, Object... constraints) throws ProfileParserException {
+  public ProfileModel parse(String integrationProfileXml, String conformanceProfileId,
+      Object... constraints) throws ProfileParserException {
     try {
       String constraintsXml =
           constraints != null && constraints.length > 0 ? (String) constraints[0] : null;
       String additionalConstraintsXml =
           constraints != null && constraints.length > 1 ? (String) constraints[1] : null;
-      InputStream profileStream = IOUtils.toInputStream(content);
+      InputStream profileStream = IOUtils.toInputStream(integrationProfileXml);
       Profile p = XMLDeserializer.deserialize(profileStream).get();
-      scala.collection.Iterable<String> keys = p.messages().keys();
-      String key = keys.iterator().next();
-      hl7.v2.profile.Message m = p.messages().apply(key);
+      hl7.v2.profile.Message m = p.messages().apply(integrationProfileXml);
       return parse(m, constraintsXml);
     } catch (Exception e) {
       e.printStackTrace();

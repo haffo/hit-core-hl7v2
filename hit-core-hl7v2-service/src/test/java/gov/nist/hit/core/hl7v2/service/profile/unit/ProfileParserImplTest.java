@@ -21,7 +21,7 @@ public class ProfileParserImplTest {
   public void testParse() throws ProfileParserException, IOException {
     String profile =
         IOUtils.toString(ProfileParserImplTest.class
-            .getResourceAsStream("/IZ_V1.5_ACK_Z23/Profile.xml"));
+            .getResourceAsStream("/IZ_V1.5_ACK_Z23/IntegrationProfile.xml"));
     String consStatements =
         IOUtils.toString(ProfileParserImplTest.class
             .getResourceAsStream("/IZ_V1.5_ACK_Z23/ConformanceStatementConstraints.xml"));

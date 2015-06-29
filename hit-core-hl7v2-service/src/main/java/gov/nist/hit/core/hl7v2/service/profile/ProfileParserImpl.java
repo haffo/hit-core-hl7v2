@@ -99,15 +99,25 @@ public class ProfileParserImpl implements ProfileParser {
           constraints != null && constraints.length > 1 ? (String) constraints[1] : null;
       InputStream profileStream = IOUtils.toInputStream(integrationProfileXml);
       Profile p = XMLDeserializer.deserialize(profileStream).get();
-      hl7.v2.profile.Message m = p.messages().apply(integrationProfileXml);
-      return parse(m, constraintsXml);
+      hl7.v2.profile.Message m = p.messages().apply(conformanceProfileId);
+      return parse(m, constraintsXml, additionalConstraintsXml);
     } catch (Exception e) {
       e.printStackTrace();
       throw new ProfileParserException(e.getMessage());
     }
   }
 
-  public ProfileModel parse(Message message, String constraintsXml) throws XPathExpressionException {
+  /**
+   * TODO: Include additional Constraints
+   * 
+   * @param message
+   * @param constraintsXml
+   * @param additionalConstraintsXml
+   * @return
+   * @throws XPathExpressionException
+   */
+  public ProfileModel parse(Message message, String constraintsXml, String additionalConstraintsXml)
+      throws XPathExpressionException {
     this.constraintManager = new ConstraintManager(constraintsXml);
     this.segmentTracker = new LinkedHashMap<String, ProfileElement>();
     this.datatypeTracker = new LinkedHashMap<String, ProfileElement>();

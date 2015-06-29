@@ -21,7 +21,6 @@ import hl7.v2.profile.XMLDeserializer;
 import hl7.v2.validation.SyncHL7Validator;
 import hl7.v2.validation.content.ConformanceContext;
 import hl7.v2.validation.content.DefaultConformanceContext;
-import hl7.v2.validation.report.Report;
 import hl7.v2.validation.vs.ValueSetLibrary;
 
 import org.apache.commons.io.IOUtils;
@@ -52,10 +51,10 @@ public class Er7MessageValidator implements MessageValidator {
           Map$.MODULE$.empty();
       ValueSetLibrary valueSetLibrary =
           valueSets != null ? ValueSetLibrary.apply(IOUtils.toInputStream(valueSets)).get() : null;
-      SyncHL7Validator validator = new SyncHL7Validator(profile, valueSetLibrary, c, pluginMap);
+      SyncHL7Validator validator = new SyncHL7Validator(profile, valueSetLibrary, c);
       scala.collection.Iterable<String> keys = profile.messages().keys();
       String key = keys.iterator().next();
-      Report report = validator.check(message, key);
+      gov.nist.validation.report.Report report = validator.check(message, key);
       String res = report.toJson();
       return res;
     } catch (RuntimeException e) {

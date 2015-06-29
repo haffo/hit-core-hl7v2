@@ -12,19 +12,27 @@
 package gov.nist.hit.core.hl7v2.service.message;
 
 import gov.nist.hit.core.service.ValidationReportGenerator;
+import gov.nist.hit.core.service.exception.ValidationReportException;
 
+import java.io.IOException;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
+import org.springframework.stereotype.Service;
 
 /**
  * @author Harold Affo (NIST)
  */
 
-public abstract class Er7ValidationReportGenerator extends ValidationReportGenerator {
+@Service
+public class Er7ValidationReportGenerator extends ValidationReportGenerator {
+
   private final static Logger logger = Logger.getLogger(Er7ValidationReportGenerator.class);
 
-  public Er7ValidationReportGenerator() {
+  private static final String HTML_XSL = "/xslt/HL7V2HTML.xsl";
 
-  }
+  private static final String PDF_XSL = "/xslt/HL7V2PDF.xsl";
+
 
   /**
    * @param htmlReport
@@ -52,6 +60,30 @@ public abstract class Er7ValidationReportGenerator extends ValidationReportGener
     sb.append(htmlReport);
     sb.append("</body></html>");
     return sb.toString();
+  }
+
+
+
+  public Er7ValidationReportGenerator() {
+
+  }
+
+  @Override
+  public String getPdfConversionXslt() {
+    try {
+      return IOUtils.toString(ValidationReportGenerator.class.getResourceAsStream(PDF_XSL));
+    } catch (IOException e) {
+      throw new ValidationReportException(e.getMessage());
+    }
+  }
+
+  @Override
+  public String getHtmlConversionXslt() {
+    try {
+      return IOUtils.toString(Er7ValidationReportGenerator.class.getResourceAsStream(HTML_XSL));
+    } catch (IOException e) {
+      throw new ValidationReportException(e.getMessage());
+    }
   }
 
 }

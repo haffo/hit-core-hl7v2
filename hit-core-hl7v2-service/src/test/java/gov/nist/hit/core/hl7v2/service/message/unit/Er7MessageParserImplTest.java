@@ -27,7 +27,7 @@ package gov.nist.hit.core.hl7v2.service.message.unit;
 import gov.nist.hit.core.domain.MessageElement;
 import gov.nist.hit.core.domain.MessageElementData;
 import gov.nist.hit.core.domain.MessageModel;
-import gov.nist.hit.core.hl7v2.service.message.Er7MessageParserImpl;
+import gov.nist.hit.core.hl7v2.service.message.Er7MessageParser;
 import gov.nist.hit.core.service.MessageParser;
 import gov.nist.hit.core.service.exception.MessageParserException;
 
@@ -46,7 +46,7 @@ public class Er7MessageParserImplTest {
 
   private static String xmlProfile;
 
-  MessageParser parser = new Er7MessageParserImpl();
+  MessageParser parser = new Er7MessageParser();
 
   @BeforeClass
   public static void setUp() throws IOException {

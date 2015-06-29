@@ -11,21 +11,62 @@
  */
 package gov.nist.hit.core.hl7v2.service.message;
 
+import expression.EvalResult;
+import expression.Plugin;
 import gov.nist.hit.core.service.MessageValidator;
 import gov.nist.hit.core.service.exception.MessageValidationException;
+import hl7.v2.instance.Element;
+import hl7.v2.instance.Separators;
+import hl7.v2.profile.XMLDeserializer;
+import hl7.v2.validation.SyncHL7Validator;
+import hl7.v2.validation.content.ConformanceContext;
+import hl7.v2.validation.content.DefaultConformanceContext;
+import hl7.v2.validation.report.Report;
+import hl7.v2.validation.vs.ValueSetLibrary;
 
-public interface Er7MessageValidator extends MessageValidator {
+import org.apache.commons.io.IOUtils;
+import org.springframework.stereotype.Service;
 
-  /**
-   * Validate the message and return a json representation of the report
-   * 
-   * @param message
-   * @param title
-   * @param options
-   * @return
-   * @throws MessageValidationException
-   */
-  public String validatetoJson(String title, String message, String profile, String constraints,
-      String valueSets) throws MessageValidationException;
+import scala.Function3;
+import scala.collection.immutable.Map;
+import scala.collection.immutable.Map$;
+
+
+@Service
+public class Er7MessageValidator implements MessageValidator {
+
+  @Override
+  public String validate(String title, String message, String... options)
+      throws MessageValidationException {
+    try {
+      String profileXml = options[0];
+      String constraintsXml = options[1];
+      String valueSets = options[2];
+
+      hl7.v2.profile.Profile profile =
+          XMLDeserializer.deserialize(IOUtils.toInputStream(profileXml)).get();
+      ConformanceContext c =
+          DefaultConformanceContext.apply(IOUtils.toInputStream(constraintsXml)).get();
+      // The plugin map. This should be empty if no plugin is used
+      Map<String, Function3<Plugin, Element, Separators, EvalResult>> pluginMap =
+          Map$.MODULE$.empty();
+      ValueSetLibrary valueSetLibrary =
+          valueSets != null ? ValueSetLibrary.apply(IOUtils.toInputStream(valueSets)).get() : null;
+      SyncHL7Validator validator = new SyncHL7Validator(profile, valueSetLibrary, c, pluginMap);
+      scala.collection.Iterable<String> keys = profile.messages().keys();
+      String key = keys.iterator().next();
+      Report report = validator.check(message, key);
+      String res = report.toJson();
+      return res;
+    } catch (RuntimeException e) {
+      throw new MessageValidationException(e);
+    } catch (Exception e) {
+      throw new MessageValidationException(e);
+    }
+
+
+  }
+
+
 
 }

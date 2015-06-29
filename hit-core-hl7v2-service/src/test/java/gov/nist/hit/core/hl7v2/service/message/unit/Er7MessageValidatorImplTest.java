@@ -12,7 +12,7 @@
 
 package gov.nist.hit.core.hl7v2.service.message.unit;
 
-import gov.nist.hit.core.hl7v2.service.message.Er7MessageValidatorImpl;
+import gov.nist.hit.core.hl7v2.service.message.Er7MessageValidator;
 import gov.nist.hit.core.service.exception.MessageParserException;
 import gov.nist.hit.core.service.exception.MessageValidationException;
 
@@ -24,7 +24,7 @@ import org.junit.Test;
 
 public class Er7MessageValidatorImplTest {
 
-  Er7MessageValidatorImpl validator = new Er7MessageValidatorImpl();
+  Er7MessageValidator validator = new Er7MessageValidator();
 
   @BeforeClass
   public static void setUp() throws IOException {

@@ -12,33 +12,23 @@
 
 package gov.nist.hit.core.hl7v2.service.soap.unit;
 
-import gov.nist.hit.core.domain.MessageModel;
-import gov.nist.hit.core.service.exception.MessageParserException;
-import gov.nist.hit.iz.service.XmlMessageParserImpl;
-import gov.nist.hit.iz.service.soap.SoapMessageParser;
-import gov.nist.hit.iz.service.soap.SoapMessageParserImpl;
-
-import java.io.IOException;
-
-import org.apache.commons.io.IOUtils;
-import org.junit.Test;
 
 public class SoapMessageParserImplTest {
 
-  SoapMessageParser parser = new SoapMessageParserImpl(new XmlMessageParserImpl());
-
-  @Test
-  public void testParse() throws MessageParserException, IOException {
-    MessageModel model = parser.parse(getSoapContent());
-  }
-
-  public String getSoapContent() throws IOException {
-    return IOUtils.toString(SoapMessageParserImplTest.class
-        .getResourceAsStream("/soapMessages/2.xml"));
-  }
-
-  // public String getSoapContent2() throws IOException {
+  // SoapMessageParser parser = new SoapMessageParserImpl(new XmlMessageParserImpl());
+  //
+  // @Test
+  // public void testParse() throws MessageParserException, IOException {
+  // MessageModel model = parser.parse(getSoapContent());
+  // }
+  //
+  // public String getSoapContent() throws IOException {
   // return IOUtils.toString(SoapMessageParserImplTest.class
   // .getResourceAsStream("/soapMessages/2.xml"));
   // }
+  //
+  // // public String getSoapContent2() throws IOException {
+  // // return IOUtils.toString(SoapMessageParserImplTest.class
+  // // .getResourceAsStream("/soapMessages/2.xml"));
+  // // }
 }

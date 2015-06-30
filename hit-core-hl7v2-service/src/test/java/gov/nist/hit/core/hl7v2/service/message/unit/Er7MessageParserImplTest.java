@@ -24,78 +24,63 @@
 
 package gov.nist.hit.core.hl7v2.service.message.unit;
 
-import gov.nist.hit.core.domain.MessageElement;
-import gov.nist.hit.core.domain.MessageElementData;
-import gov.nist.hit.core.domain.MessageModel;
-import gov.nist.hit.core.hl7v2.service.message.Er7MessageParser;
-import gov.nist.hit.core.service.MessageParser;
-import gov.nist.hit.core.service.exception.MessageParserException;
-
-import java.io.IOException;
-import java.util.List;
-
-import junit.framework.Assert;
-
-import org.apache.commons.io.IOUtils;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 public class Er7MessageParserImplTest {
 
-  private static String er7Message;
-
-  private static String xmlProfile;
-
-  MessageParser parser = new Er7MessageParser();
-
-  @BeforeClass
-  public static void setUp() throws IOException {
-    er7Message = getEr7Message();
-    xmlProfile = getProfile();
-  }
-
-  @Test
-  public void testParse() throws MessageParserException {
-    MessageModel model = parser.parse(er7Message, xmlProfile);
-    List<MessageElement> elements = model.getElements();
-    for (int index = 0; index < elements.size(); index++) {
-      MessageElement element = elements.get(index);
-      assertEndIndex(element);
-    }
-  }
-
-  /**
-   * 
-   * @param element
-   */
-  private void assertEndIndex(MessageElement element) {
-    MessageElementData elementData = element.getData();
-    Assert.assertTrue(elementData.getStartIndex() > 0);
-    List<MessageElement> children = element.getChildren();
-    if (children != null) {
-      for (MessageElement child : children) {
-        assertEndIndex(child);
-      }
-    }
-  }
-
-  /**
-   * 
-   * @return
-   * @throws IOException
-   */
-  private static String getEr7Message() throws IOException {
-    return IOUtils
-        .toString(Er7MessageParserImplTest.class.getResourceAsStream("/messages/ELR.txt"));
-  }
-
-  /**
-   * 
-   * @return
-   * @throws IOException
-   */
-  private static String getProfile() throws IOException {
-    return IOUtils.toString(Er7MessageParserImplTest.class
-        .getResourceAsStream("/new_validation/IntegrationProfile.xml"));
-  }
+  // private static String er7Message;
+  //
+  // private static String xmlProfile;
+  //
+  // MessageParser parser = new Er7MessageParser();
+  //
+  // @BeforeClass
+  // public static void setUp() throws IOException {
+  // er7Message = getEr7Message();
+  // xmlProfile = getProfile();
+  // }
+  //
+  // @Test
+  // public void testParse() throws MessageParserException {
+  // MessageModel model = parser.parse(er7Message, xmlProfile);
+  // List<MessageElement> elements = model.getElements();
+  // for (int index = 0; index < elements.size(); index++) {
+  // MessageElement element = elements.get(index);
+  // assertEndIndex(element);
+  // }
+  // }
+  //
+  // /**
+  // *
+  // * @param element
+  // */
+  // private void assertEndIndex(MessageElement element) {
+  // MessageElementData elementData = element.getData();
+  // Assert.assertTrue(elementData.getStartIndex() > 0);
+  // List<MessageElement> children = element.getChildren();
+  // if (children != null) {
+  // for (MessageElement child : children) {
+  // assertEndIndex(child);
+  // }
+  // }
+  // }
+  //
+  // /**
+  // *
+  // * @return
+  // * @throws IOException
+  // */
+  // private static String getEr7Message() throws IOException {
+  // return IOUtils
+  // .toString(Er7MessageParserImplTest.class.getResourceAsStream("/messages/ELR.txt"));
+  // }
+  //
+  // /**
+  // *
+  // * @return
+  // * @throws IOException
+  // */
+  // private static String getProfile() throws IOException {
+  // return IOUtils.toString(Er7MessageParserImplTest.class
+  // .getResourceAsStream("/new_validation/IntegrationProfile.xml"));
+  // }
 }

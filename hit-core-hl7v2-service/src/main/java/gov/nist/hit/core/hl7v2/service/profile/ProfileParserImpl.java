@@ -16,6 +16,7 @@ import gov.nist.hit.core.domain.Predicate;
 import gov.nist.hit.core.domain.ProfileElement;
 import gov.nist.hit.core.domain.ProfileModel;
 import gov.nist.hit.core.hl7v2.domain.util.Util;
+import gov.nist.hit.core.hl7v2.service.profile.ConstraintManager;
 import gov.nist.hit.core.service.ProfileParser;
 import gov.nist.hit.core.service.exception.ProfileParserException;
 import hl7.v2.profile.Component;

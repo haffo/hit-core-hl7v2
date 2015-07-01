@@ -114,7 +114,7 @@ public class ProfileParserImpl extends ProfileParser {
   public ProfileModel parse(Object conformanceProfile, String... constraints)
       throws ProfileParserException {
     try {
-      if (!(conformanceProfile instanceof Profile)) {
+      if (!(conformanceProfile instanceof Message)) {
         throw new IllegalArgumentException("Conformance Profile is not a valid instanceof "
             + Message.class.getCanonicalName());
       }

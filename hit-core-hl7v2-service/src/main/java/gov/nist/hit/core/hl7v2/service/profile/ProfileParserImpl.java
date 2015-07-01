@@ -16,7 +16,6 @@ import gov.nist.hit.core.domain.Predicate;
 import gov.nist.hit.core.domain.ProfileElement;
 import gov.nist.hit.core.domain.ProfileModel;
 import gov.nist.hit.core.hl7v2.domain.util.Util;
-import gov.nist.hit.core.hl7v2.service.profile.ConstraintManager;
 import gov.nist.hit.core.service.ProfileParser;
 import gov.nist.hit.core.service.exception.ProfileParserException;
 import hl7.v2.profile.Component;
@@ -36,6 +35,7 @@ import hl7.v2.profile.ValueSetSpec;
 import hl7.v2.profile.XMLDeserializer;
 
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -44,8 +44,6 @@ import java.util.Set;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.io.IOUtils;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import scala.collection.Iterator;
@@ -57,33 +55,13 @@ import scala.collection.immutable.List;
  * 
  */
 @Service
-@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProfileParserImpl implements ProfileParser {
-
-  private final static String TYPE_GROUP = "GROUP";
-  private final static String TYPE_DT = "DATATYPE";
-  private final static String TYPE_SEGMENT = "SEGMENT";
-  private final static String TYPE_FIELD = "FIELD";
-  private final static String TYPE_COMPONENT = "COMPONENT";
-  private final static String NODE_SEGMENT = "Segment";
-  private final static String NODE_DATATYPE = "Datatype";
-  private final static String NODE_GROUP = "Group";
-  private final static String TYPE_SUBCOMPONENT = "SUBCOMPONENT";
-
-  private final static String ICON_GROUP = "group.png";
-  private final static String ICON_SEGMENT = "segment.png";
-  private final static String ICON_FIELD = "field.png";
-  private final static String ICON_DATATYPE = ICON_FIELD;
-  private final static String ICON_COMPONENT = "component.png";
-  private final static String ICON_SUBCOMPONENT = "subcomponent.png";
-
-  private ConstraintManager constraintManager;
-
-  private ProfileModel model;
-  private Map<String, ProfileElement> segmentTracker;
-  private Map<String, ProfileElement> datatypeTracker;
+public class ProfileParserImpl extends ProfileParser {
 
   public ProfileParserImpl() {}
+
+  private final Map<String, Message> cachedConformanceProfilesMap = new HashMap<String, Message>();
+
+  private ConstraintManager constraintManager;
 
   @Override
   /**
@@ -92,21 +70,24 @@ public class ProfileParserImpl implements ProfileParser {
    * Options: constraints xml content
    */
   public ProfileModel parse(String integrationProfileXml, String conformanceProfileId,
-      Object... constraints) throws ProfileParserException {
+      String... constraints) throws ProfileParserException {
     try {
-      String constraintsXml =
-          constraints != null && constraints.length > 0 ? (String) constraints[0] : null;
-      String additionalConstraintsXml =
-          constraints != null && constraints.length > 1 ? (String) constraints[1] : null;
-      InputStream profileStream = IOUtils.toInputStream(integrationProfileXml);
-      Profile p = XMLDeserializer.deserialize(profileStream).get();
-      hl7.v2.profile.Message m = p.messages().apply(conformanceProfileId);
-      return parse(m, constraintsXml, additionalConstraintsXml);
+      Message m = null;
+      if (cachedConformanceProfilesMap.containsKey(conformanceProfileId)) {
+        m = cachedConformanceProfilesMap.get(conformanceProfileId);
+      } else {
+        InputStream profileStream = IOUtils.toInputStream(integrationProfileXml);
+        Profile p = XMLDeserializer.deserialize(profileStream).get();
+        m = p.messages().apply(conformanceProfileId);
+        cachedConformanceProfilesMap.put(conformanceProfileId, m);
+      }
+      return parse(m, constraints);
     } catch (Exception e) {
       e.printStackTrace();
       throw new ProfileParserException(e.getMessage());
     }
   }
+
 
   /**
    * TODO: Include additional Constraints
@@ -115,35 +96,47 @@ public class ProfileParserImpl implements ProfileParser {
    * @param constraintsXml
    * @param additionalConstraintsXml
    * @return
-   * @throws XPathExpressionException
+   * @throws ProfileParserException
    */
-  public ProfileModel parse(Message message, String constraintsXml, String additionalConstraintsXml)
-      throws XPathExpressionException {
-    this.constraintManager = new ConstraintManager(constraintsXml);
-    this.segmentTracker = new LinkedHashMap<String, ProfileElement>();
-    this.datatypeTracker = new LinkedHashMap<String, ProfileElement>();
-    model = new ProfileModel();
-    ProfileElement structure = new ProfileElement("Message Structure");
-    structure.setType("MESSAGE");
-    structure.setRelevent(true);
-    structure.setConstraintPath(null);
-    scala.collection.immutable.List<SegRefOrGroup> children = message.structure();
-    if (children != null && !children.isEmpty()) {
-      Iterator<SegRefOrGroup> it = children.iterator();
-      while (it.hasNext()) {
-        process(it.next(), structure);
+  @Override
+  public ProfileModel parse(Object conformanceProfile, String... constraints)
+      throws ProfileParserException {
+    try {
+      if (!(conformanceProfile instanceof Profile)) {
+        throw new IllegalArgumentException("Conformance Profile is not a valid instanceof "
+            + Message.class.getCanonicalName());
       }
+      String constraintsXml = constraints != null && constraints.length > 0 ? constraints[0] : null;
+      String additionalConstraintsXml =
+          constraints != null && constraints.length > 1 ? constraints[1] : null;
+      Message message = (Message) conformanceProfile;
+      this.constraintManager = new ConstraintManager(constraintsXml);
+      this.segmentTracker = new LinkedHashMap<String, ProfileElement>();
+      this.datatypeTracker = new LinkedHashMap<String, ProfileElement>();
+      model = new ProfileModel();
+      ProfileElement structure = new ProfileElement("Message Structure");
+      structure.setType("MESSAGE");
+      structure.setRelevent(true);
+      structure.setConstraintPath(null);
+      scala.collection.immutable.List<SegRefOrGroup> children = message.structure();
+      if (children != null && !children.isEmpty()) {
+        Iterator<SegRefOrGroup> it = children.iterator();
+        while (it.hasNext()) {
+          process(it.next(), structure);
+        }
+      }
+      model.getElements().add(structure);
+      model.getElements().addAll(this.segmentTracker.values());
+      ProfileElement datatypes = new ProfileElement("Datatypes");
+      datatypes.setType("DATATYPE");
+      datatypes.setRelevent(true);
+      datatypes.setConstraintPath(null);
+      datatypes.getChildren().addAll(this.datatypeTracker.values());
+      model.getElements().add(datatypes);
+      return model;
+    } catch (XPathExpressionException e) {
+      throw new ProfileParserException(e.getLocalizedMessage());
     }
-    model.getElements().add(structure);
-    model.getElements().addAll(this.segmentTracker.values());
-
-    ProfileElement datatypes = new ProfileElement("Datatypes");
-    datatypes.setType("DATATYPE");
-    datatypes.setRelevent(true);
-    datatypes.setConstraintPath(null);
-    datatypes.getChildren().addAll(this.datatypeTracker.values());
-    model.getElements().add(datatypes);
-    return model;
   }
 
   /**
@@ -487,5 +480,7 @@ public class ProfileParserImpl implements ProfileParser {
 
     return element;
   }
+
+
 
 }

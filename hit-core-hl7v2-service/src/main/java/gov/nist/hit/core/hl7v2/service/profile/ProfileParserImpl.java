@@ -34,17 +34,26 @@ import hl7.v2.profile.Usage;
 import hl7.v2.profile.ValueSetSpec;
 import hl7.v2.profile.XMLDeserializer;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import scala.collection.Iterator;
 import scala.collection.immutable.List;
@@ -59,9 +68,10 @@ public class ProfileParserImpl extends ProfileParser {
 
   public ProfileParserImpl() {}
 
-  private final Map<String, Message> cachedConformanceProfilesMap = new HashMap<String, Message>();
-
+  private final Map<String, Profile> cachedIntegrationProfilesMap = new HashMap<String, Profile>();
   private ConstraintManager constraintManager;
+  private Map<String, ProfileElement> segmentTracker;
+  private Map<String, ProfileElement> datatypeTracker;
 
   @Override
   /**
@@ -72,21 +82,23 @@ public class ProfileParserImpl extends ProfileParser {
   public ProfileModel parse(String integrationProfileXml, String conformanceProfileId,
       String... constraints) throws ProfileParserException {
     try {
-      Message m = null;
-      if (cachedConformanceProfilesMap.containsKey(conformanceProfileId)) {
-        m = cachedConformanceProfilesMap.get(conformanceProfileId);
+      Profile p = null;
+      String integrationProfileId = integrationProfileId(integrationProfileXml);
+      if (cachedIntegrationProfilesMap.containsKey(integrationProfileId)) {
+        p = cachedIntegrationProfilesMap.get(conformanceProfileId);
       } else {
         InputStream profileStream = IOUtils.toInputStream(integrationProfileXml);
-        Profile p = XMLDeserializer.deserialize(profileStream).get();
-        m = p.messages().apply(conformanceProfileId);
-        cachedConformanceProfilesMap.put(conformanceProfileId, m);
+        p = XMLDeserializer.deserialize(profileStream).get();
+        cachedIntegrationProfilesMap.put(integrationProfileId, p);
       }
+      Message m = p.messages().apply(conformanceProfileId);
       return parse(m, constraints);
     } catch (Exception e) {
       e.printStackTrace();
       throw new ProfileParserException(e.getMessage());
     }
   }
+
 
 
   /**
@@ -481,6 +493,32 @@ public class ProfileParserImpl extends ProfileParser {
     return element;
   }
 
+
+  private Document toDoc(String xmlSource) {
+    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    factory.setNamespaceAware(true);
+    factory.setIgnoringComments(false);
+    factory.setIgnoringElementContentWhitespace(true);
+    DocumentBuilder builder;
+    try {
+      builder = factory.newDocumentBuilder();
+      return builder.parse(new InputSource(new StringReader(xmlSource)));
+    } catch (ParserConfigurationException e) {
+      e.printStackTrace();
+    } catch (SAXException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
+
+  public String integrationProfileId(String xml) {
+    Document doc = this.toDoc(xml);
+    Element elmIntegrationProfile =
+        (Element) doc.getElementsByTagName("ConformanceProfile").item(0);
+    return elmIntegrationProfile.getAttribute("ID");
+  }
 
 
 }

@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<ConformanceContext UUID="94f1dc05-6bdc-4c9a-9ab0-8aa714d5c1d9" xsi:noNamespaceSchemaLocation="ConformanceContext.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <MetaData>
-        <Description>Conformance context for ADT_A01</Description>
-    </MetaData>
-    <Segment/>
-    <Datatype/>
-</ConformanceContext>

@@ -38,10 +38,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -52,6 +50,7 @@ import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -69,9 +68,10 @@ public class ProfileParserImpl extends ProfileParser {
   public ProfileParserImpl() {}
 
   private final Map<String, Profile> cachedIntegrationProfilesMap = new HashMap<String, Profile>();
-  private ConstraintManager constraintManager;
-  private Map<String, ProfileElement> segmentTracker;
-  private Map<String, ProfileElement> datatypeTracker;
+  private Map<String, ProfileElement> segmentsMap;
+  private Map<String, ProfileElement> datatypesMap;
+  private Map<String, ProfileElement> groupsMap;
+
 
   @Override
   /**
@@ -85,7 +85,7 @@ public class ProfileParserImpl extends ProfileParser {
       Profile p = null;
       String integrationProfileId = integrationProfileId(integrationProfileXml);
       if (cachedIntegrationProfilesMap.containsKey(integrationProfileId)) {
-        p = cachedIntegrationProfilesMap.get(conformanceProfileId);
+        p = cachedIntegrationProfilesMap.get(integrationProfileId);
       } else {
         InputStream profileStream = IOUtils.toInputStream(integrationProfileXml);
         p = XMLDeserializer.deserialize(profileStream).get();
@@ -122,9 +122,9 @@ public class ProfileParserImpl extends ProfileParser {
       String additionalConstraintsXml =
           constraints != null && constraints.length > 1 ? constraints[1] : null;
       Message message = (Message) conformanceProfile;
-      this.constraintManager = new ConstraintManager(constraintsXml);
-      this.segmentTracker = new LinkedHashMap<String, ProfileElement>();
-      this.datatypeTracker = new LinkedHashMap<String, ProfileElement>();
+      this.segmentsMap = new LinkedHashMap<String, ProfileElement>();
+      this.datatypesMap = new LinkedHashMap<String, ProfileElement>();
+      this.groupsMap = new LinkedHashMap<String, ProfileElement>();
       model = new ProfileModel();
       ProfileElement structure = new ProfileElement("Message Structure");
       structure.setType("MESSAGE");
@@ -138,13 +138,16 @@ public class ProfileParserImpl extends ProfileParser {
         }
       }
       model.getElements().add(structure);
-      model.getElements().addAll(this.segmentTracker.values());
+      model.getElements().addAll(this.segmentsMap.values());
       ProfileElement datatypes = new ProfileElement("Datatypes");
       datatypes.setType("DATATYPE");
       datatypes.setRelevent(true);
       datatypes.setConstraintPath(null);
-      datatypes.getChildren().addAll(this.datatypeTracker.values());
+      datatypes.getChildren().addAll(this.datatypesMap.values());
       model.getElements().add(datatypes);
+      addConstraints(constraintsXml);
+      addConstraints(additionalConstraintsXml);
+
       return model;
     } catch (XPathExpressionException e) {
       throw new ProfileParserException(e.getLocalizedMessage());
@@ -156,7 +159,7 @@ public class ProfileParserImpl extends ProfileParser {
    * @param ref
    * @param parentElement
    * @param model
-   * @param segmentTracker
+   * @param segmentsMap
    * @throws XPathExpressionException
    */
   private ProfileElement process(SegRefOrGroup ref, ProfileElement parentElement)
@@ -172,27 +175,28 @@ public class ProfileParserImpl extends ProfileParser {
     }
   }
 
-  private Set<Constraint> findConfStatements(String type, String id, String name,
-      String constraintPath) throws XPathExpressionException {
-    Set<Constraint> constraints = new HashSet<Constraint>();
-    if (id != null)
-      constraints.addAll(constraintManager.findConfStatementsByIdAndPath(type, id, constraintPath));
-    if (name != null)
-      constraints.addAll(constraintManager.findConfStatementsByNameAndPath(type, name,
-          constraintPath));
-    return constraints;
-  }
-
-  private Set<Predicate> findPredicates(String type, String id, String name, String constraintPath)
-      throws XPathExpressionException {
-    Set<Predicate> constraints = new HashSet<Predicate>();
-    if (id != null)
-      constraints.addAll(constraintManager.findPredicatesByIdAndTarget(type, id, constraintPath));
-    if (name != null)
-      constraints.addAll(constraintManager
-          .findPredicatesByNameAndTarget(type, name, constraintPath));
-    return constraints;
-  }
+  // private Set<Constraint> findConfStatements(String type, String id, String name,
+  // String constraintPath) throws XPathExpressionException {
+  // Set<Constraint> constraints = new HashSet<Constraint>();
+  // if (id != null)
+  // constraints.addAll(constraintManager.findConfStatementsByIdAndPath(type, id, constraintPath));
+  // if (name != null)
+  // constraints.addAll(constraintManager.findConfStatementsByNameAndPath(type, name,
+  // constraintPath));
+  // return constraints;
+  // }
+  //
+  // private Set<Predicate> findPredicates(String type, String id, String name, String
+  // constraintPath)
+  // throws XPathExpressionException {
+  // Set<Predicate> constraints = new HashSet<Predicate>();
+  // if (id != null)
+  // constraints.addAll(constraintManager.findPredicatesByIdAndTarget(type, id, constraintPath));
+  // if (name != null)
+  // constraints.addAll(constraintManager
+  // .findPredicatesByNameAndTarget(type, name, constraintPath));
+  // return constraints;
+  // }
 
   private ProfileElement process(SegmentRef ref, Req req, ProfileElement parentElement)
       throws XPathExpressionException {
@@ -206,30 +210,30 @@ public class ProfileParserImpl extends ProfileParser {
     element.setConstraintPath(ref.req().position() + "[1]");
 
     // relative to itself
-    String constraintPath = element.getConstraintPath();
-    element.getConformanceStatements().addAll(
-        findConfStatements(NODE_GROUP, parentElement.getId(), parentElement.getName(),
-            constraintPath));
-    element.getPredicates().addAll(
-        findPredicates(NODE_GROUP, parentElement.getId(), parentElement.getName(), constraintPath));
+    // String constraintPath = element.getConstraintPath();
+    // element.getConformanceStatements().addAll(
+    // findConfStatements(NODE_GROUP, parentElement.getId(), parentElement.getName(),
+    // constraintPath));
+    // element.getPredicates().addAll(
+    // findPredicates(NODE_GROUP, parentElement.getId(), parentElement.getName(), constraintPath));
     // relative to its parent
     if (TYPE_GROUP.equals(parentElement.getType())) {
-      constraintPath = parentElement.getConstraintPath() + "." + constraintPath;
-      element.getConformanceStatements().addAll(
-          findConfStatements(NODE_GROUP, parentElement.getId(), parentElement.getName(),
-              constraintPath));
-      element.getPredicates()
-          .addAll(
-              findPredicates(NODE_GROUP, parentElement.getId(), parentElement.getName(),
-                  constraintPath));
+      // constraintPath = parentElement.getConstraintPath() + "." + constraintPath;
+      // element.getConformanceStatements().addAll(
+      // findConfStatements(NODE_GROUP, parentElement.getId(), parentElement.getName(),
+      // constraintPath));
+      // element.getPredicates()
+      // .addAll(
+      // findPredicates(NODE_GROUP, parentElement.getId(), parentElement.getName(),
+      // constraintPath));
     }
 
     ProfileElement pe = null;
-    if (segmentTracker.containsKey(s.id())) {
-      pe = segmentTracker.get(s.id());
+    if (segmentsMap.containsKey(s.id())) {
+      pe = segmentsMap.get(s.id());
     } else {
       pe = process(ref.ref(), ref.req());
-      segmentTracker.put(pe.getId(), pe);
+      segmentsMap.put(pe.getId(), pe);
     }
     pe.setRelevent(pe.isRelevent() || element.isRelevent());
     element.setReference(new gov.nist.hit.core.domain.SegmentRef(pe.getId(), "Segment", pe
@@ -258,7 +262,7 @@ public class ProfileParserImpl extends ProfileParser {
    * @param req
    * @param parentElement
    * @param model
-   * @param segmentTracker
+   * @param segmentsMap
    * @return
    * @throws XPathExpressionException
    */
@@ -287,7 +291,7 @@ public class ProfileParserImpl extends ProfileParser {
    * @param req
    * @param parentElement
    * @param model
-   * @param segmentTracker
+   * @param segmentsMap
    * @return
    * @throws XPathExpressionException
    */
@@ -300,14 +304,14 @@ public class ProfileParserImpl extends ProfileParser {
     element.setLongName(g.name());
     element.setParent(parentElement);
     element.setConstraintPath(req.position() + "[1]");
-
+    groupsMap.put(g.id(), element);
     // relative to parent
-    String constraintPath = element.getConstraintPath();
-    element.getConformanceStatements().addAll(
-        findConfStatements(NODE_GROUP, parentElement.getId(), parentElement.getName(),
-            constraintPath));
-    element.getPredicates().addAll(
-        findPredicates(NODE_GROUP, parentElement.getId(), parentElement.getName(), constraintPath));
+    // String constraintPath = element.getConstraintPath();
+    // element.getConformanceStatements().addAll(
+    // findConfStatements(NODE_GROUP, parentElement.getId(), parentElement.getName(),
+    // constraintPath));
+    // element.getPredicates().addAll(
+    // findPredicates(NODE_GROUP, parentElement.getId(), parentElement.getName(), constraintPath));
 
     parentElement.getChildren().add(element);
     scala.collection.immutable.List<SegRefOrGroup> children = g.structure();
@@ -372,11 +376,11 @@ public class ProfileParserImpl extends ProfileParser {
     element.setPath(parent.getName() + "." + f.req().position());
     String constraintPath = f.req().position() + "[1]";
     element.setConstraintPath(constraintPath);
-
-    element.getConformanceStatements().addAll(
-        findConfStatements(NODE_SEGMENT, parent.getId(), parent.getName(), constraintPath));
-    element.getPredicates().addAll(
-        findPredicates(NODE_SEGMENT, parent.getId(), parent.getName(), constraintPath));
+    //
+    // element.getConformanceStatements().addAll(
+    // findConfStatements(NODE_SEGMENT, parent.getId(), parent.getName(), constraintPath));
+    // element.getPredicates().addAll(
+    // findPredicates(NODE_SEGMENT, parent.getId(), parent.getName(), constraintPath));
 
     parent.getChildren().add(element);
     process(f.datatype(), element);
@@ -414,10 +418,13 @@ public class ProfileParserImpl extends ProfileParser {
           String segmentName = fieldOrComponent.getParent().getName();
           String constraintPath =
               fieldOrComponent.getConstraintPath() + "." + componentElement.getConstraintPath();
-          componentElement.getConformanceStatements().addAll(
-              findConfStatements(NODE_SEGMENT, segmentId, null, constraintPath));
-          componentElement.getPredicates().addAll(
-              findPredicates(NODE_SEGMENT, segmentId, null, constraintPath));
+
+          componentElement.setConstraintPath(constraintPath);
+
+          // componentElement.getConformanceStatements().addAll(
+          // findConfStatements(NODE_SEGMENT, segmentId, null, constraintPath));
+          // componentElement.getPredicates().addAll(
+          // findPredicates(NODE_SEGMENT, segmentId, null, constraintPath));
 
           if (fieldOrComponent.getType().equals(TYPE_COMPONENT)) {
             segmentId = fieldOrComponent.getParent().getParent().getId();
@@ -426,16 +433,18 @@ public class ProfileParserImpl extends ProfileParser {
                 fieldOrComponent.getParent().getConstraintPath() + "."
                     + fieldOrComponent.getConstraintPath() + "." + componentElement.getPosition()
                     + "[1]";
-            componentElement.getConformanceStatements().addAll(
-                findConfStatements(NODE_SEGMENT, segmentId, null, constraintPath));
-            componentElement.getPredicates().addAll(
-                findPredicates(NODE_SEGMENT, segmentId, null, constraintPath));
+            componentElement.setConstraintPath(constraintPath);
+
+            // componentElement.getConformanceStatements().addAll(
+            // findConfStatements(NODE_SEGMENT, segmentId, null, constraintPath));
+            // componentElement.getPredicates().addAll(
+            // findPredicates(NODE_SEGMENT, segmentId, null, constraintPath));
           }
         }
       }
     }
 
-    if (!datatypeTracker.containsKey(d.id())) {
+    if (!datatypesMap.containsKey(d.id())) {
       ProfileElement element = new ProfileElement();
       element.setId(d.id());
       element.setName(d.name());
@@ -444,20 +453,10 @@ public class ProfileParserImpl extends ProfileParser {
       element.setIcon(ICON_DATATYPE);
       element.setRelevent(true);
       element.getChildren().addAll(fieldOrComponent.getChildren());
-      datatypeTracker.put(d.id(), element);
+      datatypesMap.put(d.id(), element);
     }
 
     return fieldOrComponent;
-  }
-
-  private void setSubComponentTypes(ProfileElement subComponent) {
-    subComponent.setType(TYPE_SUBCOMPONENT);
-    subComponent.setIcon(ICON_SUBCOMPONENT);
-    if (subComponent.getChildren() != null && !subComponent.getChildren().isEmpty()) {
-      for (ProfileElement child : subComponent.getChildren()) {
-        setSubComponentTypes(child);
-      }
-    }
   }
 
   /**
@@ -484,9 +483,10 @@ public class ProfileParserImpl extends ProfileParser {
     element.setPath(parent.getPath() + "." + c.req().position());
     String constraintPath = c.req().position() + "[1]";
     element.setConstraintPath(constraintPath);
-    element.getConformanceStatements().addAll(
-        findConfStatements(NODE_DATATYPE, d.id(), d.name(), constraintPath));
-    element.getPredicates().addAll(findPredicates(NODE_DATATYPE, d.id(), d.name(), constraintPath));
+    // element.getConformanceStatements().addAll(
+    // findConfStatements(NODE_DATATYPE, d.id(), d.name(), constraintPath));
+    // element.getPredicates().addAll(findPredicates(NODE_DATATYPE, d.id(), d.name(),
+    // constraintPath));
     parent.getChildren().add(element);
     process(c.datatype(), element);
 
@@ -519,6 +519,189 @@ public class ProfileParserImpl extends ProfileParser {
         (Element) doc.getElementsByTagName("ConformanceProfile").item(0);
     return elmIntegrationProfile.getAttribute("ID");
   }
+
+
+  private Predicate predicate(Element element) {
+    String id = element.getAttribute("ID");
+    String trueUsage = element.getAttribute("TrueUsage");
+    String falseUsage = element.getAttribute("FalseUsage");
+    String desc = element.getElementsByTagName("Description").item(0).getTextContent();
+    return new Predicate(id, desc, trueUsage, falseUsage);
+  }
+
+  private Constraint conformanceStatement(Element element) {
+    String id = element.getAttribute("ID");
+    String desc = element.getElementsByTagName("Description").item(0).getTextContent();
+    return new Constraint(id, desc);
+  }
+
+
+  public void addPredicates(Element root, String type, Map<String, ProfileElement> map) {
+    NodeList rootChildList = root.getElementsByTagName(type);
+    if (rootChildList != null && rootChildList.getLength() > 0) {
+      Element rootChildElement = (Element) rootChildList.item(0);
+      NodeList children = rootChildElement.getElementsByTagName("ByID");
+      if (children != null && children.getLength() > 0) {
+        for (int i = 0; i < children.getLength(); i++) {
+          Element child = (Element) children.item(0);
+          String id = child.getAttribute("ID");
+          ProfileElement element = findElementById(id, map);
+          if (element != null) {
+            NodeList predicatesNodes = child.getElementsByTagName("Predicate");
+            if (predicatesNodes != null && predicatesNodes.getLength() > 0) {
+              for (int j = 0; j < predicatesNodes.getLength(); j++) {
+                Element node = (Element) predicatesNodes.item(j);
+                String target = node.getAttribute("Target");
+                ProfileElement found = findElementByTarget(target, element);
+                if (found != null) {
+                  found.getPredicates().add(predicate(node));
+                  System.out.println("Added Predicate at " + found.getPath());
+
+                }
+              }
+            }
+          }
+        }
+      }
+
+      children = rootChildElement.getElementsByTagName("ByName");
+      if (children != null && children.getLength() > 0) {
+        for (int i = 0; i < children.getLength(); i++) {
+          Element child = (Element) children.item(0);
+          String name = child.getAttribute("Name");
+          ProfileElement element = findElementByName(name, map);
+          if (element != null) {
+            NodeList predicatesNodes = child.getElementsByTagName("Predicate");
+            if (predicatesNodes != null && predicatesNodes.getLength() > 0) {
+              for (int j = 0; j < predicatesNodes.getLength(); j++) {
+                Element node = (Element) predicatesNodes.item(j);
+                String target = node.getAttribute("Target");
+                ProfileElement found = findElementByTarget(target, element);
+                if (found != null) {
+                  found.getPredicates().add(predicate(node));
+                  System.out.println("Added Predicate at " + found.getPath());
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  public void addPredicates(Element root) {
+    addPredicates(root, "Datatype", datatypesMap);
+    addPredicates(root, "Segment", segmentsMap);
+    addPredicates(root, "Group", groupsMap);
+  }
+
+  public void addConformanceStatements(Element root) {
+    addConformanceStatements(root, "Datatype", datatypesMap);
+    addConformanceStatements(root, "Segment", segmentsMap);
+    addConformanceStatements(root, "Group", groupsMap);
+  }
+
+
+
+  public void addConformanceStatements(Element root, String type, Map<String, ProfileElement> map) {
+    NodeList rootChildList = root.getElementsByTagName(type);
+    if (rootChildList != null && rootChildList.getLength() > 0) {
+      Element rootChildElement = (Element) rootChildList.item(0);
+      NodeList children = rootChildElement.getElementsByTagName("ByID");
+      if (children != null && children.getLength() > 0) {
+        for (int i = 0; i < children.getLength(); i++) {
+          Element child = (Element) children.item(0);
+          String id = child.getAttribute("ID");
+          ProfileElement element = findElementById(id, map);
+          if (element != null) {
+            NodeList predicatesNodes = child.getElementsByTagName("Constraint");
+            if (predicatesNodes != null && predicatesNodes.getLength() > 0) {
+              for (int j = 0; j < predicatesNodes.getLength(); j++) {
+                Element node = (Element) predicatesNodes.item(j);
+                String target = node.getAttribute("Target");
+                ProfileElement found = findElementByTarget(target, element);
+                if (found != null) {
+                  found.getConformanceStatements().add(conformanceStatement(node));
+                  System.out.println("Added Conf. Statement at " + found.getPath());
+                }
+              }
+            }
+          }
+        }
+      }
+
+      children = rootChildElement.getElementsByTagName("ByName");
+      if (children != null && children.getLength() > 0) {
+        for (int i = 0; i < children.getLength(); i++) {
+          Element child = (Element) children.item(0);
+          String name = child.getAttribute("Name");
+          ProfileElement element = findElementByName(name, map);
+          if (element != null) {
+            NodeList predicatesNodes = child.getElementsByTagName("Constraint");
+            if (predicatesNodes != null && predicatesNodes.getLength() > 0) {
+              for (int j = 0; j < predicatesNodes.getLength(); j++) {
+                Element node = (Element) predicatesNodes.item(j);
+                String target = node.getAttribute("Target");
+                ProfileElement found = findElementByTarget(target, element);
+                if (found != null) {
+                  found.getConformanceStatements().add(conformanceStatement(node));
+                  System.out.println("Added Conf. Statement at " + found.getPath());
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+  }
+
+
+  public void addConstraints(String constraintXml) {
+    try {
+      if (constraintXml != null && !"".equals(constraintXml)) {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc = builder.parse(IOUtils.toInputStream(constraintXml));
+        Element context = (Element) doc.getElementsByTagName("ConformanceContext").item(0);
+        NodeList predicatesList = context.getElementsByTagName("Predicates");
+        if (predicatesList != null && predicatesList.getLength() > 0) {
+          addPredicates((Element) predicatesList.item(0));
+        }
+
+        NodeList constraintsList = context.getElementsByTagName("Constraints");
+        if (constraintsList != null && constraintsList.getLength() > 0) {
+          addConformanceStatements((Element) constraintsList.item(0));
+        }
+      }
+    } catch (ParserConfigurationException | SAXException | IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private ProfileElement findElementByTarget(String target, ProfileElement element) {
+    if (target != null)
+      for (ProfileElement child : element.getChildren()) {
+        if (target.equals(child.getConstraintPath())) {
+          return child;
+        }
+      }
+    return null;
+  }
+
+  private ProfileElement findElementByName(String name, Map<String, ProfileElement> map) {
+    for (ProfileElement child : map.values()) {
+      if (name.equals(child.getName())) {
+        return child;
+      }
+    }
+    return null;
+  }
+
+  private ProfileElement findElementById(String id, Map<String, ProfileElement> map) {
+    return map.get(id);
+  }
+
 
 
 }

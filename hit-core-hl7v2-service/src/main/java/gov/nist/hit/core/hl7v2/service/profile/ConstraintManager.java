@@ -57,6 +57,21 @@ public class ConstraintManager {
 
   }
 
+
+  public ConstraintManager(String constraintXml, String additionalConstraintXml) {
+    try {
+      if (constraintXml != null) {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        doc = builder.parse(IOUtils.toInputStream(constraintXml));
+      }
+    } catch (ParserConfigurationException | SAXException | IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+  }
+
   public Set<Constraint> findConfStatementsByIdAndPath(String type, String id, String targetPath)
       throws XPathExpressionException {
     return findConstraints("/ConformanceContext/Constraints/" + type + "/ByID[@ID='" + id

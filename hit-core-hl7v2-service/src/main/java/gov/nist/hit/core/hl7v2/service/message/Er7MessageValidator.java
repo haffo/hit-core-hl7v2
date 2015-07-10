@@ -37,13 +37,22 @@ public class Er7MessageValidator implements MessageValidator {
       throws MessageValidationException {
     try {
       String profileXml = options[0];
-      String constraintsXml = options[1];
-      String constraintsXml2 = options[2];
-      String valueSets = options[3];
+      String valueSets = options[1];
+      String constraintsXml = options[2];
+      String constraintsXml2 = null;
+      if (options.length == 3) {
+        constraintsXml2 = options[3];
+      }
+      ConformanceContext c = null;
       Profile profile = getProfile(IOUtils.toInputStream(profileXml));
-      ConformanceContext c =
-          getConformanceContext(IOUtils.toInputStream(constraintsXml),
-              IOUtils.toInputStream(constraintsXml2));
+      if (constraintsXml2 != null) {
+        c =
+            getConformanceContext(IOUtils.toInputStream(constraintsXml),
+                IOUtils.toInputStream(constraintsXml2));
+      } else {
+        c = getConformanceContext(IOUtils.toInputStream(constraintsXml));
+      }
+
       // The plugin map. This should be empty if no plugin is used
       ValueSetLibrary valueSetLibrary =
           valueSets != null ? getValueSetLibrary(IOUtils.toInputStream(valueSets)) : null;

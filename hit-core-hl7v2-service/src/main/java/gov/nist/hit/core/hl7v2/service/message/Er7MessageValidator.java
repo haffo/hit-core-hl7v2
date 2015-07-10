@@ -11,24 +11,22 @@
  */
 package gov.nist.hit.core.hl7v2.service.message;
 
-import expression.EvalResult;
-import expression.Plugin;
 import gov.nist.hit.core.service.MessageValidator;
 import gov.nist.hit.core.service.exception.MessageValidationException;
-import hl7.v2.instance.Element;
-import hl7.v2.instance.Separators;
+import hl7.v2.profile.Profile;
 import hl7.v2.profile.XMLDeserializer;
 import hl7.v2.validation.SyncHL7Validator;
 import hl7.v2.validation.content.ConformanceContext;
 import hl7.v2.validation.content.DefaultConformanceContext;
 import hl7.v2.validation.vs.ValueSetLibrary;
+import hl7.v2.validation.vs.ValueSetLibraryImpl;
+
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
-
-import scala.Function3;
-import scala.collection.immutable.Map;
-import scala.collection.immutable.Map$;
 
 
 @Service
@@ -40,17 +38,15 @@ public class Er7MessageValidator implements MessageValidator {
     try {
       String profileXml = options[0];
       String constraintsXml = options[1];
-      String valueSets = options[2];
-
-      hl7.v2.profile.Profile profile =
-          XMLDeserializer.deserialize(IOUtils.toInputStream(profileXml)).get();
+      String constraintsXml2 = options[2];
+      String valueSets = options[3];
+      Profile profile = getProfile(IOUtils.toInputStream(profileXml));
       ConformanceContext c =
-          DefaultConformanceContext.apply(IOUtils.toInputStream(constraintsXml)).get();
+          getConformanceContext(IOUtils.toInputStream(constraintsXml),
+              IOUtils.toInputStream(constraintsXml2));
       // The plugin map. This should be empty if no plugin is used
-      Map<String, Function3<Plugin, Element, Separators, EvalResult>> pluginMap =
-          Map$.MODULE$.empty();
       ValueSetLibrary valueSetLibrary =
-          valueSets != null ? ValueSetLibrary.apply(IOUtils.toInputStream(valueSets)).get() : null;
+          valueSets != null ? getValueSetLibrary(IOUtils.toInputStream(valueSets)) : null;
       SyncHL7Validator validator = new SyncHL7Validator(profile, valueSetLibrary, c);
       scala.collection.Iterable<String> keys = profile.messages().keys();
       String key = keys.iterator().next();
@@ -62,10 +58,26 @@ public class Er7MessageValidator implements MessageValidator {
     } catch (Exception e) {
       throw new MessageValidationException(e);
     }
-
-
   }
 
+  private ConformanceContext getConformanceContext(InputStream... constraints) {
+    List<InputStream> confContexts = Arrays.asList(constraints);
+    // The get() at the end will throw an exception if something goes wrong
+    ConformanceContext c = DefaultConformanceContext.apply(confContexts).get();
+    return c;
+  }
+
+  private ValueSetLibrary getValueSetLibrary(InputStream vsLibXML) {
+    ValueSetLibrary valueSetLibrary = ValueSetLibraryImpl.apply(vsLibXML).get();
+    return valueSetLibrary;
+  }
+
+  private Profile getProfile(InputStream profileXML) {
+    // The get() at the end will throw an exception if something goes wrong
+    Profile profile = XMLDeserializer.deserialize(profileXML).get();
+
+    return profile;
+  }
 
 
 }

@@ -46,7 +46,7 @@ import scala.collection.immutable.List;
  * @author Harold Affo
  * 
  */
-@Service
+@Service("er7MessageParser")
 public class Er7MessageParser implements MessageParser {
 
   private final static String SEGMENT = "SEGMENT";

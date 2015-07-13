@@ -622,7 +622,7 @@ public class ProfileParserImpl extends ProfileParser {
                 ProfileElement found = findElementByTarget(target, element);
                 if (found != null) {
                   found.getConformanceStatements().add(conformanceStatement(node));
-                  System.out.println("Added Conf. Statement at " + found.getPath());
+                  // System.out.println("Added Conf. Statement at " + found.getPath());
                 }
               }
             }
@@ -645,7 +645,7 @@ public class ProfileParserImpl extends ProfileParser {
                 ProfileElement found = findElementByTarget(target, element);
                 if (found != null) {
                   found.getConformanceStatements().add(conformanceStatement(node));
-                  System.out.println("Added Conf. Statement at " + found.getPath());
+                  // System.out.println("Added Conf. Statement at " + found.getPath());
                 }
               }
             }

@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
  * @author Harold Affo (NIST)
  */
 
-@Service
+@Service("er7ReportGenerator")
 public class Er7ValidationReportGenerator extends ValidationReportGenerator {
 
   private final static Logger logger = Logger.getLogger(Er7ValidationReportGenerator.class);

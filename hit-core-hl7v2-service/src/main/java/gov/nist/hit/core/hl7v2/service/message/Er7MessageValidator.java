@@ -29,7 +29,7 @@ import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
 
 
-@Service
+@Service("er7MessageValidator")
 public class Er7MessageValidator implements MessageValidator {
 
   @Override

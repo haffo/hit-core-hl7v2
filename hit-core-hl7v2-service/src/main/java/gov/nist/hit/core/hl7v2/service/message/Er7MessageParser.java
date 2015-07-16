@@ -62,16 +62,18 @@ public class Er7MessageParser implements MessageParser {
 	 * 
 	 */
   @Override
-  public MessageModel parse(String er7Message, Object... options) throws MessageParserException {
+  public MessageModel parse(String er7Message, String... options) throws MessageParserException {
     try {
-      String profileXml = (String) options[0];
-      if (!"".equals(er7Message) && er7Message != null) {
+      String profileXml = options[0];
+      if (options.length == 1) {
+        throw new MessageParserException("No Conformance Profile Provided to Parse the Message");
+      }
+      String conformanceProfileId = options[1];
+      if (!"".equals(er7Message) && er7Message != null && !"".equals(conformanceProfileId)) {
         InputStream profileStream = IOUtils.toInputStream(profileXml);
         Profile profile = XMLDeserializer.deserialize(profileStream).get();
-        scala.collection.Iterable<String> keys = profile.messages().keys();
-        String key = keys.iterator().next();
         JParser p = new JParser();
-        Message message = p.jparse(er7Message, profile.messages().apply(key));
+        Message message = p.jparse(er7Message, profile.messages().apply(conformanceProfileId));
         return toModel(message);
       }
     } catch (RuntimeException e) {

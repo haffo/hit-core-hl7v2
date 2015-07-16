@@ -36,30 +36,23 @@ public class Er7MessageValidator implements MessageValidator {
   public String validate(String title, String message, String... options)
       throws MessageValidationException {
     try {
-      String profileXml = options[0];
-      String valueSets = options[1];
-      String constraintsXml = options[2];
-      String constraintsXml2 = null;
-      if (options.length == 3) {
-        constraintsXml2 = options[3];
+      if (options == null || options.length < 3) {
+        throw new MessageValidationException("Invalid Message Validation Arguments");
       }
-      ConformanceContext c = null;
-      Profile profile = getProfile(IOUtils.toInputStream(profileXml));
-      if (constraintsXml2 != null) {
-        c =
-            getConformanceContext(IOUtils.toInputStream(constraintsXml),
-                IOUtils.toInputStream(constraintsXml2));
-      } else {
-        c = getConformanceContext(IOUtils.toInputStream(constraintsXml));
-      }
-
-      // The plugin map. This should be empty if no plugin is used
+      String conformanceProfielId = options[0];
+      String integrationProfileXml = options[1];
+      String valueSets = options[2];
+      String constraintsXml = options[3];
+      String constraintsXml2 = options.length >= 4 ? constraintsXml2 = options[4] : null;
+      Profile profile = getProfile(IOUtils.toInputStream(integrationProfileXml));
+      ConformanceContext c =
+          constraintsXml2 != null ? getConformanceContext(IOUtils.toInputStream(constraintsXml),
+              IOUtils.toInputStream(constraintsXml2)) : getConformanceContext(IOUtils
+              .toInputStream(constraintsXml));
       ValueSetLibrary valueSetLibrary =
           valueSets != null ? getValueSetLibrary(IOUtils.toInputStream(valueSets)) : null;
       SyncHL7Validator validator = new SyncHL7Validator(profile, valueSetLibrary, c);
-      scala.collection.Iterable<String> keys = profile.messages().keys();
-      String key = keys.iterator().next();
-      gov.nist.validation.report.Report report = validator.check(message, key);
+      gov.nist.validation.report.Report report = validator.check(message, conformanceProfielId);
       String res = report.toJson();
       return res;
     } catch (RuntimeException e) {
@@ -71,7 +64,6 @@ public class Er7MessageValidator implements MessageValidator {
 
   private ConformanceContext getConformanceContext(InputStream... constraints) {
     List<InputStream> confContexts = Arrays.asList(constraints);
-    // The get() at the end will throw an exception if something goes wrong
     ConformanceContext c = DefaultConformanceContext.apply(confContexts).get();
     return c;
   }
@@ -82,9 +74,7 @@ public class Er7MessageValidator implements MessageValidator {
   }
 
   private Profile getProfile(InputStream profileXML) {
-    // The get() at the end will throw an exception if something goes wrong
     Profile profile = XMLDeserializer.deserialize(profileXML).get();
-
     return profile;
   }
 

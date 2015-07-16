@@ -43,7 +43,7 @@ public class Er7MessageValidator implements MessageValidator {
       String integrationProfileXml = options[1];
       String valueSets = options[2];
       String constraintsXml = options[3];
-      String constraintsXml2 = options.length >= 4 ? constraintsXml2 = options[4] : null;
+      String constraintsXml2 = options.length >= 4 && options[4] != null ? options[4] : null;
       Profile profile = getProfile(IOUtils.toInputStream(integrationProfileXml));
       ConformanceContext c =
           constraintsXml2 != null ? getConformanceContext(IOUtils.toInputStream(constraintsXml),

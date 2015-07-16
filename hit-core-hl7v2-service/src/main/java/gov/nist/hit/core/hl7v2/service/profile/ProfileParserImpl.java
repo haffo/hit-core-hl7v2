@@ -555,8 +555,6 @@ public class ProfileParserImpl extends ProfileParser {
                 ProfileElement found = findElementByTarget(target, element);
                 if (found != null) {
                   found.getPredicates().add(predicate(node));
-                  System.out.println("Added Predicate at " + found.getPath());
-
                 }
               }
             }
@@ -579,7 +577,6 @@ public class ProfileParserImpl extends ProfileParser {
                 ProfileElement found = findElementByTarget(target, element);
                 if (found != null) {
                   found.getPredicates().add(predicate(node));
-                  System.out.println("Added Predicate at " + found.getPath());
                 }
               }
             }

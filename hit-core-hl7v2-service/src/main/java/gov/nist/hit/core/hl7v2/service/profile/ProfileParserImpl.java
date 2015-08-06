@@ -207,7 +207,10 @@ public class ProfileParserImpl extends ProfileParser {
     element.setLongName(s.desc());
     element.setIcon(ICON_SEGMENT);
     element.setParent(parentElement);
-    element.setConstraintPath(ref.req().position() + "[1]");
+    element.setPosition(req.position() + "");
+    // element.setConstraintPath(ref.req().position() + "[1]");
+    // element.setConstraintPath(parentElement.getConstraintPath() != null ? parentElement
+    // .getConstraintPath() + "." + shortTarget(req.position()) : shortTarget(req.position()));
 
     // relative to itself
     // String constraintPath = element.getConstraintPath();
@@ -303,7 +306,9 @@ public class ProfileParserImpl extends ProfileParser {
     element.setName(g.name());
     element.setLongName(g.name());
     element.setParent(parentElement);
-    element.setConstraintPath(req.position() + "[1]");
+    element.setPosition(req.position() + "");
+    // element.setConstraintPath(parentElement.getConstraintPath() != null ? parentElement
+    // .getConstraintPath() + "." + shortTarget(req.position()) : shortTarget(req.position()));
     groupsMap.put(g.id(), element);
     // relative to parent
     // String constraintPath = element.getConstraintPath();
@@ -374,8 +379,8 @@ public class ProfileParserImpl extends ProfileParser {
     element.setDataType(f.datatype().id()); // use id for flavors
     element.setPosition(f.req().position() + "");
     element.setPath(parent.getName() + "." + f.req().position());
-    String constraintPath = f.req().position() + "[1]";
-    element.setConstraintPath(constraintPath);
+    // String constraintPath = shortTarget(f.req().position());
+    // element.setConstraintPath(constraintPath);
     //
     // element.getConformanceStatements().addAll(
     // findConfStatements(NODE_SEGMENT, parent.getId(), parent.getName(), constraintPath));
@@ -404,7 +409,6 @@ public class ProfileParserImpl extends ProfileParser {
    * @param parentElement
    * @throws XPathExpressionException
    */
-  @SuppressWarnings("unchecked")
   private ProfileElement process(Datatype d, ProfileElement fieldOrComponent)
       throws XPathExpressionException {
     if (d instanceof Composite) {
@@ -413,33 +417,14 @@ public class ProfileParserImpl extends ProfileParser {
       if (children != null) {
         Iterator<Component> it = children.iterator();
         while (it.hasNext()) {
-          ProfileElement componentElement = process(it.next(), d, fieldOrComponent);
-          String segmentId = fieldOrComponent.getParent().getId();
-          String segmentName = fieldOrComponent.getParent().getName();
-          String constraintPath =
-              fieldOrComponent.getConstraintPath() + "." + componentElement.getConstraintPath();
-
-          componentElement.setConstraintPath(constraintPath);
-
-          // componentElement.getConformanceStatements().addAll(
-          // findConfStatements(NODE_SEGMENT, segmentId, null, constraintPath));
-          // componentElement.getPredicates().addAll(
-          // findPredicates(NODE_SEGMENT, segmentId, null, constraintPath));
-
-          if (fieldOrComponent.getType().equals(TYPE_COMPONENT)) {
-            segmentId = fieldOrComponent.getParent().getParent().getId();
-            segmentName = fieldOrComponent.getParent().getParent().getName();
-            constraintPath =
-                fieldOrComponent.getParent().getConstraintPath() + "."
-                    + fieldOrComponent.getConstraintPath() + "." + componentElement.getPosition()
-                    + "[1]";
-            componentElement.setConstraintPath(constraintPath);
-
-            // componentElement.getConformanceStatements().addAll(
-            // findConfStatements(NODE_SEGMENT, segmentId, null, constraintPath));
-            // componentElement.getPredicates().addAll(
-            // findPredicates(NODE_SEGMENT, segmentId, null, constraintPath));
-          }
+          process(it.next(), d, fieldOrComponent);
+          // ProfileElement componentElement = process(it.next(), d, fieldOrComponent);
+          // String constraintPath =
+          // fieldOrComponent.getConstraintPath() + "." + componentElement.getConstraintPath();
+          // constraintPath =
+          // fieldOrComponent.getType().equals(TYPE_COMPONENT) ? fieldOrComponent.getParent()
+          // .getConstraintPath() + "." + constraintPath : constraintPath;
+          // componentElement.setConstraintPath(constraintPath);
         }
       }
     }
@@ -481,15 +466,10 @@ public class ProfileParserImpl extends ProfileParser {
     element.setPosition(c.req().position() + "");
     element.setParent(parent);
     element.setPath(parent.getPath() + "." + c.req().position());
-    String constraintPath = c.req().position() + "[1]";
-    element.setConstraintPath(constraintPath);
-    // element.getConformanceStatements().addAll(
-    // findConfStatements(NODE_DATATYPE, d.id(), d.name(), constraintPath));
-    // element.getPredicates().addAll(findPredicates(NODE_DATATYPE, d.id(), d.name(),
-    // constraintPath));
+    // String constraintPath = shortTarget(c.req().position());
+    // element.setConstraintPath(constraintPath);
     parent.getChildren().add(element);
     process(c.datatype(), element);
-
     return element;
   }
 
@@ -543,7 +523,7 @@ public class ProfileParserImpl extends ProfileParser {
       NodeList children = rootChildElement.getElementsByTagName("ByID");
       if (children != null && children.getLength() > 0) {
         for (int i = 0; i < children.getLength(); i++) {
-          Element child = (Element) children.item(0);
+          Element child = (Element) children.item(i);
           String id = child.getAttribute("ID");
           ProfileElement element = findElementById(id, map);
           if (element != null) {
@@ -565,7 +545,7 @@ public class ProfileParserImpl extends ProfileParser {
       children = rootChildElement.getElementsByTagName("ByName");
       if (children != null && children.getLength() > 0) {
         for (int i = 0; i < children.getLength(); i++) {
-          Element child = (Element) children.item(0);
+          Element child = (Element) children.item(i);
           String name = child.getAttribute("Name");
           ProfileElement element = findElementByName(name, map);
           if (element != null) {
@@ -607,7 +587,7 @@ public class ProfileParserImpl extends ProfileParser {
       NodeList children = rootChildElement.getElementsByTagName("ByID");
       if (children != null && children.getLength() > 0) {
         for (int i = 0; i < children.getLength(); i++) {
-          Element child = (Element) children.item(0);
+          Element child = (Element) children.item(i);
           String id = child.getAttribute("ID");
           ProfileElement element = findElementById(id, map);
           if (element != null) {
@@ -630,7 +610,7 @@ public class ProfileParserImpl extends ProfileParser {
       children = rootChildElement.getElementsByTagName("ByName");
       if (children != null && children.getLength() > 0) {
         for (int i = 0; i < children.getLength(); i++) {
-          Element child = (Element) children.item(0);
+          Element child = (Element) children.item(i);
           String name = child.getAttribute("Name");
           ProfileElement element = findElementByName(name, map);
           if (element != null) {
@@ -679,12 +659,29 @@ public class ProfileParserImpl extends ProfileParser {
   private ProfileElement findElementByTarget(String target, ProfileElement element) {
     if (target != null)
       for (ProfileElement child : element.getChildren()) {
-        if (target.equals(child.getConstraintPath())) {
+        if (target.equals(shortTarget(child)) || target.equals(mediumTarget(child))
+            || target.equals(longTarget(child))) {
           return child;
         }
       }
     return null;
   }
+
+
+  private String shortTarget(ProfileElement element) {
+    return element != null && element.getPosition() != null ? element.getPosition() + "[1]" : null;
+  }
+
+  private String mediumTarget(ProfileElement element) {
+    String pTarget = shortTarget(element.getParent());
+    return pTarget != null ? pTarget + "." + shortTarget(element) : shortTarget(element);
+  }
+
+  private String longTarget(ProfileElement element) {
+    String pTarget = mediumTarget(element.getParent());
+    return pTarget != null ? pTarget + "." + shortTarget(element) : shortTarget(element);
+  }
+
 
   private ProfileElement findElementByName(String name, Map<String, ProfileElement> map) {
     for (ProfileElement child : map.values()) {

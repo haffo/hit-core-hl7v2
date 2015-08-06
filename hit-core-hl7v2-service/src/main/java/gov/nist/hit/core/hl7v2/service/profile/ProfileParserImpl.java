@@ -129,7 +129,6 @@ public class ProfileParserImpl extends ProfileParser {
       ProfileElement structure = new ProfileElement("Message Structure");
       structure.setType("MESSAGE");
       structure.setRelevent(true);
-      structure.setConstraintPath(null);
       scala.collection.immutable.List<SegRefOrGroup> children = message.structure();
       if (children != null && !children.isEmpty()) {
         Iterator<SegRefOrGroup> it = children.iterator();
@@ -142,7 +141,6 @@ public class ProfileParserImpl extends ProfileParser {
       ProfileElement datatypes = new ProfileElement("Datatypes");
       datatypes.setType("DATATYPE");
       datatypes.setRelevent(true);
-      datatypes.setConstraintPath(null);
       datatypes.getChildren().addAll(this.datatypesMap.values());
       model.getElements().add(datatypes);
       addConstraints(constraintsXml);

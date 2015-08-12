@@ -47,7 +47,7 @@
 		<dependency>
     		<groupId>gov.nist</groupId>
     		<artifactId>hl7-v2-validation</artifactId>
-    		<version>1.0.0-beta-5-SNAPSHOT</version>
+    		<version>1.0.0-beta-7-SNAPSHOT</version>
     	</dependency>
     
 

@@ -37,6 +37,8 @@ import hl7.v2.profile.XMLDeserializer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -142,10 +144,15 @@ public class ProfileParserImpl extends ProfileParser {
       datatypes.setType("DATATYPE");
       datatypes.setRelevent(true);
       datatypes.getChildren().addAll(this.datatypesMap.values());
+      Collections.sort(datatypes.getChildren(), new Comparator<ProfileElement>() {
+        @Override
+        public int compare(ProfileElement o1, ProfileElement o2) {
+          return o1.getName().compareTo(o2.getName());
+        }
+      });
       model.getElements().add(datatypes);
       addConstraints(constraintsXml);
       addConstraints(additionalConstraintsXml);
-
       return model;
     } catch (XPathExpressionException e) {
       throw new ProfileParserException(e.getLocalizedMessage());
@@ -206,29 +213,6 @@ public class ProfileParserImpl extends ProfileParser {
     element.setIcon(ICON_SEGMENT);
     element.setParent(parentElement);
     element.setPosition(req.position() + "");
-    // element.setConstraintPath(ref.req().position() + "[1]");
-    // element.setConstraintPath(parentElement.getConstraintPath() != null ? parentElement
-    // .getConstraintPath() + "." + shortTarget(req.position()) : shortTarget(req.position()));
-
-    // relative to itself
-    // String constraintPath = element.getConstraintPath();
-    // element.getConformanceStatements().addAll(
-    // findConfStatements(NODE_GROUP, parentElement.getId(), parentElement.getName(),
-    // constraintPath));
-    // element.getPredicates().addAll(
-    // findPredicates(NODE_GROUP, parentElement.getId(), parentElement.getName(), constraintPath));
-    // relative to its parent
-    if (TYPE_GROUP.equals(parentElement.getType())) {
-      // constraintPath = parentElement.getConstraintPath() + "." + constraintPath;
-      // element.getConformanceStatements().addAll(
-      // findConfStatements(NODE_GROUP, parentElement.getId(), parentElement.getName(),
-      // constraintPath));
-      // element.getPredicates()
-      // .addAll(
-      // findPredicates(NODE_GROUP, parentElement.getId(), parentElement.getName(),
-      // constraintPath));
-    }
-
     ProfileElement pe = null;
     if (segmentsMap.containsKey(s.id())) {
       pe = segmentsMap.get(s.id());
@@ -240,7 +224,6 @@ public class ProfileParserImpl extends ProfileParser {
     element.setReference(new gov.nist.hit.core.domain.SegmentRef(pe.getId(), "Segment", pe
         .getName()));
     parentElement.getChildren().add(element);
-
     return element;
   }
 
@@ -305,18 +288,9 @@ public class ProfileParserImpl extends ProfileParser {
     element.setLongName(g.name());
     element.setParent(parentElement);
     element.setPosition(req.position() + "");
-    // element.setConstraintPath(parentElement.getConstraintPath() != null ? parentElement
-    // .getConstraintPath() + "." + shortTarget(req.position()) : shortTarget(req.position()));
-    groupsMap.put(g.id(), element);
-    // relative to parent
-    // String constraintPath = element.getConstraintPath();
-    // element.getConformanceStatements().addAll(
-    // findConfStatements(NODE_GROUP, parentElement.getId(), parentElement.getName(),
-    // constraintPath));
-    // element.getPredicates().addAll(
-    // findPredicates(NODE_GROUP, parentElement.getId(), parentElement.getName(), constraintPath));
-
+    element.setId(g.id());
     parentElement.getChildren().add(element);
+    groupsMap.put(g.id(), element);
     scala.collection.immutable.List<SegRefOrGroup> children = g.structure();
     if (children != null) {
       Iterator<SegRefOrGroup> it = children.iterator();
@@ -377,14 +351,6 @@ public class ProfileParserImpl extends ProfileParser {
     element.setDataType(f.datatype().id()); // use id for flavors
     element.setPosition(f.req().position() + "");
     element.setPath(parent.getName() + "." + f.req().position());
-    // String constraintPath = shortTarget(f.req().position());
-    // element.setConstraintPath(constraintPath);
-    //
-    // element.getConformanceStatements().addAll(
-    // findConfStatements(NODE_SEGMENT, parent.getId(), parent.getName(), constraintPath));
-    // element.getPredicates().addAll(
-    // findPredicates(NODE_SEGMENT, parent.getId(), parent.getName(), constraintPath));
-
     parent.getChildren().add(element);
     process(f.datatype(), element);
   }
@@ -409,25 +375,17 @@ public class ProfileParserImpl extends ProfileParser {
    */
   private ProfileElement process(Datatype d, ProfileElement fieldOrComponent)
       throws XPathExpressionException {
-    if (d instanceof Composite) {
-      Composite c = (Composite) d;
-      scala.collection.immutable.List<Component> children = c.components();
-      if (children != null) {
-        Iterator<Component> it = children.iterator();
-        while (it.hasNext()) {
-          process(it.next(), d, fieldOrComponent);
-          // ProfileElement componentElement = process(it.next(), d, fieldOrComponent);
-          // String constraintPath =
-          // fieldOrComponent.getConstraintPath() + "." + componentElement.getConstraintPath();
-          // constraintPath =
-          // fieldOrComponent.getType().equals(TYPE_COMPONENT) ? fieldOrComponent.getParent()
-          // .getConstraintPath() + "." + constraintPath : constraintPath;
-          // componentElement.setConstraintPath(constraintPath);
+    if (!datatypesMap.containsKey(d.id())) {
+      if (d instanceof Composite) {
+        Composite c = (Composite) d;
+        scala.collection.immutable.List<Component> children = c.components();
+        if (children != null) {
+          Iterator<Component> it = children.iterator();
+          while (it.hasNext()) {
+            process(it.next(), d, fieldOrComponent);
+          }
         }
       }
-    }
-
-    if (!datatypesMap.containsKey(d.id())) {
       ProfileElement element = new ProfileElement();
       element.setId(d.id());
       element.setName(d.name());
@@ -437,6 +395,9 @@ public class ProfileParserImpl extends ProfileParser {
       element.setRelevent(true);
       element.getChildren().addAll(fieldOrComponent.getChildren());
       datatypesMap.put(d.id(), element);
+    } else {
+      ProfileElement el = datatypesMap.get(d.id());
+      fieldOrComponent.setChildren(el.getChildren());
     }
 
     return fieldOrComponent;
@@ -464,8 +425,6 @@ public class ProfileParserImpl extends ProfileParser {
     element.setPosition(c.req().position() + "");
     element.setParent(parent);
     element.setPath(parent.getPath() + "." + c.req().position());
-    // String constraintPath = shortTarget(c.req().position());
-    // element.setConstraintPath(constraintPath);
     parent.getChildren().add(element);
     process(c.datatype(), element);
     return element;
@@ -597,7 +556,6 @@ public class ProfileParserImpl extends ProfileParser {
                 ProfileElement found = findElementByTarget(target, element);
                 if (found != null) {
                   found.getConformanceStatements().add(conformanceStatement(node));
-                  // System.out.println("Added Conf. Statement at " + found.getPath());
                 }
               }
             }
@@ -620,7 +578,6 @@ public class ProfileParserImpl extends ProfileParser {
                 ProfileElement found = findElementByTarget(target, element);
                 if (found != null) {
                   found.getConformanceStatements().add(conformanceStatement(node));
-                  // System.out.println("Added Conf. Statement at " + found.getPath());
                 }
               }
             }
@@ -655,13 +612,14 @@ public class ProfileParserImpl extends ProfileParser {
   }
 
   private ProfileElement findElementByTarget(String target, ProfileElement element) {
-    if (target != null)
+    if (target != null) {
       for (ProfileElement child : element.getChildren()) {
         if (target.equals(shortTarget(child)) || target.equals(mediumTarget(child))
             || target.equals(longTarget(child))) {
           return child;
         }
       }
+    }
     return null;
   }
 

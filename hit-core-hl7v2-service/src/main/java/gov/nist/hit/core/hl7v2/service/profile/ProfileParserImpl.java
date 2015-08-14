@@ -44,6 +44,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -74,9 +75,7 @@ public class ProfileParserImpl extends ProfileParser {
   private final Map<String, Profile> cachedIntegrationProfilesMap = new HashMap<String, Profile>();
   private Map<String, ProfileElement> segmentsMap;
   private Map<String, ProfileElement> datatypesMap;
-
   private Map<String, ProfileElement> groupsMap;
-
 
   @Override
   /**
@@ -134,7 +133,6 @@ public class ProfileParserImpl extends ProfileParser {
       ProfileElement structure = new ProfileElement("Message Structure");
       structure.setType("MESSAGE");
       structure.setRelevent(true);
-
       scala.collection.immutable.List<SegRefOrGroup> children = message.structure();
       if (children != null && !children.isEmpty()) {
         Iterator<SegRefOrGroup> it = children.iterator();
@@ -157,7 +155,7 @@ public class ProfileParserImpl extends ProfileParser {
       model.getElements().add(datatypes);
       addConstraints(constraintsXml);
       addConstraints(additionalConstraintsXml);
-      fixComponentsAndFields();
+      fixIconsAndTypes();
       return model;
     } catch (XPathExpressionException e) {
       throw new ProfileParserException(e.getLocalizedMessage());
@@ -187,35 +185,13 @@ public class ProfileParserImpl extends ProfileParser {
     }
   }
 
-  // private Set<Constraint> findConfStatements(String type, String id, String name,
-  // String constraintPath) throws XPathExpressionException {
-  // Set<Constraint> constraints = new HashSet<Constraint>();
-  // if (id != null)
-  // constraints.addAll(constraintManager.findConfStatementsByIdAndPath(type, id, constraintPath));
-  // if (name != null)
-  // constraints.addAll(constraintManager.findConfStatementsByNameAndPath(type, name,
-  // constraintPath));
-  // return constraints;
-  // }
-  //
-  // private Set<Predicate> findPredicates(String type, String id, String name, String
-  // constraintPath)
-  // throws XPathExpressionException {
-  // Set<Predicate> constraints = new HashSet<Predicate>();
-  // if (id != null)
-  // constraints.addAll(constraintManager.findPredicatesByIdAndTarget(type, id, constraintPath));
-  // if (name != null)
-  // constraints.addAll(constraintManager
-  // .findPredicatesByNameAndTarget(type, name, constraintPath));
-  // return constraints;
-  // }
 
   private ProfileElement process(SegmentRef ref, Req req, ProfileElement parentElement)
       throws XPathExpressionException {
     ProfileElement element = process(req, new ProfileElement(), parentElement);
     Segment s = ref.ref();
     element.setName(s.name());
-    element.setType(TYPE_SEGMENT);
+    element.setType(TYPE_SEGMENT_REF);
     element.setLongName(s.desc());
     element.setIcon(ICON_SEGMENT);
     element.setParent(parentElement);
@@ -338,14 +314,19 @@ public class ProfileParserImpl extends ProfileParser {
     return element;
   }
 
-  private void fixComponentsAndFields() throws CloneNotSupportedException {
+  /**
+   * Fix icons and types of component and subcomponents
+   * 
+   * @throws CloneNotSupportedException
+   */
+  private void fixIconsAndTypes() throws CloneNotSupportedException {
     Collection<ProfileElement> segments = segmentsMap.values();
     java.util.Iterator<ProfileElement> it = segments.iterator();
     while (it.hasNext()) {
       ProfileElement segment = it.next();
       if (segment.getChildren() != null && segment.getChildren().size() > 0) {
         for (int j = 0; j < segment.getChildren().size(); j++) {
-          fixComponentsAndFields(segment.getChildren().get(j));
+          fixIconsAndTypes(segment.getChildren().get(j));
         }
       }
     }
@@ -354,8 +335,7 @@ public class ProfileParserImpl extends ProfileParser {
 
 
 
-  private void fixComponentsAndFields(ProfileElement fieldOrComponent)
-      throws CloneNotSupportedException {
+  private void fixIconsAndTypes(ProfileElement fieldOrComponent) throws CloneNotSupportedException {
     ArrayList<ProfileElement> newChildren = new ArrayList<ProfileElement>();
     java.util.List<ProfileElement> children = fieldOrComponent.getChildren();
     fieldOrComponent.setChildren(newChildren);
@@ -366,7 +346,7 @@ public class ProfileParserImpl extends ProfileParser {
         child.setIcon(ICON_COMPONENT);
         child.setPath(fieldOrComponent.getPath() + "." + child.getPosition());
         newChildren.add(child);
-        fixComponentsAndFields(child);
+        fixIconsAndTypes(child);
       }
     } else {
       for (int i = 0; i < children.size(); i++) {
@@ -375,7 +355,7 @@ public class ProfileParserImpl extends ProfileParser {
         child.setIcon(ICON_SUBCOMPONENT);
         child.setPath(fieldOrComponent.getPath() + "." + child.getPosition());
         newChildren.add(child);
-        fixComponentsAndFields(child);
+        fixIconsAndTypes(child);
       }
     }
   }
@@ -418,41 +398,6 @@ public class ProfileParserImpl extends ProfileParser {
     return null;
   }
 
-  // /**
-  // *
-  // * @param d
-  // * @param parentElement
-  // * @throws XPathExpressionException
-  // */
-  // private ProfileElement process(Datatype d, ProfileElement fieldOrComponent)
-  // throws XPathExpressionException {
-  // if (!datatypesMap.containsKey(d.id())) {
-  // if (d instanceof Composite) {
-  // Composite c = (Composite) d;
-  // scala.collection.immutable.List<Component> children = c.components();
-  // if (children != null) {
-  // Iterator<Component> it = children.iterator();
-  // while (it.hasNext()) {
-  // process(it.next(), d, fieldOrComponent);
-  // }
-  // }
-  // }
-  // ProfileElement element = new ProfileElement();
-  // element.setId(d.id());
-  // element.setName(d.name());
-  // element.setLongName(d.desc());
-  // element.setType(TYPE_DT);
-  // element.setIcon(ICON_DATATYPE);
-  // element.setRelevent(true);
-  // element.getChildren().addAll(fieldOrComponent.getChildren());
-  // datatypesMap.put(d.id(), element);
-  // } else {
-  // ProfileElement el = datatypesMap.get(d.id());
-  // fieldOrComponent.setChildren(el.getChildren());
-  // }
-  //
-  // return fieldOrComponent;
-  // }
 
   private ProfileElement process(Datatype d) throws XPathExpressionException {
     if (!datatypesMap.containsKey(d.id())) {
@@ -460,7 +405,7 @@ public class ProfileParserImpl extends ProfileParser {
       element.setId(d.id());
       element.setName(d.name());
       element.setLongName(d.desc());
-      element.setType(TYPE_DT);
+      element.setType(TYPE_DATATYPE);
       element.setIcon(ICON_DATATYPE);
       element.setRelevent(true);
       datatypesMap.put(d.id(), element);
@@ -481,33 +426,6 @@ public class ProfileParserImpl extends ProfileParser {
     }
 
   }
-
-  // /**
-  // *
-  // * @param c
-  // * @param parentElement
-  // * @throws XPathExpressionException
-  // */
-  // private ProfileElement process(Component c, Datatype d, ProfileElement parent)
-  // throws XPathExpressionException {
-  // if (c == null)
-  // return parent;
-  // ProfileElement element = new ProfileElement();
-  // process(c.req(), element, parent);
-  // element.setName(c.name());
-  // element.setType(parent.getType().equals(TYPE_FIELD) ? TYPE_COMPONENT : TYPE_SUBCOMPONENT);
-  // element.setIcon(parent.getType().equals(TYPE_FIELD) ? ICON_COMPONENT : ICON_SUBCOMPONENT);
-  // String table = table(c.req());
-  // if (table != null)
-  // element.setTable(table);
-  // element.setDataType(c.datatype().id());
-  // element.setPosition(c.req().position() + "");
-  // element.setParent(parent);
-  // element.setPath(parent.getPath() + "." + c.req().position());
-  // parent.getChildren().add(element);
-  // process(c.datatype(), element);
-  // return element;
-  // }
 
   private ProfileElement process(Component c, ProfileElement parent)
       throws XPathExpressionException {
@@ -714,18 +632,48 @@ public class ProfileParserImpl extends ProfileParser {
     }
   }
 
-  private ProfileElement findElementByTarget(String target, ProfileElement element) {
-    if (target != null) {
-      for (ProfileElement child : element.getChildren()) {
-        if (target.equals(shortTarget(child)) || target.equals(mediumTarget(child))
-            || target.equals(longTarget(child))) {
-          return child;
-        }
+
+  private ProfileElement findElement(java.util.List<Integer> positions, ProfileElement element) {
+    if (!positions.isEmpty()) {
+      int curPos = positions.get(0);
+      ProfileElement child1 = null;
+      if (element.getType().equals(TYPE_GROUP) || element.getType().equals(TYPE_SEGMENT)
+          || element.getType().equals(TYPE_FIELD) || element.getType().equals(TYPE_COMPONENT)
+          || element.getType().equals(TYPE_DATATYPE)) {
+        child1 = element.getChildren().get(curPos - 1);
+      } else if (element.getType().equals(TYPE_SEGMENT_REF)) {
+        ProfileElement segmentElement = segmentsMap.get(element.getReference().getId());
+        child1 = segmentElement.getChildren().get(curPos - 1);
       }
+      positions.remove(0);
+      if (!positions.isEmpty()) {
+        return findElement(positions, child1);
+      }
+      return child1;
     }
     return null;
   }
 
+  private java.util.List<Integer> positions(String target) {
+    ArrayList<Integer> positions = new ArrayList<Integer>();
+    String[] posis = target.split(Pattern.quote("."));
+    for (int i = 0; i < posis.length; i++) {
+      String t = posis[i].split(Pattern.quote("["))[0];
+      positions.add(Integer.valueOf(t));
+    }
+    return positions;
+  }
+
+
+
+  private ProfileElement findElementByTarget(String target, ProfileElement element) {
+    if (target != null && !"".equals(target)) {
+      java.util.List<Integer> positions = positions(target);
+      ProfileElement found = findElement(positions, element);
+      return found;
+    }
+    return null;
+  }
 
   private String shortTarget(ProfileElement element) {
     return element != null && element.getPosition() != null ? element.getPosition() + "[1]" : null;

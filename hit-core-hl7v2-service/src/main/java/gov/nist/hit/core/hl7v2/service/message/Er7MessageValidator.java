@@ -11,11 +11,13 @@
  */
 package gov.nist.hit.core.hl7v2.service.message;
 
+import gov.nist.healthcare.unified.enums.Context;
+import gov.nist.healthcare.unified.model.EnhancedReport;
+import gov.nist.healthcare.unified.proxy.ValidationProxy;
 import gov.nist.hit.core.service.MessageValidator;
 import gov.nist.hit.core.service.exception.MessageValidationException;
 import hl7.v2.profile.Profile;
 import hl7.v2.profile.XMLDeserializer;
-import hl7.v2.validation.SyncHL7Validator;
 import hl7.v2.validation.content.ConformanceContext;
 import hl7.v2.validation.content.DefaultConformanceContext;
 import hl7.v2.validation.vs.ValueSetLibrary;
@@ -33,28 +35,31 @@ import org.springframework.stereotype.Service;
 public class Er7MessageValidator implements MessageValidator {
 
   @Override
-  public String validate(String title, String message, String... options)
-      throws MessageValidationException {
+  public String validate(String... args) throws MessageValidationException {
     try {
-      if (options == null || options.length < 3) {
+      if (args == null || args.length < 5) {
         throw new MessageValidationException("Invalid Message Validation Arguments");
       }
-      String conformanceProfielId = options[0];
-      String integrationProfileXml = options[1];
-      String valueSets = options[2];
-      String constraintsXml = options[3];
-      String constraintsXml2 = options.length >= 4 && options[4] != null ? options[4] : null;
-      Profile profile = getProfile(IOUtils.toInputStream(integrationProfileXml));
+      String title = args[0];
+      String contextType = args[1];
+
+      String message = args[2];
+      String conformanceProfielId = args[3];
+      String integrationProfileXml = args[4];
+      String valueSets = args[5];
+
+      String c1 = args[6];
+      String c2 = args.length >= 7 && args[7] != null ? args[7] : null;
       ConformanceContext c =
-          constraintsXml2 != null ? getConformanceContext(IOUtils.toInputStream(constraintsXml),
-              IOUtils.toInputStream(constraintsXml2)) : getConformanceContext(IOUtils
-              .toInputStream(constraintsXml));
-      ValueSetLibrary valueSetLibrary =
+          c2 != null ? getConformanceContext(IOUtils.toInputStream(c1), IOUtils.toInputStream(c2))
+              : getConformanceContext(IOUtils.toInputStream(c1));
+      ValueSetLibrary vsLib =
           valueSets != null ? getValueSetLibrary(IOUtils.toInputStream(valueSets)) : null;
-      SyncHL7Validator validator = new SyncHL7Validator(profile, valueSetLibrary, c);
-      gov.nist.validation.report.Report report = validator.check(message, conformanceProfielId);
-      String res = report.toJson();
-      return res;
+      ValidationProxy vp = new ValidationProxy(title, "NIST", "1.0");
+      EnhancedReport report =
+          vp.validate(message, integrationProfileXml, c, vsLib, conformanceProfielId,
+              Context.valueOf(contextType));
+      return report.to("json").toString();
     } catch (RuntimeException e) {
       throw new MessageValidationException(e);
     } catch (Exception e) {

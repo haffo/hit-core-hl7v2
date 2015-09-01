@@ -110,16 +110,14 @@ public class Er7MessageParser implements MessageParser {
     Location loc = c.location();
     Req req = c.req();
     MessageElementData data =
-        new MessageElementData(loc.path(), loc.desc(), req.usage().toString(), -1, null,
-            loc.line(), loc.column(), -1, Er7Util.getPosition(loc.path()), c.instance(), null,
-            COMPONENT);
+        new MessageElementData(loc.uidPath(), loc.desc(), req.usage().toString(), -1, null,
+            loc.line(), loc.column(), -1, c.position(), c.instance(), null, COMPONENT);
     MessageElement el = new MessageElement(NODE_COMPONENT, data, parent);
     if (c instanceof SimpleComponent) {
       SimpleComponent s = (SimpleComponent) c;
       MessageElementData value =
-          new MessageElementData(loc.path(), loc.desc(), req.usage().toString(), -1, null,
-              loc.line(), loc.column(), -1, Er7Util.getPosition(loc.path()), c.instance(), s
-                  .value().raw(), COMPONENT);
+          new MessageElementData(loc.uidPath(), loc.desc(), req.usage().toString(), -1, null,
+              loc.line(), loc.column(), -1, s.position(), c.instance(), s.value().raw(), COMPONENT);
       new MessageElement("value", value, el);
     } else {
       ComplexComponent cc = (ComplexComponent) c;
@@ -142,14 +140,13 @@ public class Er7MessageParser implements MessageParser {
     Location loc = s.location();
     Req req = s.req();
     MessageElementData data =
-        new MessageElementData(loc.path(), loc.desc(), req.usage().toString(), -1, null,
-            loc.line(), loc.column(), -1, Er7Util.getPosition(loc.path()), s.instance(), null,
-            SUB_COMPONENT);
+        new MessageElementData(loc.uidPath(), loc.desc(), req.usage().toString(), -1, null,
+            loc.line(), loc.column(), -1, s.position(), s.instance(), null, SUB_COMPONENT);
     MessageElement el = new MessageElement(NODE_SUB_COMPONENT, data, parent);
     MessageElementData value =
-        new MessageElementData(loc.path(), loc.desc(), req.usage().toString(), -1, null,
-            loc.line(), loc.column(), -1, Er7Util.getPosition(loc.path()), s.instance(), s.value()
-                .raw(), SUB_COMPONENT);
+        new MessageElementData(loc.uidPath(), loc.desc(), req.usage().toString(), -1, null,
+            loc.line(), loc.column(), -1, s.position(), s.instance(), s.value().raw(),
+            SUB_COMPONENT);
     new MessageElement("value", value, el);
   }
 
@@ -164,17 +161,16 @@ public class Er7MessageParser implements MessageParser {
     Range card = Util.getOption(req.cardinality());
     String rep = f.toString();
     MessageElementData data =
-        new MessageElementData(loc.path(), loc.desc(), req.usage().toString(), card.min(),
-            card.max(), loc.line(), loc.column(), -1, Er7Util.getPosition(loc.path()),
-            f.instance(), null, FIELD);
+        new MessageElementData(loc.uidPath(), loc.desc(), req.usage().toString(), card.min(),
+            card.max(), loc.line(), loc.column(), -1, f.position(), f.instance(), null, FIELD);
 
     MessageElement el = new MessageElement(NODE_FIELD, data, parent);
     if (f instanceof SimpleField) {
       SimpleField s = (SimpleField) f;
       MessageElementData value =
-          new MessageElementData(loc.path(), loc.desc(), req.usage().toString(), card.min(),
-              card.max(), loc.line(), loc.column(), -1, Er7Util.getPosition(loc.path()),
-              f.instance(), s.value().raw(), FIELD);
+          new MessageElementData(loc.uidPath(), loc.desc(), req.usage().toString(), card.min(),
+              card.max(), loc.line(), loc.column(), -1, f.position(), f.instance(),
+              s.value().raw(), FIELD);
       new MessageElement("value", value, el);
     } else {
       ComplexField c = (ComplexField) f;
@@ -205,9 +201,8 @@ public class Er7MessageParser implements MessageParser {
       Req req = s.req();
       Range card = Util.getOption(req.cardinality());
       MessageElementData data =
-          new MessageElementData(loc.path(), loc.desc(), req.usage().toString(), card.min(),
-              card.max(), loc.line(), loc.column(), -1, Er7Util.getPosition(loc.path()),
-              s.instance(), null, SEGMENT);
+          new MessageElementData(loc.uidPath(), loc.desc(), req.usage().toString(), card.min(),
+              card.max(), loc.line(), loc.column(), -1, s.position(), s.instance(), null, SEGMENT);
       MessageElement el = new MessageElement(NODE_SEGMENT, data, parent);
       List<Field> children = s.children();
       if (children != null && !children.isEmpty()) {

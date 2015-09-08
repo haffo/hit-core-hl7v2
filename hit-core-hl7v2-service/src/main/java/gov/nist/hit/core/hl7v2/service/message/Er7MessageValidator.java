@@ -16,15 +16,13 @@ import gov.nist.healthcare.unified.model.EnhancedReport;
 import gov.nist.healthcare.unified.proxy.ValidationProxy;
 import gov.nist.hit.core.service.MessageValidator;
 import gov.nist.hit.core.service.exception.MessageValidationException;
-import hl7.v2.profile.Profile;
-import hl7.v2.profile.XMLDeserializer;
 import hl7.v2.validation.content.ConformanceContext;
 import hl7.v2.validation.content.DefaultConformanceContext;
 import hl7.v2.validation.vs.ValueSetLibrary;
 import hl7.v2.validation.vs.ValueSetLibraryImpl;
 
 import java.io.InputStream;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.IOUtils;
@@ -42,17 +40,20 @@ public class Er7MessageValidator implements MessageValidator {
       }
       String title = args[0];
       String contextType = args[1];
-
       String message = args[2];
       String conformanceProfielId = args[3];
       String integrationProfileXml = args[4];
       String valueSets = args[5];
-
       String c1 = args[6];
       String c2 = args.length >= 7 && args[7] != null ? args[7] : null;
-      ConformanceContext c =
-          c2 != null ? getConformanceContext(IOUtils.toInputStream(c1), IOUtils.toInputStream(c2))
-              : getConformanceContext(IOUtils.toInputStream(c1));
+      InputStream c1Stream = c1 != null ? IOUtils.toInputStream(c1) : null;
+      InputStream c2Stream = c2 != null ? IOUtils.toInputStream(c2) : null;
+      List<InputStream> cStreams = new ArrayList<InputStream>();
+      if (c1Stream != null)
+        cStreams.add(c1Stream);
+      if (c2Stream != null)
+        cStreams.add(c2Stream);
+      ConformanceContext c = getConformanceContext(cStreams);
       ValueSetLibrary vsLib =
           valueSets != null ? getValueSetLibrary(IOUtils.toInputStream(valueSets)) : null;
       ValidationProxy vp = new ValidationProxy(title, "NIST", "1.0");
@@ -67,8 +68,7 @@ public class Er7MessageValidator implements MessageValidator {
     }
   }
 
-  private ConformanceContext getConformanceContext(InputStream... constraints) {
-    List<InputStream> confContexts = Arrays.asList(constraints);
+  private ConformanceContext getConformanceContext(List<InputStream> confContexts) {
     ConformanceContext c = DefaultConformanceContext.apply(confContexts).get();
     return c;
   }
@@ -78,10 +78,6 @@ public class Er7MessageValidator implements MessageValidator {
     return valueSetLibrary;
   }
 
-  private Profile getProfile(InputStream profileXML) {
-    Profile profile = XMLDeserializer.deserialize(profileXML).get();
-    return profile;
-  }
 
 
 }

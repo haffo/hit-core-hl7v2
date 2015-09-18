@@ -17,7 +17,6 @@ import gov.nist.hit.core.domain.IntegrationProfile;
 import gov.nist.hit.core.domain.ProfileModel;
 import gov.nist.hit.core.domain.TestCaseDocument;
 import gov.nist.hit.core.domain.TestContext;
-import gov.nist.hit.core.domain.TestDomain;
 import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
 import gov.nist.hit.core.hl7v2.repo.HL7V2TestContextRepository;
 import gov.nist.hit.core.service.ResourcebundleLoader;
@@ -36,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
 
   static final Logger logger = LoggerFactory.getLogger(HL7V2ResourcebundleLoaderImpl.class);
+  static final String FORMAT = "hl7v2";
 
   @Autowired
   HL7V2TestContextRepository testContextRepository;
@@ -64,14 +64,14 @@ public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
 
 
   @Override
-  public TestContext testContext(String path, JsonNode domainObj) throws IOException {
+  public TestContext testContext(String path, JsonNode formatObj) throws IOException {
     // for backward compatibility
-    domainObj = domainObj.findValue("hl7v2") != null ? domainObj.findValue("hl7v2") : domainObj;
+    formatObj = formatObj.findValue(FORMAT) != null ? formatObj.findValue(FORMAT) : formatObj;
     HL7V2TestContext testContext = new HL7V2TestContext();
-    testContext.setDomain(TestDomain.HL7V2);
-    JsonNode messageId = domainObj.findValue("messageId");
-    JsonNode constraintId = domainObj.findValue("constraintId");
-    JsonNode valueSetLibraryId = domainObj.findValue("valueSetLibraryId");
+    testContext.setFormat(FORMAT);
+    JsonNode messageId = formatObj.findValue("messageId");
+    JsonNode constraintId = formatObj.findValue("constraintId");
+    JsonNode valueSetLibraryId = formatObj.findValue("valueSetLibraryId");
     if (valueSetLibraryId != null && !"".equals(valueSetLibraryId.getTextValue())) {
       testContext.setVocabularyLibrary((getVocabularyLibrary(valueSetLibraryId.getTextValue())));
     }

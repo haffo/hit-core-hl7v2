@@ -11,14 +11,12 @@
  */
 package gov.nist.hit.core.hl7v2.service;
 
-import org.springframework.stereotype.Service;
 
 
 /**
  * @author Harold Affo (NIST)
  */
 
-@Service
 public class HL7V2ValidationReportGeneratorImpl extends HL7V2ValidationReportGenerator {
 
 }

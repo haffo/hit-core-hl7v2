@@ -9,7 +9,7 @@
  * works bear some notice that they are derived from it, and any modified versions bear some notice
  * that they have been modified.
  */
-package gov.nist.hit.core.hl7v2.service.profile;
+package gov.nist.hit.core.hl7v2.service;
 
 import gov.nist.hit.core.domain.Constraint;
 import gov.nist.hit.core.domain.Predicate;
@@ -52,7 +52,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.io.IOUtils;
-import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -67,10 +66,9 @@ import scala.collection.immutable.List;
  * @author Harold Affo
  * 
  */
-@Service
-public class ProfileParserImpl extends ProfileParser {
+public abstract class HL7V2ProfileParser extends ProfileParser {
 
-  public ProfileParserImpl() {}
+  public HL7V2ProfileParser() {}
 
   private final Map<String, Profile> cachedIntegrationProfilesMap = new HashMap<String, Profile>();
   private Map<String, ProfileElement> segmentsMap;

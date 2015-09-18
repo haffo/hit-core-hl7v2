@@ -11,7 +11,7 @@
  * bear some notice that they are derived from it, and any modified versions
  * bear some notice that they have been modified.
  */
-package gov.nist.hit.core.hl7v2.domain.message;
+package gov.nist.hit.core.hl7v2.domain;
 
 import java.io.Serializable;
 

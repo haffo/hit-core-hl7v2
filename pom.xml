@@ -10,6 +10,8 @@
 	<modules>
 		<module>hit-core-hl7v2-domain</module>
 		<module>hit-core-hl7v2-service</module>
+		<module>hit-core-hl7v2-repo</module>
+		<module>hit-core-hl7v2-api</module>
 	</modules>
 
 	<properties>

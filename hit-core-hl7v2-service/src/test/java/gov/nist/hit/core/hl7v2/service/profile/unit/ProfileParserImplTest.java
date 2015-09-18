@@ -1,7 +1,7 @@
 package gov.nist.hit.core.hl7v2.service.profile.unit;
 
 import gov.nist.hit.core.domain.ProfileModel;
-import gov.nist.hit.core.hl7v2.service.profile.ProfileParserImpl;
+import gov.nist.hit.core.hl7v2.service.HL7V2ProfileParserImpl;
 import gov.nist.hit.core.service.ProfileParser;
 import gov.nist.hit.core.service.exception.ProfileParserException;
 
@@ -13,7 +13,7 @@ import org.junit.Test;
 
 public class ProfileParserImplTest {
 
-  ProfileParser parser = new ProfileParserImpl();
+  ProfileParser parser = new HL7V2ProfileParserImpl();
 
   @Test
   public void testParse() throws ProfileParserException, IOException {

@@ -9,7 +9,7 @@
  * works bear some notice that they are derived from it, and any modified versions bear some notice
  * that they have been modified.
  */
-package gov.nist.hit.core.hl7v2.service.message;
+package gov.nist.hit.core.hl7v2.service;
 
 import gov.nist.hit.core.service.ValidationReportGenerator;
 import gov.nist.hit.core.service.exception.ValidationReportException;
@@ -18,16 +18,14 @@ import java.io.IOException;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
-import org.springframework.stereotype.Service;
 
 /**
  * @author Harold Affo (NIST)
  */
 
-@Service("er7ReportGenerator")
-public class Er7ValidationReportGenerator extends ValidationReportGenerator {
+public abstract class HL7V2ValidationReportGenerator extends ValidationReportGenerator {
 
-  private final static Logger logger = Logger.getLogger(Er7ValidationReportGenerator.class);
+  private final static Logger logger = Logger.getLogger(HL7V2ValidationReportGenerator.class);
 
   private static final String HTML_XSL = "/xslt/HL7V2HTML.xsl";
 
@@ -64,7 +62,7 @@ public class Er7ValidationReportGenerator extends ValidationReportGenerator {
 
 
 
-  public Er7ValidationReportGenerator() {
+  public HL7V2ValidationReportGenerator() {
 
   }
 
@@ -80,7 +78,7 @@ public class Er7ValidationReportGenerator extends ValidationReportGenerator {
   @Override
   public String getHtmlConversionXslt() {
     try {
-      return IOUtils.toString(Er7ValidationReportGenerator.class.getResourceAsStream(HTML_XSL));
+      return IOUtils.toString(HL7V2ValidationReportGenerator.class.getResourceAsStream(HTML_XSL));
     } catch (IOException e) {
       throw new ValidationReportException(e.getMessage());
     }

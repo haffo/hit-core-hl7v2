@@ -1,4 +1,4 @@
-package gov.nist.hit.core.hl7v2.service.message;
+package gov.nist.hit.core.hl7v2.service;
 
 import hl7.v2.instance.Message;
 import hl7.v2.parser.impl.DefaultParser;

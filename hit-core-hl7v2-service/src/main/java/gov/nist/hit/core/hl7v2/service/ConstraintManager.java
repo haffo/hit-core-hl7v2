@@ -9,7 +9,7 @@
  * works bear some notice that they are derived from it, and any modified versions bear some notice
  * that they have been modified.
  */
-package gov.nist.hit.core.hl7v2.service.profile;
+package gov.nist.hit.core.hl7v2.service;
 
 import gov.nist.hit.core.domain.Constraint;
 import gov.nist.hit.core.domain.Predicate;

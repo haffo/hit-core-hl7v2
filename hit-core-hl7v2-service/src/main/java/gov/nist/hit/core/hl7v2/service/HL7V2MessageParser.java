@@ -9,11 +9,14 @@
  * works bear some notice that they are derived from it, and any modified versions bear some notice
  * that they have been modified.
  */
-package gov.nist.hit.core.hl7v2.service.message;
+package gov.nist.hit.core.hl7v2.service;
 
 import gov.nist.hit.core.domain.MessageElement;
 import gov.nist.hit.core.domain.MessageModel;
-import gov.nist.hit.core.hl7v2.domain.message.MessageElementData;
+import gov.nist.hit.core.domain.MessageParserCommand;
+import gov.nist.hit.core.domain.TestContext;
+import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
+import gov.nist.hit.core.hl7v2.domain.MessageElementData;
 import gov.nist.hit.core.hl7v2.domain.util.Util;
 import gov.nist.hit.core.service.MessageParser;
 import gov.nist.hit.core.service.exception.MessageParserException;
@@ -36,7 +39,6 @@ import hl7.v2.profile.XMLDeserializer;
 import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
-import org.springframework.stereotype.Service;
 
 import scala.collection.Iterator;
 import scala.collection.immutable.List;
@@ -46,8 +48,7 @@ import scala.collection.immutable.List;
  * @author Harold Affo
  * 
  */
-@Service("er7MessageParser")
-public class Er7MessageParser implements MessageParser {
+public abstract class HL7V2MessageParser implements MessageParser {
 
   private final static String SEGMENT = "SEGMENT";
   private final static String FIELD = "FIELD";
@@ -58,24 +59,34 @@ public class Er7MessageParser implements MessageParser {
   private final static String NODE_COMPONENT = "component";
   private final static String NODE_SUB_COMPONENT = "subcomponent";
 
-  /**
-	 * 
+  /** 
+	 *  
 	 */
   @Override
-  public MessageModel parse(String er7Message, String... options) throws MessageParserException {
+  public MessageModel parse(TestContext context, MessageParserCommand command)
+      throws MessageParserException {
     try {
-      String profileXml = options[0];
-      if (options.length == 1) {
-        throw new MessageParserException("No Conformance Profile Provided to Parse the Message");
+      if (context instanceof HL7V2TestContext) {
+        HL7V2TestContext testContext = (HL7V2TestContext) context;
+        String er7Message = command.getContent();
+        String profileXml = testContext.getConformanceProfile().getIntegrationProfile().getXml();
+        if (profileXml == null) {
+          throw new MessageParserException("No Conformance Profile Provided to Parse the Message");
+        }
+        String conformanceProfileId = testContext.getConformanceProfile().getSourceId();
+        if (!"".equals(er7Message) && er7Message != null && !"".equals(conformanceProfileId)) {
+          InputStream profileStream = IOUtils.toInputStream(profileXml);
+          Profile profile = XMLDeserializer.deserialize(profileStream).get();
+          JParser p = new JParser();
+          Message message = p.jparse(er7Message, profile.messages().apply(conformanceProfileId));
+          return toModel(message);
+        }
+      } else {
+        throw new MessageParserException(
+            "Invalid Context Provided. Expected Context is HL7V2TestContext but found "
+                + context.getClass().getSimpleName());
       }
-      String conformanceProfileId = options[1];
-      if (!"".equals(er7Message) && er7Message != null && !"".equals(conformanceProfileId)) {
-        InputStream profileStream = IOUtils.toInputStream(profileXml);
-        Profile profile = XMLDeserializer.deserialize(profileStream).get();
-        JParser p = new JParser();
-        Message message = p.jparse(er7Message, profile.messages().apply(conformanceProfileId));
-        return toModel(message);
-      }
+
     } catch (RuntimeException e) {
       throw new MessageParserException(e.getMessage());
     } catch (Exception e) {

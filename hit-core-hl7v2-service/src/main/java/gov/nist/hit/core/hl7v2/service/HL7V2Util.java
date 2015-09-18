@@ -1,8 +1,8 @@
-package gov.nist.hit.core.hl7v2.service.message;
+package gov.nist.hit.core.hl7v2.service;
 
 import java.util.regex.Pattern;
 
-public class Er7Util {
+public class HL7V2Util {
 
 
   public static int getPosition(String path, String type) {

@@ -15,10 +15,14 @@ package gov.nist.hit.core.hl7v2.service;
 import gov.nist.hit.core.domain.ConformanceProfile;
 import gov.nist.hit.core.domain.IntegrationProfile;
 import gov.nist.hit.core.domain.ProfileModel;
+import gov.nist.hit.core.domain.Stage;
 import gov.nist.hit.core.domain.TestCaseDocument;
 import gov.nist.hit.core.domain.TestContext;
+import gov.nist.hit.core.domain.VocabularyLibrary;
 import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
+import gov.nist.hit.core.hl7v2.domain.HLV2TestCaseDocument;
 import gov.nist.hit.core.hl7v2.repo.HL7V2TestContextRepository;
+import gov.nist.hit.core.repo.VocabularyLibraryRepository;
 import gov.nist.hit.core.service.ResourcebundleLoader;
 import gov.nist.hit.core.service.ValueSetLibrarySerializer;
 import gov.nist.hit.core.service.exception.ProfileParserException;
@@ -27,10 +31,14 @@ import gov.nist.hit.core.service.util.FileUtil;
 
 import java.io.IOException;
 
+import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.JsonMappingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
 
@@ -39,6 +47,9 @@ public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
 
   @Autowired
   HL7V2TestContextRepository testContextRepository;
+
+  @Autowired
+  VocabularyLibraryRepository vocabularyLibraryRepository;
 
   HL7V2ProfileParser profileParser = new HL7V2ProfileParserImpl();
   ValueSetLibrarySerializer valueSetLibrarySerializer = new ValueSetLibrarySerializerImpl();
@@ -49,26 +60,27 @@ public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
 
 
   @Override
-  public TestCaseDocument setTestContextDocument(TestContext c, TestCaseDocument doc)
-      throws IOException {
+  public TestCaseDocument generateTestCaseDocument(TestContext c) throws IOException {
+    HLV2TestCaseDocument doc = new HLV2TestCaseDocument();
     if (c != null) {
       HL7V2TestContext context = testContextRepository.findOne(c.getId());
       doc.setExMsgPresent(context.getMessage() != null && context.getMessage().getContent() != null);
       doc.setXmlConfProfilePresent(context.getConformanceProfile() != null
-          && context.getConformanceProfile().getXml() != null);
+          && context.getConformanceProfile().getJson() != null);
       doc.setXmlValueSetLibraryPresent(context.getVocabularyLibrary() != null
-          && context.getVocabularyLibrary().getXml() != null);
+          && context.getVocabularyLibrary().getJson() != null);
     }
     return doc;
   }
 
 
   @Override
-  public TestContext testContext(String path, JsonNode formatObj) throws IOException {
+  public TestContext testContext(String path, JsonNode formatObj, Stage stage) throws IOException {
     // for backward compatibility
     formatObj = formatObj.findValue(FORMAT) != null ? formatObj.findValue(FORMAT) : formatObj;
     HL7V2TestContext testContext = new HL7V2TestContext();
     testContext.setFormat(FORMAT);
+    testContext.setStage(stage);
     JsonNode messageId = formatObj.findValue("messageId");
     JsonNode constraintId = formatObj.findValue("constraintId");
     JsonNode valueSetLibraryId = formatObj.findValue("valueSetLibraryId");
@@ -107,6 +119,23 @@ public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
       String constraintsXml, String additionalConstraintsXml) throws ProfileParserException {
     return profileParser.parse(integrationProfileXml, conformanceProfileId, constraintsXml,
         additionalConstraintsXml);
+  }
+
+
+
+  @Override
+  protected VocabularyLibrary vocabLibrary(String content) throws JsonGenerationException,
+      JsonMappingException, IOException {
+    Document doc = this.stringToDom(content);
+    VocabularyLibrary vocabLibrary = new VocabularyLibrary();
+    Element valueSetLibraryeElement = (Element) doc.getElementsByTagName("ValueSetLibrary").item(0);
+    vocabLibrary.setSourceId(valueSetLibraryeElement.getAttribute("ValueSetLibraryIdentifier"));
+    vocabLibrary.setName(valueSetLibraryeElement.getAttribute("Name"));
+    vocabLibrary.setDescription(valueSetLibraryeElement.getAttribute("Description"));
+    vocabLibrary.setXml(content);
+    vocabLibrary.setJson(obm.writeValueAsString(valueSetLibrarySerializer.toObject(content)));
+    vocabularyLibraryRepository.save(vocabLibrary);
+    return vocabLibrary;
   }
 
 

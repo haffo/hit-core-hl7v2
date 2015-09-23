@@ -2,7 +2,6 @@ package gov.nist.hit.core.hl7v2.domain;
 
 import gov.nist.hit.core.domain.ConformanceProfile;
 import gov.nist.hit.core.domain.Constraints;
-import gov.nist.hit.core.domain.Message;
 import gov.nist.hit.core.domain.TestContext;
 import gov.nist.hit.core.domain.VocabularyLibrary;
 
@@ -18,36 +17,32 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
-public class HL7V2TestContext extends TestContext implements Serializable { 
+public class HL7V2TestContext extends TestContext implements Serializable {
 
- 
+
   private static final long serialVersionUID = 1L;
- 
 
-  @OneToOne (cascade=CascadeType.ALL)
-  @JoinColumn(unique= true, nullable=false, insertable=true, updatable=true)  
+
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinColumn(unique = true, nullable = false, insertable = true, updatable = true)
   @JsonProperty(value = "profile")
   protected ConformanceProfile conformanceProfile;
 
   @ManyToOne
   protected VocabularyLibrary vocabularyLibrary;
 
-  @OneToOne (cascade=CascadeType.ALL)
-  @JoinColumn(unique= true, nullable=true, insertable=true, updatable=true)  
-  protected Message message;
-
   @JsonIgnore
   @ManyToOne
-  protected Constraints constraints; 
-  
+  protected Constraints constraints;
+
   @JsonIgnore
-  @OneToOne (cascade=CascadeType.ALL)
-  @JoinColumn(unique= true, nullable=true, insertable=true, updatable=true)  
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinColumn(unique = true, nullable = true, insertable = true, updatable = true)
   protected Constraints addditionalConstraints;
-  
+
 
   public HL7V2TestContext() {}
- 
+
   public ConformanceProfile getConformanceProfile() {
     return conformanceProfile;
   }
@@ -56,13 +51,6 @@ public class HL7V2TestContext extends TestContext implements Serializable {
     this.conformanceProfile = conformanceProfile;
   }
 
-  public Message getMessage() {
-    return message;
-  }
-
-  public void setMessage(Message message) {
-    this.message = message;
-  }
 
   public Constraints getConstraints() {
     return constraints;
@@ -87,9 +75,7 @@ public class HL7V2TestContext extends TestContext implements Serializable {
   public void setAddditionalConstraints(Constraints addditionalConstraints) {
     this.addditionalConstraints = addditionalConstraints;
   }
- 
-  
-  
-  
+
+
 
 }

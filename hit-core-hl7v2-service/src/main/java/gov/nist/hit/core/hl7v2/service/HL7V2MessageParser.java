@@ -37,6 +37,8 @@ import hl7.v2.profile.Req;
 import hl7.v2.profile.XMLDeserializer;
 
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 
@@ -79,7 +81,7 @@ public abstract class HL7V2MessageParser implements MessageParser {
           Profile profile = XMLDeserializer.deserialize(profileStream).get();
           JParser p = new JParser();
           Message message = p.jparse(er7Message, profile.messages().apply(conformanceProfileId));
-          return toModel(message);
+          return parse(message, er7Message);
         }
       } else {
         throw new MessageParserException(
@@ -100,7 +102,7 @@ public abstract class HL7V2MessageParser implements MessageParser {
    * @param message
    * @return
    */
-  private MessageModel toModel(Message message) {
+  private MessageModel parse(Message message, String er7Message) {
     MessageElement root = new MessageElement();
     List<SegOrGroup> children = message.children();
     if (children != null && !children.isEmpty()) {
@@ -109,7 +111,17 @@ public abstract class HL7V2MessageParser implements MessageParser {
         process(it.next(), "", root);
       }
     }
-    return new MessageModel(root);
+    return new MessageModel(root.getChildren(), getDelimeters(er7Message));
+  }
+
+  private Map<String, String> getDelimeters(String message) {
+    // String dString = "^~&";
+    Map<String, String> map = new HashMap<String, String>();
+    map.put("field", "^");
+    map.put("component", "~");
+    map.put("subcomponent", "&");
+    map.put("segment", "\n");
+    return map;
   }
 
   /**

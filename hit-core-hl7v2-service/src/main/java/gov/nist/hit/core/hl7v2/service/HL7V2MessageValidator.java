@@ -66,6 +66,7 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
         EnhancedReport report =
             vp.validate(message, integrationProfileXml, c, vsLib, conformanceProfielId,
                 Context.valueOf(contextType));
+
         return new MessageValidationResult(report.to("json").toString(), report.render("iz-report",
             null));
       } else {

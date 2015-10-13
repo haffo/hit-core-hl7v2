@@ -1,4 +1,4 @@
-<xsl:stylesheet exclude-result-prefixes="map" version="1.0"
+<xsl:stylesheet exclude-result-prefixes="map" version="2.0"
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:message="http://www.nist.gov/healthcare/validation/message"
 	xmlns:report="http://www.nist.gov/healthcare/validation/message/hl7/v2/report"
 	xmlns:map="urn:internal"

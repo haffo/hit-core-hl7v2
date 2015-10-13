@@ -12,6 +12,7 @@
 
 package gov.nist.hit.core.hl7v2.api;
 
+import gov.nist.hit.core.domain.MessageModel;
 import gov.nist.hit.core.domain.MessageParserCommand;
 import gov.nist.hit.core.domain.MessageValidationCommand;
 import gov.nist.hit.core.domain.MessageValidationResult;
@@ -22,8 +23,6 @@ import gov.nist.hit.core.hl7v2.service.HL7V2MessageValidator;
 import gov.nist.hit.core.service.exception.MessageParserException;
 import gov.nist.hit.core.service.exception.MessageValidationException;
 import gov.nist.hit.core.service.exception.TestCaseException;
-
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,12 +65,10 @@ public class HL7V2TestContextController {
   }
 
   @RequestMapping(value = "/{testContextId}/parseMessage", method = RequestMethod.POST)
-  public List<gov.nist.hit.core.domain.MessageElement> parse(
-      @PathVariable final Long testContextId, @RequestBody final MessageParserCommand command)
-      throws MessageParserException {
+  public MessageModel parse(@PathVariable final Long testContextId,
+      @RequestBody final MessageParserCommand command) throws MessageParserException {
     logger.info("Parsing message");
-    HL7V2TestContext testContext = testContext(testContextId);
-    return messageParser.parse(testContext, command).getElements();
+    return messageParser.parse(testContext(testContextId), command);
   }
 
   @RequestMapping(value = "/{testContextId}/validateMessage", method = RequestMethod.POST)

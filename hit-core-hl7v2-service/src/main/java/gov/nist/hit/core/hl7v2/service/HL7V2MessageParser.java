@@ -29,6 +29,7 @@ import hl7.v2.instance.Location;
 import hl7.v2.instance.Message;
 import hl7.v2.instance.SegOrGroup;
 import hl7.v2.instance.Segment;
+import hl7.v2.instance.Separators;
 import hl7.v2.instance.SimpleComponent;
 import hl7.v2.instance.SimpleField;
 import hl7.v2.profile.Profile;
@@ -37,6 +38,7 @@ import hl7.v2.profile.Req;
 import hl7.v2.profile.XMLDeserializer;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,6 +62,15 @@ public abstract class HL7V2MessageParser implements MessageParser {
   private final static String NODE_FIELD = "field";
   private final static String NODE_COMPONENT = "component";
   private final static String NODE_SUB_COMPONENT = "subcomponent";
+
+  private final static String FIELD_SEPERATOR = "field_separator";
+  private final static String COMPONENT_SEPERATOR = "component_separator";
+  private final static String REPETITION_SEPERATOR = "repetition_separator";
+  private final static String SUBCOMPONENT_SEPERATOR = "subcomponent_separator";
+  private final static String CONTINUATION_SEPERATOR = "continuation_separator";
+  private final static String SEGMENT_SEPERATOR = "segment_separator";
+  private final static String OTHER_SEPERATOR = "other_separator";
+
 
   /** 
 	 *  
@@ -111,16 +122,30 @@ public abstract class HL7V2MessageParser implements MessageParser {
         process(it.next(), "", root);
       }
     }
-    return new MessageModel(root.getChildren(), getDelimeters(er7Message));
+    return new MessageModel(root.getChildren(), getDelimeters(message.separators()));
   }
 
-  private Map<String, String> getDelimeters(String message) {
-    // String dString = "^~&";
+  private Map<String, String> getDelimeters(Separators separators) {
     Map<String, String> map = new HashMap<String, String>();
-    map.put("field", "^");
-    map.put("component", "~");
-    map.put("subcomponent", "&");
-    map.put("segment", "\n");
+    java.util.List<Object> list = new ArrayList<Object>();
+    scala.collection.Iterator<Object> it = separators.toList().iterator();
+    while (it.hasNext()) {
+      list.add(it.next());
+    }
+
+    // [|, ^, ~, \, &, #]
+
+    if (list.size() >= 5) {
+      map.put(FIELD_SEPERATOR, list.get(0).toString());
+      map.put(COMPONENT_SEPERATOR, list.get(1).toString());
+      map.put(REPETITION_SEPERATOR, list.get(2).toString());
+      map.put(CONTINUATION_SEPERATOR, list.get(3).toString());
+      map.put(SUBCOMPONENT_SEPERATOR, list.get(4).toString());
+      if (list.size() >= 6)
+        map.put(OTHER_SEPERATOR, list.get(5).toString());
+      map.put(SEGMENT_SEPERATOR, "\n");
+    }
+
     return map;
   }
 

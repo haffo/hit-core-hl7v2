@@ -5,8 +5,6 @@ import gov.nist.hit.core.domain.Constraints;
 import gov.nist.hit.core.domain.TestContext;
 import gov.nist.hit.core.domain.VocabularyLibrary;
 
-import java.io.Serializable;
-
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
@@ -17,7 +15,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
-public class HL7V2TestContext extends TestContext implements Serializable {
+public class HL7V2TestContext extends TestContext {
 
 
   private static final long serialVersionUID = 1L;

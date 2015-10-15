@@ -15,7 +15,7 @@ package gov.nist.hit.core.hl7v2.service;
 import gov.nist.hit.core.domain.ConformanceProfile;
 import gov.nist.hit.core.domain.IntegrationProfile;
 import gov.nist.hit.core.domain.ProfileModel;
-import gov.nist.hit.core.domain.Stage;
+import gov.nist.hit.core.domain.TestingStage;
 import gov.nist.hit.core.domain.TestCaseDocument;
 import gov.nist.hit.core.domain.TestContext;
 import gov.nist.hit.core.domain.VocabularyLibrary;
@@ -75,7 +75,7 @@ public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
 
 
   @Override
-  public TestContext testContext(String path, JsonNode formatObj, Stage stage) throws IOException {
+  public TestContext testContext(String path, JsonNode formatObj, TestingStage stage) throws IOException {
     // for backward compatibility
     formatObj = formatObj.findValue(FORMAT) != null ? formatObj.findValue(FORMAT) : formatObj;
     HL7V2TestContext testContext = new HL7V2TestContext();

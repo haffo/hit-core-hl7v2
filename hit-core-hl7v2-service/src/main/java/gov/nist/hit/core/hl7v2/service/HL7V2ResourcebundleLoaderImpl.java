@@ -15,9 +15,9 @@ package gov.nist.hit.core.hl7v2.service;
 import gov.nist.hit.core.domain.ConformanceProfile;
 import gov.nist.hit.core.domain.IntegrationProfile;
 import gov.nist.hit.core.domain.ProfileModel;
-import gov.nist.hit.core.domain.TestingStage;
 import gov.nist.hit.core.domain.TestCaseDocument;
 import gov.nist.hit.core.domain.TestContext;
+import gov.nist.hit.core.domain.TestingStage;
 import gov.nist.hit.core.domain.VocabularyLibrary;
 import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
 import gov.nist.hit.core.hl7v2.domain.HLV2TestCaseDocument;
@@ -75,27 +75,30 @@ public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
 
 
   @Override
-  public TestContext testContext(String path, JsonNode formatObj, TestingStage stage) throws IOException {
+  public TestContext testContext(String path, JsonNode formatObj, TestingStage stage)
+      throws IOException {
     // for backward compatibility
     formatObj = formatObj.findValue(FORMAT) != null ? formatObj.findValue(FORMAT) : formatObj;
-    HL7V2TestContext testContext = new HL7V2TestContext();
-    testContext.setFormat(FORMAT);
-    testContext.setStage(stage);
+
     JsonNode messageId = formatObj.findValue("messageId");
     JsonNode constraintId = formatObj.findValue("constraintId");
     JsonNode valueSetLibraryId = formatObj.findValue("valueSetLibraryId");
-    if (valueSetLibraryId != null && !"".equals(valueSetLibraryId.getTextValue())) {
-      testContext.setVocabularyLibrary((getVocabularyLibrary(valueSetLibraryId.getTextValue())));
-    }
-    if (constraintId != null && !"".equals(constraintId.getTextValue())) {
-      testContext.setConstraints(getConstraints(constraintId.getTextValue()));
-    }
-    testContext.setAddditionalConstraints(additionalConstraints(path + CONSTRAINTS_FILE_PATTERN));
-    testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.txt"))));
-    if (testContext.getMessage() == null) {
-      testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.text"))));
-    }
     if (messageId != null) {
+      HL7V2TestContext testContext = new HL7V2TestContext();
+      testContext.setFormat(FORMAT);
+      testContext.setStage(stage);
+
+      if (valueSetLibraryId != null && !"".equals(valueSetLibraryId.getTextValue())) {
+        testContext.setVocabularyLibrary((getVocabularyLibrary(valueSetLibraryId.getTextValue())));
+      }
+      if (constraintId != null && !"".equals(constraintId.getTextValue())) {
+        testContext.setConstraints(getConstraints(constraintId.getTextValue()));
+      }
+      testContext.setAddditionalConstraints(additionalConstraints(path + CONSTRAINTS_FILE_PATTERN));
+      testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.txt"))));
+      if (testContext.getMessage() == null) {
+        testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.text"))));
+      }
       try {
         ConformanceProfile conformanceProfile = new ConformanceProfile();
         IntegrationProfile integrationProfile = getIntegrationProfile(messageId.getTextValue());
@@ -109,8 +112,9 @@ public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
       } catch (ProfileParserException e) {
         throw new RuntimeException("Failed to parse integrationProfile at " + path);
       }
+      return testContext;
     }
-    return testContext;
+    return null;
   }
 
 

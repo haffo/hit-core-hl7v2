@@ -41,7 +41,6 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
     try {
       if (testContext instanceof HL7V2TestContext) {
         HL7V2TestContext v2TestContext = (HL7V2TestContext) testContext;
-        String title = command.getName();
         String contextType = command.getContextType();
         String message = getMessageContent(command);
         String conformanceProfielId = v2TestContext.getConformanceProfile().getSourceId();
@@ -62,11 +61,14 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
         ConformanceContext c = getConformanceContext(cStreams);
         ValueSetLibrary vsLib =
             valueSets != null ? getValueSetLibrary(IOUtils.toInputStream(valueSets)) : null;
-        ValidationProxy vp = new ValidationProxy(title, "NIST", "1.0");
+        ValidationProxy vp = new ValidationProxy("NIST Validation Tool", "NIST");
         EnhancedReport report =
             vp.validate(message, integrationProfileXml, c, vsLib, conformanceProfielId,
                 Context.valueOf(contextType));
-
+        if (command.getNav() != null) {
+          report.setTestCase(command.getNav().get("testPlan"), command.getNav().get("testGroup"),
+              command.getNav().get("testCase"), command.getNav().get("testStep"));
+        }
         return new MessageValidationResult(report.to("json").toString(), report.render("iz-report",
             null));
       } else {

@@ -20,15 +20,16 @@
 				cellspacing="1" cellpadding="10">
 				<tbody class="cf-tbody">
 					<tr>
-						<td>
+						<td class="row1 border_right">
 							<span class="maintitle">Message Validation Report</span>
 						</td>
-						<td align="right" style="font-weight:bold">
-							Date:
-							<xsl:call-template name="dateTransformer">
-								<xsl:with-param name="myDate" select="message:DateOfTest" />
-								<xsl:with-param name="myTime" select="message:TimeOfTest" />
-							</xsl:call-template>
+						<td class="row2" style="font-weight:bold">
+							<center>
+								<xsl:call-template name="dateTransformer">
+									<xsl:with-param name="myDate" select="message:DateOfTest" />
+									<xsl:with-param name="myTime" select="message:TimeOfTest" />
+								</xsl:call-template>
+							</center>
 						</td>
 					</tr>
 				</tbody>
@@ -41,7 +42,9 @@
 					<tr>
 						<td class="row1 border_right">Validation Type</td>
 						<td class="row2">
-							<xsl:value-of select="message:Type" />
+							<center>
+								<xsl:value-of select="message:Type" />
+							</center>
 						</td>
 					</tr>
 				</tbody>
@@ -59,7 +62,7 @@
 						</td>
 					</tr>
 					<tr class="border_bottom">
-						<td class="row2 border_right ">Version</td>
+						<td class="row2 border_right ">Validation Version</td>
 						<td class="row3 ">
 							<xsl:value-of select="message:ServiceVersion" />
 						</td>
@@ -67,6 +70,7 @@
 				</tbody>
 			</table>
 		</div>
+		<xsl:apply-templates select="message:TestCaseReference" />
 	</xsl:template>
 	<xsl:template match="report:SpecificReport">
 		<xsl:apply-templates select="report:MetaData/report:Profile" />
@@ -209,6 +213,40 @@
 			</tbody>
 		</xsl:for-each>
 
+	</xsl:template>
+	<xsl:template match="report:HeaderReport/message:TestCaseReference">
+		<div class="report-section">
+			<table class="forumline" width="100%" cellspacing="1"
+				cellpadding="2">
+				<tbody>
+					<tr class="border_bottom">
+						<td class="row1 border_right" valign="top" rowspan="4">Test Case</td>
+						<td class="row2 border_right dark-gray">Test Plan</td>
+						<td class="row3 ">
+							<xsl:value-of select="report:TestPlan" />
+						</td>
+					</tr>
+					<tr class="border_bottom">
+						<td class="row2 border_right dark-gray">Test Group</td>
+						<td class="row3 ">
+							<xsl:value-of select="report:TestGroup" />
+						</td>
+					</tr>
+					<tr class="border_bottom">
+						<td class="row2 border_right dark-gray">Test Case</td>
+						<td class="row3">
+							<xsl:value-of select="report:TestCase" />
+						</td>
+					</tr>
+					<tr class="border_bottom">
+						<td class="row2 border_right dark-gray">Test Step</td>
+						<td class="row3">
+							<xsl:value-of select="report:TestStep" />
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 	</xsl:template>
 	<xsl:template match="report:MetaData/report:Profile">
 		<div class="report-section">

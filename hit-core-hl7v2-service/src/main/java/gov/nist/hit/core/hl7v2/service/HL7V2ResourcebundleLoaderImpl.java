@@ -128,7 +128,7 @@ public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
 
 
   @Override
-  protected VocabularyLibrary vocabLibrary(String content) throws JsonGenerationException,
+  public VocabularyLibrary vocabLibrary(String content) throws JsonGenerationException,
       JsonMappingException, IOException {
     Document doc = this.stringToDom(content);
     VocabularyLibrary vocabLibrary = new VocabularyLibrary();

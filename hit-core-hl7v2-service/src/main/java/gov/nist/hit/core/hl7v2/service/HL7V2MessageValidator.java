@@ -29,6 +29,7 @@ import hl7.v2.validation.vs.ValueSetLibraryImpl;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 
@@ -65,21 +66,23 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
         EnhancedReport report =
             vp.validate(message, integrationProfileXml, c, vsLib, conformanceProfielId,
                 Context.valueOf(contextType));
-        if (command.getNav() != null) {
-          report.setTestCase(command.getNav().get("testPlan"), command.getNav().get("testGroup"),
-              command.getNav().get("testCase"), command.getNav().get("testStep"));
+        if (report != null) {
+          Map<String, String> nav = command.getNav();
+          if (nav != null && !nav.isEmpty()) {
+            report.setTestCase(nav.get("testPlan"), nav.get("testGroup"), nav.get("testCase"),
+                nav.get("testStep"));
+          }
+          return new MessageValidationResult(report.to("json").toString(), report.render(
+              "iz-report", null));
         }
-        return new MessageValidationResult(report.to("json").toString(), report.render("iz-report",
-            null));
-      } else {
-        throw new MessageValidationException(
-            "Invalid Context Provided. Expected Context is HL7V2TestContext but found "
-                + testContext.getClass().getSimpleName());
       }
+      throw new MessageValidationException();
+    } catch (MessageException e) {
+      throw new MessageValidationException(e.getLocalizedMessage());
     } catch (RuntimeException e) {
-      throw new MessageValidationException(e);
+      throw new MessageValidationException(e.getLocalizedMessage());
     } catch (Exception e) {
-      throw new MessageValidationException(e);
+      throw new MessageValidationException(e.getLocalizedMessage());
     }
   }
 

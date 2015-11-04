@@ -74,13 +74,7 @@ public class HL7V2TestContextController {
   @RequestMapping(value = "/{testContextId}/validateMessage", method = RequestMethod.POST)
   public MessageValidationResult validate(@PathVariable final Long testContextId,
       @RequestBody final MessageValidationCommand command) throws MessageValidationException {
-    try {
-      return messageValidator.validate(testContext(testContextId), command);
-    } catch (MessageValidationException e) {
-      throw new MessageValidationException(e.getMessage());
-    } catch (Exception e) {
-      throw new MessageValidationException(e.getMessage());
-    }
+    return messageValidator.validate(testContext(testContextId), command);
   }
 
   public HL7V2TestContextRepository getTestContextRepository() {

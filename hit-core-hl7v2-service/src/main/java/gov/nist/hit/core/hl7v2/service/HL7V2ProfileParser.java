@@ -209,15 +209,16 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
   }
 
   private boolean relevent(ProfileElement child, ProfileElement parent) {
+    boolean isUsageRelevent = relevent(child.getUsage(), child.isHide());
     if (parent != null) {
-      return relevent(child.getUsage()) && relevent(parent, parent.getParent());
+      return isUsageRelevent && relevent(parent, parent.getParent());
     } else {
-      return relevent(child.getUsage());
+      return isUsageRelevent;
     }
   }
 
-  private boolean relevent(String usage) {
-    return usage == null || usage.equals("R") || usage.equals("RE") || usage.equals("C")
+  private boolean relevent(String usage, boolean hide) {
+    return usage == null || !hide || usage.equals("R") || usage.equals("RE") || usage.equals("C")
         || usage.startsWith("C");
   }
 

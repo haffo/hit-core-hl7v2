@@ -19,40 +19,49 @@
 	</properties>
 
 	<dependencies>
-		
-		
+
+
 		<dependency>
 			<groupId>gov.nist.hit.core</groupId>
 			<artifactId>hit-core-domain</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>gov.nist.hit.core</groupId>
 			<artifactId>hit-core-service</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
-		
-		
+
+
 		<dependency>
 			<groupId>gov.nist.hit.core</groupId>
 			<artifactId>hit-core-repo</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>gov.nist.hit.core</groupId>
 			<artifactId>hit-core-transport</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
-		
+
 		<dependency>
-    		<groupId>gov.nist</groupId>
-    		<artifactId>hl7-v2-validation</artifactId>
-    		<version>1.0.0-beta-11.5-SNAPSHOT</version>
-    	</dependency>
-    	
-    	
+            <groupId>gov.nist</groupId>
+            <artifactId>hl7-v2-validation</artifactId>
+            <version>1.0.0-beta-11.8-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nist.healthcare.hl7.v2.unifiedreport</groupId>
+            <artifactId>validation-proxy</artifactId>
+            <version>0.0.8-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nist.healthcare.hl7.v2.unifiedreport</groupId>
+            <artifactId>report-filter</artifactId>
+            <version>0.0.8-SNAPSHOT</version>
+        </dependency>
+        
 	</dependencies>
 
 

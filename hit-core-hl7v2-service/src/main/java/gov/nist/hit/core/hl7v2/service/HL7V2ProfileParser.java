@@ -201,6 +201,7 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
       pe = process(ref.ref(), ref.req());
       segmentsMap.put(pe.getId(), pe);
     }
+    pe.setHide(req.hide());
     pe.setRelevent(pe.isRelevent() || element.isRelevent());
     element.setReference(new gov.nist.hit.core.domain.SegmentRef(pe.getId(), "Segment", pe
         .getName()));
@@ -218,8 +219,8 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
   }
 
   private boolean relevent(String usage, boolean hide) {
-    return usage == null || !hide || usage.equals("R") || usage.equals("RE") || usage.equals("C")
-        || usage.startsWith("C");
+    return (usage == null || usage.equals("R") || usage.equals("RE") || usage.equals("C") || (usage
+        .startsWith("C") && (usage.contains("R") || usage.contains("RE")))) && !hide;
   }
 
   /**
@@ -306,7 +307,7 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
       element.setMinLength(length.min() + "");
       element.setMaxLength(length.max());
     }
-
+    element.setHide(req.hide());
     boolean relevent = relevent(element, parent);
     element.setRelevent(relevent);
 

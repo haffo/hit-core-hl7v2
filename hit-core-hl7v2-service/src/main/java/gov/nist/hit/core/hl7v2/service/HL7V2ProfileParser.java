@@ -45,9 +45,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -82,9 +79,6 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
   private final Map<String, Profile> cachedIntegrationProfilesMap = new HashMap<String, Profile>();
   private Map<String, ProfileElement> segmentsMap;
   private Map<String, ProfileElement> datatypesMap;
-  private Map<String, ProfileElement> groupsMap;
-  private Map<String, ProfileElement> messagesMap;
-  private Map<String, ProfileElement> registry;
   private Constraints conformanceStatements = null;
   private Constraints predicates = null;
   ConstraintsParserImpl constraintsParser = new ConstraintsParserImpl();
@@ -140,8 +134,6 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
 
       this.segmentsMap = new LinkedHashMap<String, ProfileElement>();
       this.datatypesMap = new LinkedHashMap<String, ProfileElement>();
-      this.groupsMap = new LinkedHashMap<String, ProfileElement>();
-      this.messagesMap = new LinkedHashMap<String, ProfileElement>();
 
       model = new ProfileModel();
       this.conformanceStatements = constraintsParser.confStatements(c1Xml);
@@ -320,7 +312,8 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
   }
 
 
-  private Map<Integer, Set<String>> dynaMap(Segment s) {
+  private Map<Integer, Set<String>> dynaMap(Segment s) throws XPathExpressionException,
+      CloneNotSupportedException {
     List<DynMapping> dynamicMappings = s.mappings();
     if (!dynamicMappings.isEmpty()) {
       Map<Integer, Set<String>> maps = new HashMap<Integer, Set<String>>();
@@ -331,7 +324,9 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
         scala.collection.immutable.Map<String, Datatype> map = d.map();
         Iterator<Datatype> mapIt = map.valuesIterator();
         while (mapIt.hasNext()) {
-          ids.add(mapIt.next().id());
+          Datatype da = mapIt.next();
+          ids.add(da.id());
+          process(da);
         }
         maps.put(d.position(), ids);
       }
@@ -366,7 +361,6 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
         this.conformanceStatements.getGroups(), g.id(), g.name()));
 
     parentElement.getChildren().add(element);
-    groupsMap.put(g.id(), element);
     scala.collection.immutable.List<SegRefOrGroup> children = g.structure();
     if (children != null) {
       Iterator<SegRefOrGroup> it = children.iterator();
@@ -407,81 +401,81 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
     return element;
   }
 
-  /**
-   * Fix icons and types of component and subcomponents
-   * 
-   * @throws CloneNotSupportedException
-   */
-  private void updateTypes() throws CloneNotSupportedException {
-    Collection<ProfileElement> elements = messagesMap.values();
-    java.util.Iterator<ProfileElement> it = elements.iterator();
-    while (it.hasNext()) {
-      updateTypes(it.next());
-    }
-    elements = segmentsMap.values();
-    it = elements.iterator();
-    while (it.hasNext()) {
-      updateTypes(it.next());
-    }
-  }
+  // /**
+  // * Fix icons and types of component and subcomponents
+  // *
+  // * @throws CloneNotSupportedException
+  // */
+  // private void updateTypes() throws CloneNotSupportedException {
+  // Collection<ProfileElement> elements = messagesMap.values();
+  // java.util.Iterator<ProfileElement> it = elements.iterator();
+  // while (it.hasNext()) {
+  // updateTypes(it.next());
+  // }
+  // elements = segmentsMap.values();
+  // it = elements.iterator();
+  // while (it.hasNext()) {
+  // updateTypes(it.next());
+  // }
+  // }
 
-  private void addVariesChildren() throws CloneNotSupportedException {
-
-    Collection<ProfileElement> elements = messagesMap.values();
-    java.util.Iterator<ProfileElement> it = elements.iterator();
-    while (it.hasNext()) {
-      addVariesChildren(it.next());
-    }
-  }
-
-
-  /**
-   * Load the registry for easy search in the message
-   * 
-   * @throws CloneNotSupportedException
-   */
-  private void registerAll() {
-    registry = new HashMap<String, ProfileElement>();
-    Collection<ProfileElement> messages = messagesMap.values();
-    java.util.Iterator<ProfileElement> it = messages.iterator();
-    while (it.hasNext()) {
-      register(it.next());
-    }
-  }
-
-  private void register(ProfileElement element) {
-    registry.put(element.getId(), element);
-    for (ProfileElement child : element.getChildren()) {
-      register(child);
-    }
-  }
+  // private void addVariesChildren() throws CloneNotSupportedException {
+  //
+  // Collection<ProfileElement> elements = messagesMap.values();
+  // java.util.Iterator<ProfileElement> it = elements.iterator();
+  // while (it.hasNext()) {
+  // addVariesChildren(it.next());
+  // }
+  // }
 
 
-  private void updateTypes(ProfileElement parent) throws CloneNotSupportedException {
-    // ArrayList<ProfileElement> newChildren = new ArrayList<ProfileElement>();
-    java.util.List<ProfileElement> children = parent.getChildren();
-    if (children != null && !children.isEmpty()) {
-      for (int i = 0; i < children.size(); i++) {
-        ProfileElement child = children.get(i);
-        if (parent.getType().equals(TYPE_SEGMENT_REF)) {
-          child.setPath(parent.getPath() + "." + child.getPosition());
-          updateTypes(child);
-        } else if (parent.getType().equals(TYPE_FIELD)) {
-          if (!child.getType().equals(TYPE_DATATYPE)) {
-            child.setType(TYPE_COMPONENT);
-            child.setPath(parent.getPath() + "." + child.getPosition());
-            updateTypes(child);
-          }
-        } else if (parent.getType().equals(TYPE_COMPONENT)
-            || parent.getType().equals(TYPE_SUBCOMPONENT)) {
-          child.setType(TYPE_SUBCOMPONENT);
-          // child.setIcon(ICON_SUBCOMPONENT);
-          child.setPath(parent.getPath() + "." + child.getPosition());
-          updateTypes(child);
-        }
-      }
-    }
-  }
+  // /**
+  // * Load the registry for easy search in the message
+  // *
+  // * @throws CloneNotSupportedException
+  // */
+  // private void registerAll() {
+  // registry = new HashMap<String, ProfileElement>();
+  // Collection<ProfileElement> messages = messagesMap.values();
+  // java.util.Iterator<ProfileElement> it = messages.iterator();
+  // while (it.hasNext()) {
+  // register(it.next());
+  // }
+  // }
+  //
+  // private void register(ProfileElement element) {
+  // registry.put(element.getId(), element);
+  // for (ProfileElement child : element.getChildren()) {
+  // register(child);
+  // }
+  // }
+  //
+  //
+  // private void updateTypes(ProfileElement parent) throws CloneNotSupportedException {
+  // // ArrayList<ProfileElement> newChildren = new ArrayList<ProfileElement>();
+  // java.util.List<ProfileElement> children = parent.getChildren();
+  // if (children != null && !children.isEmpty()) {
+  // for (int i = 0; i < children.size(); i++) {
+  // ProfileElement child = children.get(i);
+  // if (parent.getType().equals(TYPE_SEGMENT_REF)) {
+  // child.setPath(parent.getPath() + "." + child.getPosition());
+  // updateTypes(child);
+  // } else if (parent.getType().equals(TYPE_FIELD)) {
+  // if (!child.getType().equals(TYPE_DATATYPE)) {
+  // child.setType(TYPE_COMPONENT);
+  // child.setPath(parent.getPath() + "." + child.getPosition());
+  // updateTypes(child);
+  // }
+  // } else if (parent.getType().equals(TYPE_COMPONENT)
+  // || parent.getType().equals(TYPE_SUBCOMPONENT)) {
+  // child.setType(TYPE_SUBCOMPONENT);
+  // // child.setIcon(ICON_SUBCOMPONENT);
+  // child.setPath(parent.getPath() + "." + child.getPosition());
+  // updateTypes(child);
+  // }
+  // }
+  // }
+  // }
 
   /**
    * 
@@ -514,48 +508,48 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
   }
 
 
-  private void addVariesChildren(ProfileElement element) throws CloneNotSupportedException {
-    if (element.getType().equals(TYPE_GROUP)) {
-      java.util.Iterator<ProfileElement> it = element.getChildren().iterator();
-      while (it.hasNext()) {
-        addVariesChildren(it.next());
-      }
-    } else if (element.getType().equals(TYPE_SEGMENT_REF)) {
-      ProfileElement segmentElement = registry.get(element.getRef());
-      addVariesChildren(segmentElement);
-      element.setChildren(ProfileElement.clone(segmentElement.getChildren()));
-    } else {
-      if (element.getType().equals(TYPE_SEGMENT) && element.getDynamicMaps() != null
-          && !element.getDynamicMaps().isEmpty()) {
-        Map<Integer, Set<String>> dynamicMappings = element.getDynamicMaps();
-        java.util.List<ProfileElement> children = element.getChildren();
-        java.util.Iterator<ProfileElement> it = children.iterator();
-        while (it.hasNext()) {
-          ProfileElement f = it.next();
-          ArrayList<ProfileElement> datatypes = new ArrayList<ProfileElement>();
-          Set<String> mappings = dynamicMappings.get(f.getPosition());
-          if (mappings != null && !mappings.isEmpty()) {
-            java.util.Iterator<String> mIt = mappings.iterator();
-            while (mIt.hasNext()) {
-              String id = mIt.next();
-              ProfileElement dt = findDatatype(id);
-              if (dt == null)
-                throw new RuntimeException("Datatype " + id + "not found");
-              datatypes.add(dt);
-            }
-            Collections.sort(datatypes, new Comparator<ProfileElement>() {
-              @Override
-              public int compare(ProfileElement o1, ProfileElement o2) {
-                // TODO Auto-generated method stub
-                return o1.getName().compareTo(o2.getName());
-              }
-            });
-            f.setChildren(datatypes);
-          }
-        }
-      }
-    }
-  }
+  // private void addVariesChildren(ProfileElement element) throws CloneNotSupportedException {
+  // if (element.getType().equals(TYPE_GROUP)) {
+  // java.util.Iterator<ProfileElement> it = element.getChildren().iterator();
+  // while (it.hasNext()) {
+  // addVariesChildren(it.next());
+  // }
+  // } else if (element.getType().equals(TYPE_SEGMENT_REF)) {
+  // ProfileElement segmentElement = registry.get(element.getRef());
+  // addVariesChildren(segmentElement);
+  // element.setChildren(ProfileElement.clone(segmentElement.getChildren()));
+  // } else {
+  // if (element.getType().equals(TYPE_SEGMENT) && element.getDynamicMaps() != null
+  // && !element.getDynamicMaps().isEmpty()) {
+  // Map<Integer, Set<String>> dynamicMappings = element.getDynamicMaps();
+  // java.util.List<ProfileElement> children = element.getChildren();
+  // java.util.Iterator<ProfileElement> it = children.iterator();
+  // while (it.hasNext()) {
+  // ProfileElement f = it.next();
+  // ArrayList<ProfileElement> datatypes = new ArrayList<ProfileElement>();
+  // Set<String> mappings = dynamicMappings.get(f.getPosition());
+  // if (mappings != null && !mappings.isEmpty()) {
+  // java.util.Iterator<String> mIt = mappings.iterator();
+  // while (mIt.hasNext()) {
+  // String id = mIt.next();
+  // ProfileElement dt = findDatatype(id);
+  // if (dt == null)
+  // throw new RuntimeException("Datatype " + id + "not found");
+  // datatypes.add(dt);
+  // }
+  // Collections.sort(datatypes, new Comparator<ProfileElement>() {
+  // @Override
+  // public int compare(ProfileElement o1, ProfileElement o2) {
+  // // TODO Auto-generated method stub
+  // return o1.getName().compareTo(o2.getName());
+  // }
+  // });
+  // f.setChildren(datatypes);
+  // }
+  // }
+  // }
+  // }
+  // }
 
   private String table(Req req) {
     List<ValueSetSpec> vsSpec = req.vsSpec();
@@ -760,12 +754,12 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
   // addConformanceStatements(root, "Segment", segmentsMap);
   // addConformanceStatements(root, "Group", groupsMap, messagesMap);
   // }
-
-  private ProfileElement findMessageChild(String id) {
-    // ProfileElement el = messagesMap.values().iterator().next();
-    // return findChild(id, el);
-    return registry.get(id);
-  }
+  //
+  // private ProfileElement findMessageChild(String id) {
+  // // ProfileElement el = messagesMap.values().iterator().next();
+  // // return findChild(id, el);
+  // return registry.get(id);
+  // }
 
   // private ProfileElement findChild(String id, ProfileElement parent) {
   // if (parent.getId().equals(id))

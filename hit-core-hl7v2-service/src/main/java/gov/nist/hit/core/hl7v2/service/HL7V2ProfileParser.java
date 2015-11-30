@@ -136,6 +136,11 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
       this.datatypesMap = new LinkedHashMap<String, ProfileElement>();
 
       model = new ProfileModel();
+      ProfileElement message = new ProfileElement("FULL");
+      message.setType(TYPE_MESSAGE);
+      message.setRelevent(true);
+      message.setId(m.id());
+      model.setMessage(message);
       this.conformanceStatements = constraintsParser.confStatements(c1Xml);
       this.predicates = constraintsParser.predicates(c1Xml);
       if (c2Xml != null) {
@@ -149,10 +154,6 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
         }
       }
 
-      ProfileElement message = new ProfileElement("FULL");
-      message.setType(TYPE_MESSAGE);
-      message.setRelevent(true);
-      message.setId(m.id());
       scala.collection.immutable.List<SegRefOrGroup> children = m.structure();
       if (children != null && !children.isEmpty()) {
         Iterator<SegRefOrGroup> it = children.iterator();
@@ -160,7 +161,6 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
           process(it.next(), message);
         }
       }
-      model.setMessage(message);
       model.setDatatypes(this.datatypesMap);
       model.setSegments(this.segmentsMap);
 
@@ -298,7 +298,7 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
     element.setId(s.id());
     element.setDynamicMaps(dynaMap(s));
     element.setPredicates(this.findPredicates(this.predicates.getSegments(), s.id(), s.name()));
-    element.setConformanceStatements(this.findConformanceStatement(
+    element.setConformanceStatements(this.findConformanceStatements(
         this.conformanceStatements.getSegments(), s.id(), s.name()));
 
     scala.collection.immutable.List<Field> children = s.fields();
@@ -357,9 +357,15 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
     element.setPosition(req.position() + "");
     element.setId(g.id());
     element.setPredicates(this.findPredicates(this.predicates.getGroups(), g.id(), g.name()));
-    element.setConformanceStatements(this.findConformanceStatement(
+    element.setConformanceStatements(this.findConformanceStatements(
         this.conformanceStatements.getGroups(), g.id(), g.name()));
-
+    if (element.getConformanceStatements() == null) {
+      element.setConformanceStatements(new ArrayList<ConformanceStatement>());
+    }
+    // TODO: Move Message Level CS from <Group> to <Message>
+    element.getConformanceStatements().addAll(
+        (this.findConformanceStatements(this.conformanceStatements.getGroups(), model.getMessage()
+            .getId(), model.getMessage().getName())));
     parentElement.getChildren().add(element);
     scala.collection.immutable.List<SegRefOrGroup> children = g.structure();
     if (children != null) {
@@ -575,7 +581,7 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
       // element.setIcon(ICON_DATATYPE);
       element.setRelevent(true);
       element.setPredicates(this.findPredicates(this.predicates.getDatatypes(), d.id(), d.name()));
-      element.setConformanceStatements(this.findConformanceStatement(
+      element.setConformanceStatements(this.findConformanceStatements(
           this.conformanceStatements.getDatatypes(), d.id(), d.name()));
       datatypesMap.put(d.id(), element);
       if (d instanceof Composite) {
@@ -935,7 +941,7 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
     return null;
   }
 
-  private ArrayList<ConformanceStatement> findConformanceStatement(Context context, String id,
+  private ArrayList<ConformanceStatement> findConformanceStatements(Context context, String id,
       String name) {
     Set<ByNameOrByID> byNameOrByIDs = context.getByNameOrByIDs();
     ArrayList<ConformanceStatement> result = new ArrayList<ConformanceStatement>();

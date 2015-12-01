@@ -20,6 +20,7 @@ public class HL7V2TestContext extends TestContext {
 
   private static final long serialVersionUID = 1L;
 
+  private boolean dqa;
 
   @OneToOne(cascade = CascadeType.ALL)
   @JoinColumn(unique = true, nullable = false, insertable = true, updatable = true)
@@ -72,6 +73,14 @@ public class HL7V2TestContext extends TestContext {
 
   public void setAddditionalConstraints(Constraints addditionalConstraints) {
     this.addditionalConstraints = addditionalConstraints;
+  }
+
+  public boolean isDqa() {
+    return dqa;
+  }
+
+  public void setDqa(boolean dqa) {
+    this.dqa = dqa;
   }
 
 

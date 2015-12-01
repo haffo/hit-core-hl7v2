@@ -83,6 +83,8 @@ public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
     JsonNode messageId = formatObj.findValue("messageId");
     JsonNode constraintId = formatObj.findValue("constraintId");
     JsonNode valueSetLibraryId = formatObj.findValue("valueSetLibraryId");
+    JsonNode dqa = formatObj.findValue("dqa");
+
     if (messageId != null) {
       HL7V2TestContext testContext = new HL7V2TestContext();
       testContext.setFormat(FORMAT);
@@ -99,6 +101,11 @@ public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
       if (testContext.getMessage() == null) {
         testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.text"))));
       }
+
+      if (dqa != null && !"".equals(dqa.getTextValue())) {
+        testContext.setDqa(dqa.getBooleanValue());
+      }
+
       try {
         ConformanceProfile conformanceProfile = new ConformanceProfile();
         IntegrationProfile integrationProfile = getIntegrationProfile(messageId.getTextValue());

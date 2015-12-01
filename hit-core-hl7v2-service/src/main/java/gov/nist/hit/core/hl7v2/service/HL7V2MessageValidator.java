@@ -40,6 +40,30 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
   public MessageValidationResult validate(TestContext testContext, MessageValidationCommand command)
       throws MessageValidationException {
     try {
+      EnhancedReport report = generateReport(testContext, command);
+      if (report != null) {
+        Map<String, String> nav = command.getNav();
+        if (nav != null && !nav.isEmpty()) {
+          report.setTestCase(nav.get("testPlan"), nav.get("testGroup"), nav.get("testCase"),
+              nav.get("testStep"));
+        }
+        return new MessageValidationResult(report.to("json").toString(), report.render("iz-report",
+            null));
+      }
+      throw new MessageValidationException();
+    } catch (MessageException e) {
+      throw new MessageValidationException(e.getLocalizedMessage());
+    } catch (RuntimeException e) {
+      throw new MessageValidationException(e.getLocalizedMessage());
+    } catch (Exception e) {
+      throw new MessageValidationException(e.getLocalizedMessage());
+    }
+  }
+
+
+  public EnhancedReport generateReport(TestContext testContext, MessageValidationCommand command)
+      throws MessageValidationException {
+    try {
       if (testContext instanceof HL7V2TestContext) {
         HL7V2TestContext v2TestContext = (HL7V2TestContext) testContext;
         String contextType = command.getContextType();
@@ -72,9 +96,8 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
             report.setTestCase(nav.get("testPlan"), nav.get("testGroup"), nav.get("testCase"),
                 nav.get("testStep"));
           }
-          return new MessageValidationResult(report.to("json").toString(), report.render(
-              "iz-report", null));
         }
+        return report;
       }
       throw new MessageValidationException();
     } catch (MessageException e) {
@@ -85,6 +108,7 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
       throw new MessageValidationException(e.getLocalizedMessage());
     }
   }
+
 
   protected ConformanceContext getConformanceContext(List<InputStream> confContexts) {
     ConformanceContext c = DefaultConformanceContext.apply(confContexts).get();

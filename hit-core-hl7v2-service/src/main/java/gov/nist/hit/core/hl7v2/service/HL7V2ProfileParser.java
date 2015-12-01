@@ -154,6 +154,11 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
         }
       }
 
+      message.setConformanceStatements(this.findConformanceStatements(this.conformanceStatements
+          .getGroups(), model.getMessage().getId(), model.getMessage().getName()));
+      message.setPredicates(this.findPredicates(this.predicates.getGroups(), model.getMessage()
+          .getId(), model.getMessage().getName()));
+
       scala.collection.immutable.List<SegRefOrGroup> children = m.structure();
       if (children != null && !children.isEmpty()) {
         Iterator<SegRefOrGroup> it = children.iterator();
@@ -259,6 +264,23 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
     element.setRef(segmentElement.getId());
     // element.setChildren(segmentElement.getChildren());
     element.setPath(segmentElement.getName());
+
+    element.setPredicates(new ArrayList<Predicate>());
+    element.setConformanceStatements(new ArrayList<ConformanceStatement>());
+    String targetPath = getTargetPath(element);
+    if (!targetPath.equals("")) {
+      for (ConformanceStatement cs : this.model.getMessage().getConformanceStatements()) {
+        if (cs.getConstraintTarget().equals(targetPath)) {
+          element.getConformanceStatements().add(cs);
+        }
+      }
+
+      for (Predicate p : this.model.getMessage().getPredicates()) {
+        if (p.getConstraintTarget().equals(targetPath)) {
+          element.getPredicates().add(p);
+        }
+      }
+    }
     parentElement.getChildren().add(element);
     return element;
   }
@@ -359,13 +381,22 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
     element.setPredicates(this.findPredicates(this.predicates.getGroups(), g.id(), g.name()));
     element.setConformanceStatements(this.findConformanceStatements(
         this.conformanceStatements.getGroups(), g.id(), g.name()));
-    if (element.getConformanceStatements() == null) {
-      element.setConformanceStatements(new ArrayList<ConformanceStatement>());
+
+    String targetPath = getTargetPath(element);
+    if (!targetPath.equals("")) {
+      for (ConformanceStatement cs : this.model.getMessage().getConformanceStatements()) {
+        if (cs.getConstraintTarget().equals(targetPath)) {
+          element.getConformanceStatements().add(cs);
+        }
+      }
+
+      for (Predicate p : this.model.getMessage().getPredicates()) {
+        if (p.getConstraintTarget().equals(targetPath)) {
+          element.getPredicates().add(p);
+        }
+      }
     }
-    // TODO: Move Message Level CS from <Group> to <Message>
-    element.getConformanceStatements().addAll(
-        (this.findConformanceStatements(this.conformanceStatements.getGroups(), model.getMessage()
-            .getId(), model.getMessage().getName())));
+
     parentElement.getChildren().add(element);
     scala.collection.immutable.List<SegRefOrGroup> children = g.structure();
     if (children != null) {
@@ -375,6 +406,15 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
       }
     }
     return element;
+  }
+
+
+  private String getTargetPath(ProfileElement element) {
+    if (element == null || element.getType().equals(TYPE_MESSAGE))
+      return "";
+    String pTarget = getTargetPath(element.getParent());
+    return pTarget.equals("") ? element.getPosition() + "[1]" : pTarget + "."
+        + element.getPosition() + "[1]";
   }
 
   /**
@@ -603,9 +643,9 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
   }
 
 
-  private ProfileElement findDatatype(String id) {
-    return datatypesMap.get(id);
-  }
+  // private ProfileElement findDatatype(String id) {
+  // return datatypesMap.get(id);
+  // }
 
   private ProfileElement process(Component c, ProfileElement parent)
       throws XPathExpressionException, CloneNotSupportedException {
@@ -952,12 +992,12 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
           for (ConformanceStatement c : byID.getConformanceStatements()) {
             result.add(c);
           }
-        } else if (byNameOrByID instanceof ByName) {
-          ByName byName = (ByName) byNameOrByID;
-          if (byName.getByName().equals(name)) {
-            for (ConformanceStatement c : byName.getConformanceStatements()) {
-              result.add(c);
-            }
+        }
+      } else if (byNameOrByID instanceof ByName) {
+        ByName byName = (ByName) byNameOrByID;
+        if (byName.getByName().equals(name)) {
+          for (ConformanceStatement c : byName.getConformanceStatements()) {
+            result.add(c);
           }
         }
       }
@@ -975,12 +1015,12 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
           for (Predicate p : byID.getPredicates()) {
             result.add(p);
           }
-        } else if (byNameOrByID instanceof ByName) {
-          ByName byName = (ByName) byNameOrByID;
-          if (byName.getByName().equals(name)) {
-            for (Predicate p : byName.getPredicates()) {
-              result.add(p);
-            }
+        }
+      } else if (byNameOrByID instanceof ByName) {
+        ByName byName = (ByName) byNameOrByID;
+        if (byName.getByName().equals(name)) {
+          for (Predicate p : byName.getPredicates()) {
+            result.add(p);
           }
         }
       }

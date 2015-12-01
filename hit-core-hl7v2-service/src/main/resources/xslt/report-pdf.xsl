@@ -99,13 +99,13 @@
 			<xsl:with-param name="color" select="'gold'" />
 			<xsl:with-param name="msg" select="'Warnings'" />
 		</xsl:call-template>
-		<xsl:call-template name="Assertions">
+<!-- 		<xsl:call-template name="Assertions">
 			<xsl:with-param name="classification" select="'affirmative'" />
 			<xsl:with-param name="count"
 				select="../report:HeaderReport/message:AffirmCount" />
 			<xsl:with-param name="color" select="'green'" />
 			<xsl:with-param name="msg" select="'Affirmatives'" />
-		</xsl:call-template>
+		</xsl:call-template> -->
 		<!-- <xsl:call-template name="Assertions"> -->
 		<!-- <xsl:with-param name="classification" select="'informational'"/> -->
 		<!-- <xsl:with-param name="count" select="../report:HeaderReport/message:InfoCount"/> -->
@@ -364,14 +364,14 @@
 							Warnings
 						</td>
 					</tr>
-					<tr class="border_bottom">
+					<!-- <tr class="border_bottom">
 						<td class="row6" style="color: green; font-weight: bold">
-							<!-- <input type="checkbox" onclick="toggle_visibility('affirmative',this)" 
-								/> -->
+							<input type="checkbox" onclick="toggle_visibility('affirmative',this)" 
+								/>
 							<xsl:value-of select="../report:HeaderReport/message:AffirmCount" />
 							Affirmatives
 						</td>
-					</tr>
+					</tr> -->
 				</tbody>
 			</table>
 		</div>

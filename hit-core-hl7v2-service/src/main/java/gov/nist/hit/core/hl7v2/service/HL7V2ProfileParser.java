@@ -154,9 +154,14 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
         }
       }
 
+      // message.setConformanceStatements(this.findConformanceStatements(this.conformanceStatements
+      // .getGroups(), model.getMessage().getId(), model.getMessage().getName()));
+      // message.setPredicates(this.findPredicates(this.predicates.getGroups(), model.getMessage()
+      // .getId(), model.getMessage().getName()));
+
       message.setConformanceStatements(this.findConformanceStatements(this.conformanceStatements
-          .getGroups(), model.getMessage().getId(), model.getMessage().getName()));
-      message.setPredicates(this.findPredicates(this.predicates.getGroups(), model.getMessage()
+          .getMessages(), model.getMessage().getId(), model.getMessage().getName()));
+      message.setPredicates(this.findPredicates(this.predicates.getMessages(), model.getMessage()
           .getId(), model.getMessage().getName()));
 
       scala.collection.immutable.List<SegRefOrGroup> children = m.structure();
@@ -214,6 +219,15 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
     if (c2.getGroups() != null) {
       c1.getGroups().getByNameOrByIDs().addAll(c2.getGroups().getByNameOrByIDs());
     }
+
+    if (c1.getMessages() == null) {
+      c1.setMessages(new Context());
+    }
+
+    if (c2.getMessages() != null) {
+      c1.getMessages().getByNameOrByIDs().addAll(c2.getMessages().getByNameOrByIDs());
+    }
+
 
     return c1;
   }

@@ -130,17 +130,8 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
       }
       String c1Xml = constraints != null && constraints.length > 0 ? constraints[0] : null;
       String c2Xml = constraints != null && constraints.length > 1 ? constraints[1] : null;
-      Message m = (Message) conformanceProfile;
-
       this.segmentsMap = new LinkedHashMap<String, ProfileElement>();
       this.datatypesMap = new LinkedHashMap<String, ProfileElement>();
-
-      model = new ProfileModel();
-      ProfileElement message = new ProfileElement("FULL");
-      message.setType(TYPE_MESSAGE);
-      message.setRelevent(true);
-      message.setId(m.id());
-      model.setMessage(message);
       this.conformanceStatements = constraintsParser.confStatements(c1Xml);
       this.predicates = constraintsParser.predicates(c1Xml);
       if (c2Xml != null) {
@@ -153,32 +144,7 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
           this.predicates = merge(this.predicates, predicates2);
         }
       }
-
-      // message.setConformanceStatements(this.findConformanceStatements(this.conformanceStatements
-      // .getGroups(), model.getMessage().getId(), model.getMessage().getName()));
-      // message.setPredicates(this.findPredicates(this.predicates.getGroups(), model.getMessage()
-      // .getId(), model.getMessage().getName()));
-
-      message.setConformanceStatements(this.findConformanceStatements(this.conformanceStatements
-          .getMessages(), model.getMessage().getId(), model.getMessage().getName()));
-      message.setPredicates(this.findPredicates(this.predicates.getMessages(), model.getMessage()
-          .getId(), model.getMessage().getName()));
-
-      scala.collection.immutable.List<SegRefOrGroup> children = m.structure();
-      if (children != null && !children.isEmpty()) {
-        Iterator<SegRefOrGroup> it = children.iterator();
-        while (it.hasNext()) {
-          process(it.next(), message);
-        }
-      }
-      model.setDatatypes(this.datatypesMap);
-      model.setSegments(this.segmentsMap);
-
-      // registerAll();
-      // addVariesChildren();
-      // addConstraints(c1Xml);
-      // addConstraints(c2Xml);
-      // updateTypes();
+      process((Message) conformanceProfile);
       return model;
     } catch (XPathExpressionException e) {
       throw new ProfileParserException(e.getLocalizedMessage());
@@ -231,6 +197,32 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
 
     return c1;
   }
+
+  private ProfileElement process(Message m) throws XPathExpressionException,
+      CloneNotSupportedException {
+    model = new ProfileModel();
+    ProfileElement message = new ProfileElement("FULL");
+    message.setType(TYPE_MESSAGE);
+    message.setRelevent(true);
+    message.setId(m.id());
+    model.setMessage(message);
+    message.setConformanceStatements(this.findConformanceStatements(this.conformanceStatements
+        .getMessages(), model.getMessage().getId(), model.getMessage().getName()));
+    message.setPredicates(this.findPredicates(this.predicates.getMessages(), model.getMessage()
+        .getId(), model.getMessage().getName()));
+
+    scala.collection.immutable.List<SegRefOrGroup> children = m.structure();
+    if (children != null && !children.isEmpty()) {
+      Iterator<SegRefOrGroup> it = children.iterator();
+      while (it.hasNext()) {
+        process(it.next(), message);
+      }
+    }
+    model.setDatatypes(this.datatypesMap);
+    model.setSegments(this.segmentsMap);
+    return message;
+  }
+
 
   /**
    * 
@@ -288,7 +280,6 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
           element.getConformanceStatements().add(cs);
         }
       }
-
       for (Predicate p : this.model.getMessage().getPredicates()) {
         if (p.getConstraintTarget().equals(targetPath)) {
           element.getPredicates().add(p);

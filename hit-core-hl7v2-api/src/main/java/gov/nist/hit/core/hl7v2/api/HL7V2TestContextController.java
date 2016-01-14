@@ -12,17 +12,28 @@
 
 package gov.nist.hit.core.hl7v2.api;
 
+import gov.nist.hit.core.api.SessionContext;
 import gov.nist.hit.core.domain.MessageModel;
 import gov.nist.hit.core.domain.MessageParserCommand;
 import gov.nist.hit.core.domain.MessageValidationCommand;
 import gov.nist.hit.core.domain.MessageValidationResult;
+import gov.nist.hit.core.domain.TestStep;
+import gov.nist.hit.core.domain.User;
 import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
 import gov.nist.hit.core.hl7v2.repo.HL7V2TestContextRepository;
 import gov.nist.hit.core.hl7v2.service.HL7V2MessageParser;
 import gov.nist.hit.core.hl7v2.service.HL7V2MessageValidator;
+import gov.nist.hit.core.service.MessageValidationResultService;
+import gov.nist.hit.core.service.TestStepService;
+import gov.nist.hit.core.service.UserService;
 import gov.nist.hit.core.service.exception.MessageParserException;
 import gov.nist.hit.core.service.exception.MessageValidationException;
 import gov.nist.hit.core.service.exception.TestCaseException;
+import gov.nist.hit.core.service.exception.ValidationReportException;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +64,16 @@ public class HL7V2TestContextController {
   @Autowired
   protected HL7V2MessageParser messageParser;
 
+  @Autowired
+  private MessageValidationResultService validationResultService;
+
+  @Autowired
+  private TestStepService testStepService;
+
+
+  @Autowired
+  private UserService userService;
+
 
   @RequestMapping(value = "/{testContextId}")
   public HL7V2TestContext testContext(@PathVariable final Long testContextId) {
@@ -73,8 +94,31 @@ public class HL7V2TestContextController {
 
   @RequestMapping(value = "/{testContextId}/validateMessage", method = RequestMethod.POST)
   public MessageValidationResult validate(@PathVariable final Long testContextId,
-      @RequestBody final MessageValidationCommand command) throws MessageValidationException {
-    return messageValidator.validate(testContext(testContextId), command);
+      @RequestBody final MessageValidationCommand command, HttpServletRequest request,
+      HttpServletResponse response, HttpSession session) throws MessageValidationException {
+    logger.info("Validating a message");
+    User user = null;
+    Long userId = SessionContext.getCurrentUserId(session);
+    if (userId == null || (user = userService.findOne(userId)) == null)
+      throw new ValidationReportException("Unknown user");
+
+    TestStep testStep = testStepService.findOneByTestContext(testContextId);
+    if (testStep == null)
+      throw new ValidationReportException("No Teststep found");
+
+    MessageValidationResult result = messageValidator.validate(testContext(testContextId), command);
+    MessageValidationResult dbResult = null;
+    dbResult = validationResultService.findOneByTestStepAndUser(testStep.getId(), user.getId());
+    if (dbResult != null) {
+      dbResult.setHtml(result.getHtml());
+      dbResult.setJson(result.getJson());
+    } else {
+      dbResult = result;
+      dbResult.setTestStep(testStep);
+      dbResult.setUser(user);
+    }
+    validationResultService.save(dbResult);
+    return dbResult;
   }
 
   public HL7V2TestContextRepository getTestContextRepository() {

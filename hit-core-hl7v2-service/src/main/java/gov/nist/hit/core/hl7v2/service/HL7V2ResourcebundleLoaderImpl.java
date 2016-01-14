@@ -22,7 +22,6 @@ import gov.nist.hit.core.domain.VocabularyLibrary;
 import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
 import gov.nist.hit.core.hl7v2.domain.HLV2TestCaseDocument;
 import gov.nist.hit.core.hl7v2.repo.HL7V2TestContextRepository;
-import gov.nist.hit.core.repo.VocabularyLibraryRepository;
 import gov.nist.hit.core.service.ResourcebundleLoader;
 import gov.nist.hit.core.service.ValueSetLibrarySerializer;
 import gov.nist.hit.core.service.exception.ProfileParserException;
@@ -48,8 +47,6 @@ public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
   @Autowired
   HL7V2TestContextRepository testContextRepository;
 
-  @Autowired
-  VocabularyLibraryRepository vocabularyLibraryRepository;
 
   HL7V2ProfileParser profileParser = new HL7V2ProfileParserImpl();
   ValueSetLibrarySerializer valueSetLibrarySerializer = new ValueSetLibrarySerializerImpl();

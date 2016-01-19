@@ -10,7 +10,7 @@ public class HLV2TestCaseDocument extends TestCaseDocument implements Serializab
   protected boolean exMsgPresent;
   protected boolean xmlConfProfilePresent;
   protected boolean xmlValueSetLibraryPresent;
-
+  protected boolean xmlConstraintsPresent;
 
 
   public HLV2TestCaseDocument() {
@@ -40,6 +40,14 @@ public class HLV2TestCaseDocument extends TestCaseDocument implements Serializab
 
   public void setXmlValueSetLibraryPresent(boolean xmlValueSetLibraryPresent) {
     this.xmlValueSetLibraryPresent = xmlValueSetLibraryPresent;
+  }
+
+  public boolean isXmlConstraintsPresent() {
+    return xmlConstraintsPresent;
+  }
+
+  public void setXmlConstraintsPresent(boolean xmlConstraintsPresent) {
+    this.xmlConstraintsPresent = xmlConstraintsPresent;
   }
 
 

@@ -16,7 +16,7 @@ package gov.nist.hit.core.hl7v2.service;
  * @author Harold Affo (NIST)
  */
 
-public class HL7V2ValidationReportGeneratorImpl extends HL7V2ValidationReportGenerator {
+public class HL7V2ValidationReportConverterImpl extends HL7V2ValidationReportConverter {
 
 
 

@@ -96,6 +96,35 @@ public class HL7V2DocumentationController {
     return null;
   }
 
+  @RequestMapping(value = "/constraints", method = RequestMethod.POST,
+      consumes = "application/x-www-form-urlencoded; charset=UTF-8")
+  public String downloadConstraint(@RequestParam("targetId") Long targetId,
+      @RequestParam("targetType") String targetType,
+      @RequestParam("targetTitle") String targetTitle, HttpServletRequest request,
+      HttpServletResponse response) {
+    try {
+      logger.info("Downloading constraint of element with id " + targetId);
+      InputStream content = null;
+      HL7V2TestContext testContext = testContextRepository.findOne(targetId);
+      gov.nist.hit.core.domain.Constraints constraints = testContext.getAddditionalConstraints();
+      response.setContentType("application/xml");
+      targetTitle = targetTitle + "-" + "Constraints.xml";
+      targetTitle = targetTitle.replaceAll(" ", "-");
+      response.setHeader("Content-disposition", "attachment;filename=" + targetTitle);
+      if (constraints != null) {
+        content = IOUtils.toInputStream(constraints.getXml(), "UTF-8");
+      } else {
+        content = IOUtils.toInputStream("", "UTF-8");
+      }
+      FileCopyUtils.copy(content, response.getOutputStream());
+    } catch (Exception e) {
+      logger.debug(e.getMessage(), e);
+      throw new DownloadDocumentException("Failed to download the conformance profile");
+    }
+    return null;
+  }
+
+
   @RequestMapping(value = "/valuesetlib", method = RequestMethod.POST,
       consumes = "application/x-www-form-urlencoded; charset=UTF-8")
   public String downloadValueSetlib(@RequestParam("targetId") Long targetId,

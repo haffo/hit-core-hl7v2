@@ -273,6 +273,13 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
 
     element.setPredicates(new ArrayList<Predicate>());
     element.setConformanceStatements(new ArrayList<ConformanceStatement>());
+
+    addMessageConstraints(element);
+    parentElement.getChildren().add(element);
+    return element;
+  }
+
+  private void addMessageConstraints(ProfileElement element) {
     String targetPath = getTargetPath(element);
     if (!targetPath.equals("")) {
       for (ConformanceStatement cs : this.model.getMessage().getConformanceStatements()) {
@@ -280,15 +287,15 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
           element.getConformanceStatements().add(cs);
         }
       }
+
       for (Predicate p : this.model.getMessage().getPredicates()) {
         if (p.getConstraintTarget().equals(targetPath)) {
           element.getPredicates().add(p);
         }
       }
     }
-    parentElement.getChildren().add(element);
-    return element;
   }
+
 
   private boolean relevent(ProfileElement child, ProfileElement parent) {
     boolean isUsageRelevent = relevent(child.getUsage(), child.isHide());

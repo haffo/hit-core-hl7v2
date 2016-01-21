@@ -49,17 +49,17 @@
 		<dependency>
             <groupId>gov.nist</groupId>
             <artifactId>hl7-v2-validation</artifactId>
-            <version>1.0.0-beta-12.3-SNAPSHOT</version>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>gov.nist.healthcare.hl7.v2.unifiedreport</groupId>
             <artifactId>validation-proxy</artifactId>
-            <version>0.0.8-SNAPSHOT</version>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>gov.nist.healthcare.hl7.v2.unifiedreport</groupId>
             <artifactId>report-filter</artifactId>
-            <version>0.0.8-SNAPSHOT</version>
+            <version>1.0.0</version>
         </dependency>
         
 	</dependencies>

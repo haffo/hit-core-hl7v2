@@ -9,13 +9,14 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>hit-core-hl7v2-domain</module>
-		<module>hit-core-hl7v2-service</module>
 		<module>hit-core-hl7v2-repo</module>
+		<module>hit-core-hl7v2-service</module>
 		<module>hit-core-hl7v2-api</module>
 	</modules>
 
 	<properties>
 		<core.version>1.0.48</core.version>
+		<hitcore.version>1.0.0</hitcore.version>
 	</properties>
 
 	<dependencies>
@@ -24,26 +25,26 @@
 		<dependency>
 			<groupId>gov.nist.hit.core</groupId>
 			<artifactId>hit-core-domain</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>${hitcore.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>gov.nist.hit.core</groupId>
 			<artifactId>hit-core-service</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>${hitcore.version}</version>
 		</dependency>
 
 
 		<dependency>
 			<groupId>gov.nist.hit.core</groupId>
 			<artifactId>hit-core-repo</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>${hitcore.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>gov.nist.hit.core</groupId>
 			<artifactId>hit-core-transport</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>${hitcore.version}</version>
 		</dependency>
 
 		<dependency>
@@ -89,6 +90,24 @@
 
 			</plugins>
 		</pluginManagement>
-	</build>
+	</build> 
+	
+	<distributionManagement>
+		<repository>
+			<id>releases</id>
+			<url>http://vm-070.nist.gov:8081/nexus/content/repositories/releases</url>
+		</repository>
+		<snapshotRepository>
+			<id>snapshots</id>
+			<name>Internal Snapshots</name>
+			<url>http://vm-070.nist.gov:8081/nexus/content/repositories/snapshots</url>
+		</snapshotRepository>
+	</distributionManagement>
+	<scm>
+		<connection>scm:git:https://github.com/haffo/hit-core-hl7v2.git</connection>
+		<url>scm:git:https://github.com/haffo/hit-core-hl7v2.git</url>
+		<developerConnection>scm:git:https://github.com/haffo/hit-core-hl7v2.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
 
 </project>

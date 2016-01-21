@@ -274,27 +274,27 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
     element.setPredicates(new ArrayList<Predicate>());
     element.setConformanceStatements(new ArrayList<ConformanceStatement>());
 
-    addMessageConstraints(element);
+    // addMessageConstraints(element);
     parentElement.getChildren().add(element);
     return element;
   }
 
-  private void addMessageConstraints(ProfileElement element) {
-    String targetPath = getTargetPath(element);
-    if (!targetPath.equals("")) {
-      for (ConformanceStatement cs : this.model.getMessage().getConformanceStatements()) {
-        if (cs.getConstraintTarget().equals(targetPath)) {
-          element.getConformanceStatements().add(cs);
-        }
-      }
-
-      for (Predicate p : this.model.getMessage().getPredicates()) {
-        if (p.getConstraintTarget().equals(targetPath)) {
-          element.getPredicates().add(p);
-        }
-      }
-    }
-  }
+  // private void addMessageConstraints(ProfileElement element) {
+  // String targetPath = getTargetPath(element);
+  // if (!targetPath.equals("")) {
+  // for (ConformanceStatement cs : this.model.getMessage().getConformanceStatements()) {
+  // if (cs.getConstraintTarget().equals(targetPath)) {
+  // element.getConformanceStatements().add(cs);
+  // }
+  // }
+  //
+  // for (Predicate p : this.model.getMessage().getPredicates()) {
+  // if (p.getConstraintTarget().equals(targetPath)) {
+  // element.getPredicates().add(p);
+  // }
+  // }
+  // }
+  // }
 
 
   private boolean relevent(ProfileElement child, ProfileElement parent) {
@@ -394,20 +394,20 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
     element.setConformanceStatements(this.findConformanceStatements(
         this.conformanceStatements.getGroups(), g.id(), g.name()));
 
-    String targetPath = getTargetPath(element);
-    if (!targetPath.equals("")) {
-      for (ConformanceStatement cs : this.model.getMessage().getConformanceStatements()) {
-        if (cs.getConstraintTarget().equals(targetPath)) {
-          element.getConformanceStatements().add(cs);
-        }
-      }
-
-      for (Predicate p : this.model.getMessage().getPredicates()) {
-        if (p.getConstraintTarget().equals(targetPath)) {
-          element.getPredicates().add(p);
-        }
-      }
-    }
+    // String targetPath = getTargetPath(element);
+    // if (!targetPath.equals("")) {
+    // for (ConformanceStatement cs : this.model.getMessage().getConformanceStatements()) {
+    // if (cs.getConstraintTarget().equals(targetPath)) {
+    // element.getConformanceStatements().add(cs);
+    // }
+    // }
+    //
+    // for (Predicate p : this.model.getMessage().getPredicates()) {
+    // if (p.getConstraintTarget().equals(targetPath)) {
+    // element.getPredicates().add(p);
+    // }
+    // }
+    // }
 
     parentElement.getChildren().add(element);
     scala.collection.immutable.List<SegRefOrGroup> children = g.structure();

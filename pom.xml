@@ -119,9 +119,9 @@
 		</snapshotRepository>
 	</distributionManagement>
 	<scm>
-		<connection>scm:git:https://github.com/haffo/hit-core-hl7v2.git</connection>
-		<url>scm:git:https://github.com/haffo/hit-core-hl7v2.git</url>
-		<developerConnection>scm:git:https://github.com/haffo/hit-core-hl7v2.git</developerConnection>
+		<connection>scm:git:https://haffo@github.com/haffo/hit-core-hl7v2.git</connection>
+		<url>scm:git:https://haffo@github.com/haffo/hit-core-hl7v2.git</url>
+		<developerConnection>scm:git:https://haffo@github.com/haffo/hit-core-hl7v2.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 

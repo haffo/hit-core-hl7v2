@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>gov.nist.hit.core.hl7v2</groupId>
 	<artifactId>hit-core-hl7v2</artifactId>
-	<version>1.0.4-SNAPSHOT</version>
+	<version>1.0.4</version>
 	<name>hit-core-hl7v2</name>
 	<description>hit-core-hl7v2</description>
 	<packaging>pom</packaging>
@@ -122,7 +122,7 @@
 		<connection>scm:git:https://haffo@github.com/haffo/hit-core-hl7v2.git</connection>
 		<url>scm:git:https://haffo@github.com/haffo/hit-core-hl7v2.git</url>
 		<developerConnection>scm:git:https://haffo@github.com/haffo/hit-core-hl7v2.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>hit-core-hl7v2-1.0.4</tag>
   </scm>
 
 </project>

@@ -30,14 +30,15 @@ import gov.nist.hit.core.service.util.FileUtil;
 
 import java.io.IOException;
 
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.JsonMappingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
 
@@ -89,11 +90,11 @@ public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
       testContext.setFormat(FORMAT);
       testContext.setStage(stage);
 
-      if (valueSetLibraryId != null && !"".equals(valueSetLibraryId.getTextValue())) {
-        testContext.setVocabularyLibrary((getVocabularyLibrary(valueSetLibraryId.getTextValue())));
+      if (valueSetLibraryId != null && !"".equals(valueSetLibraryId.textValue())) {
+        testContext.setVocabularyLibrary((getVocabularyLibrary(valueSetLibraryId.textValue())));
       }
-      if (constraintId != null && !"".equals(constraintId.getTextValue())) {
-        testContext.setConstraints(getConstraints(constraintId.getTextValue()));
+      if (constraintId != null && !"".equals(constraintId.textValue())) {
+        testContext.setConstraints(getConstraints(constraintId.textValue()));
       }
       testContext.setAddditionalConstraints(additionalConstraints(path + CONSTRAINTS_FILE_PATTERN));
       testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.txt"))));
@@ -101,19 +102,19 @@ public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
         testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.text"))));
       }
 
-      if (dqa != null && !"".equals(dqa.getTextValue())) {
-        testContext.setDqa(dqa.getBooleanValue());
+      if (dqa != null && !"".equals(dqa.textValue())) {
+        testContext.setDqa(dqa.booleanValue());
       }
 
       try {
         ConformanceProfile conformanceProfile = new ConformanceProfile();
-        IntegrationProfile integrationProfile = getIntegrationProfile(messageId.getTextValue());
+        IntegrationProfile integrationProfile = getIntegrationProfile(messageId.textValue());
         conformanceProfile.setJson(jsonConformanceProfile(integrationProfile.getXml(), messageId
-            .getTextValue(), testContext.getConstraints() != null ? testContext.getConstraints()
+            .textValue(), testContext.getConstraints() != null ? testContext.getConstraints()
             .getXml() : null, testContext.getAddditionalConstraints() != null ? testContext
             .getAddditionalConstraints().getXml() : null));
         conformanceProfile.setIntegrationProfile(integrationProfile);
-        conformanceProfile.setSourceId(messageId.getTextValue());
+        conformanceProfile.setSourceId(messageId.textValue());
         testContext.setConformanceProfile(conformanceProfile);
       } catch (ProfileParserException e) {
         throw new RuntimeException("Failed to parse integrationProfile at " + path);

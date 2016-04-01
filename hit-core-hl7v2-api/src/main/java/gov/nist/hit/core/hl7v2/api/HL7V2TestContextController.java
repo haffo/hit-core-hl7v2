@@ -19,6 +19,7 @@ import gov.nist.hit.core.hl7v2.service.HL7V2MessageParser;
 import gov.nist.hit.core.hl7v2.service.HL7V2MessageValidator;
 import gov.nist.hit.core.hl7v2.service.HL7V2ValidationReportConverter;
 import gov.nist.hit.core.service.ValidationReportConverter;
+import io.swagger.annotations.Api;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author Harold Affo (NIST)
  * 
  */
-
+@Api(value = "HL7 V2 Test Context", tags = "HL7 V2 Test Context")
 @RequestMapping("/hl7v2/testcontext")
 @RestController
 public class HL7V2TestContextController extends TestContextController {

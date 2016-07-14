@@ -47,7 +47,7 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
           report.setTestCase(nav.get("testPlan"), nav.get("testGroup"), nav.get("testCase"),
               nav.get("testStep"));
         }
-        return new MessageValidationResult(report.to("json").toString(), report.render("iz-report",
+        return new MessageValidationResult(report.to("json").toString(), report.render("report",
             null));
       }
       throw new MessageValidationException();

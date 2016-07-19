@@ -51,9 +51,6 @@ public class ProfileParserImplTest {
     assertFalse(predicates.size() == 0);
     group = group.getChildren().get(5);
     assertEquals("OBSERVATION", group.getName());
-    predicates = group.getPredicates();
-    assertFalse(predicates.size() == 0);
-
 
   }
 

@@ -20,18 +20,7 @@ import gov.nist.hit.core.hl7v2.domain.MessageElementData;
 import gov.nist.hit.core.hl7v2.domain.util.Util;
 import gov.nist.hit.core.service.MessageParser;
 import gov.nist.hit.core.service.exception.MessageParserException;
-import hl7.v2.instance.ComplexComponent;
-import hl7.v2.instance.ComplexField;
-import hl7.v2.instance.Component;
-import hl7.v2.instance.Field;
-import hl7.v2.instance.Group;
-import hl7.v2.instance.Location;
-import hl7.v2.instance.Message;
-import hl7.v2.instance.SegOrGroup;
-import hl7.v2.instance.Segment;
-import hl7.v2.instance.Separators;
-import hl7.v2.instance.SimpleComponent;
-import hl7.v2.instance.SimpleField;
+import hl7.v2.instance.*;
 import hl7.v2.profile.Profile;
 import hl7.v2.profile.Range;
 import hl7.v2.profile.Req;
@@ -221,12 +210,14 @@ public abstract class HL7V2MessageParser implements MessageParser {
               s.value().raw(), FIELD);
       new MessageElement("value", value, el);
     } else {
-      ComplexField c = (ComplexField) f;
-      List<Component> children = c.children();
-      if (children != null && !children.isEmpty()) {
-        Iterator<Component> it = children.iterator();
-        while (it.hasNext()) {
-          process(it.next(), el);
+      if(!(f instanceof NULLComplexField)){
+        ComplexField c = (ComplexField) f;
+        List<Component> children = c.children();
+        if (children != null && !children.isEmpty()) {
+          Iterator<Component> it = children.iterator();
+          while (it.hasNext()) {
+            process(it.next(), el);
+          }
         }
       }
 

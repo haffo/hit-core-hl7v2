@@ -229,7 +229,6 @@ public abstract class HL7V2MessageParser implements MessageParser {
           process(it.next(), el);
         }
       }
-
     }
   }
 

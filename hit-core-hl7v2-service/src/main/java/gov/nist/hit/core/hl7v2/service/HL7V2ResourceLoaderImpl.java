@@ -115,7 +115,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 							.getVocabularyLibrary(vocabLibrary.getSourceId());
 					if (exist != null) {
 						System.out.println("Replace");
-						vocabLibrary.setId(exist.getId());
+						vocabLibrary.setSourceId(exist.getSourceId());
 					} else {
 						System.out.println("Add");
 					}
@@ -145,7 +145,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 							.getSourceId());
 					if (exist != null) {
 						System.out.println("Replace");
-						constraint.setId(exist.getId());
+						constraint.setSourceId(exist.getSourceId());
 					} else {
 						System.out.println("Add");
 					}
@@ -175,7 +175,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 							.findBySourceId(integrationP.getSourceId());
 					if (exist != null) {
 						System.out.println("Replace");
-						integrationP.setId(exist.getId());
+						integrationP.setSourceId(exist.getSourceId());
 					} else {
 						System.out.println("Add");
 					}
@@ -190,134 +190,154 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 	}
 
 	// ------ Context-Free test Case
-
+	
 	@Override
-	public void addOrReplaceCFTestCase() throws IOException {
-		System.out.println("AddOrReplace CFTestCase");
+	public void handleCFTC(Long testCaseId, CFTestInstance tc) throws NotFoundException {
 
-		List<Resource> resources = this.getDirectories("*");
-		if (resources != null && !resources.isEmpty()) {
-			for (Resource resource : resources) {
-				String fileName = resource.getFilename();
-				CFTestInstance testObject = testObject(fileName);
-				if (testObject != null) {
-					testObject.setRoot(true);
-					testInstanceRepository.save(testObject);
-				}
+		CFTestInstance existing = this.testInstanceRepository.getByPersistentId(tc.getPersistentId());
+		
+		if(existing != null){
+			Long exId = existing.getId();
+			tc.setId(exId);
+			List<CFTestInstance> merged = this.mergeCFTC(tc.getChildren(), existing.getChildren());
+			tc.setChildren(merged);
+			this.testInstanceRepository.saveAndFlush(tc);
+		}
+		else {
+			if(testCaseId != null && testCaseId != -1){
+				CFTestInstance parent = this.testInstanceRepository.getByPersistentId(testCaseId);
+				if (parent == null)
+					throw new NotFoundException();
+				parent.getChildren().add(tc);
+				this.testInstanceRepository.saveAndFlush(parent);
+			}
+			else {
+				tc.setRoot(true);
+				this.testInstanceRepository.saveAndFlush(tc);
 			}
 		}
+
 	}
 
 	// ------ Context-Based test Case
 
 	@Override
-//	@Transactional
 	public void handleTS(Long testCaseId, TestStep ts) throws NotFoundException {
 
-		if (!this.testStepRepository.exists(ts.getId())) {
-			System.out.println("Not Exists");
-			TestCase tc = this.testCaseRepository.findOne(testCaseId);
+		TestStep existing = this.testStepRepository.getByPersistentId(ts.getPersistentId());
+		
+		if(existing != null){
+			Long exId = existing.getId();
+			ts.setId(exId);
+			ts.setTestCase(existing.getTestCase());
+			this.testStepRepository.saveAndFlush(ts);
+		}
+		else {
+			TestCase tc = this.testCaseRepository.getByPersistentId(testCaseId);
 			if (tc == null)
 				throw new NotFoundException();
 			tc.addTestStep(ts);
-			this.testCaseRepository.save(tc);
-		} else {
-			System.out.println("Exists");
-			TestStep ex = this.testStepRepository.findOne(ts.getId());
-			ts.setTestCase(ex.getTestCase());
-			this.testStepRepository.save(ts);
-			
+			this.testCaseRepository.saveAndFlush(tc);
 		}
-		this.flush();
+
 	}
 
 	@Override
-	public void handleTCg(Long testCaseGroup, TestCase tc)
-			throws NotFoundException {
-
-		if (!this.testCaseRepository.exists(tc.getId())) {
-			TestCaseGroup tcg = this.testCaseGroupRepository
-					.findOne(testCaseGroup);
+	public void addTC(Long parentId, TestCase tc, String where) throws NotFoundException {
+		
+		if(where.toLowerCase().equals("group")){
+			TestCaseGroup tcg = this.testCaseGroupRepository.getByPersistentId(parentId);
 			if (tcg == null)
 				throw new NotFoundException();
 			tcg.getTestCases().add(tc);
-			this.testCaseGroupRepository.save(tcg);
-		} else {
-			TestCase existing = this.testCaseRepository.findOne(tc.getId());
-			List<TestStep> merged = this.mergeTS(tc.getTestSteps(),
-					existing.getTestSteps());
+			this.testCaseGroupRepository.saveAndFlush(tcg);
+		}
+		else if(where.toLowerCase().equals("plan")){
+			TestPlan tp = this.testPlanRepository.getByPersistentId(parentId);
+			if (tp == null)
+				throw new NotFoundException();
+			tp.getTestCases().add(tc);
+			this.testPlanRepository.saveAndFlush(tp);
+		}
+		
+	}
+	
+	@Override
+	public void updateTC(TestCase tc) throws NotFoundException {
+		
+		TestCase existing = this.testCaseRepository.getByPersistentId(tc.getPersistentId());
+		
+		if(existing != null){
+			Long exId = existing.getId();
+			List<TestStep> merged = this.mergeTS(tc.getTestSteps(), existing.getTestSteps());
+			tc.setId(exId);
 			tc.setDataMappings(existing.getDataMappings());
 			tc.setTestSteps(merged);
-			this.testCaseRepository.save(tc);
+			this.testCaseRepository.saveAndFlush(tc);
 		}
-		this.flush();
+		else {
+			throw new NotFoundException();
+		}
+
 	}
 
 	@Override
-	public void handleTCG(Long testPlan, TestCaseGroup tcg)
-			throws NotFoundException {
-
-		if (!this.testCaseGroupRepository.exists(tcg.getId())) {
-			TestPlan tp = this.testPlanRepository.findOne(testPlan);
+	public void addTCG(Long parentId, TestCaseGroup tcg, String where) throws NotFoundException {
+		if(where.toLowerCase().equals("plan")){
+			TestPlan tp = this.testPlanRepository.getByPersistentId(parentId);
 			if (tp == null)
 				throw new NotFoundException();
 			tp.getTestCaseGroups().add(tcg);
-			this.testPlanRepository.save(tp);
-		} else {
-			TestCaseGroup existing = this.testCaseGroupRepository.findOne(tcg
-					.getId());
-			List<TestCase> mergedTc = this.mergeTC(tcg.getTestCases(),
-					existing.getTestCases());
-			List<TestCaseGroup> mergedTcg = this.mergeTCG(
-					tcg.getTestCaseGroups(), existing.getTestCaseGroups());
+			this.testPlanRepository.saveAndFlush(tp);
+		}
+		else if(where.toLowerCase().equals("group")){
+			TestCaseGroup tcgg = this.testCaseGroupRepository.getByPersistentId(parentId);
+			if (tcgg == null)
+				throw new NotFoundException();
+			tcgg.getTestCaseGroups().add(tcg);
+			this.testCaseGroupRepository.saveAndFlush(tcgg);
+		}
+	}
+	
+	@Override
+	public void updateTCG(TestCaseGroup tcg) throws NotFoundException {
+		TestCaseGroup existing = this.testCaseGroupRepository.getByPersistentId(tcg.getPersistentId());
+		
+		if(existing != null){
+			Long exId = existing.getId();
+			List<TestCase> mergedTc = this.mergeTC(tcg.getTestCases(), existing.getTestCases());
+			List<TestCaseGroup> mergedTcg = this.mergeTCG(tcg.getTestCaseGroups(), existing.getTestCaseGroups());
+			tcg.setId(exId);
 			tcg.setTestCases(mergedTc);
 			tcg.setTestCaseGroups(mergedTcg);
-			this.testCaseGroupRepository.save(tcg);
+			this.testCaseGroupRepository.saveAndFlush(tcg);
 		}
-		this.flush();
+		else {
+			
+			throw new NotFoundException();
+			
+		}
 	}
-
+	
 	@Override
 	public void handleTP(TestPlan tp) {
-
-		if (!this.testPlanRepository.exists(tp.getId())) {
-			this.testPlanRepository.save(tp);
-		} else {
-			TestPlan existing = this.testPlanRepository.findOne(tp.getId());
-			List<TestCase> mergedTc = this.mergeTC(tp.getTestCases(),
-					existing.getTestCases());
-			List<TestCaseGroup> mergedTcg = this.mergeTCG(
-					tp.getTestCaseGroups(), existing.getTestCaseGroups());
+		
+		TestPlan existing = this.testPlanRepository.getByPersistentId(tp.getPersistentId());
+		
+		if(existing != null){
+			Long exId = existing.getId();
+			List<TestCase> mergedTc = this.mergeTC(tp.getTestCases(), existing.getTestCases());
+			List<TestCaseGroup> mergedTcg = this.mergeTCG(tp.getTestCaseGroups(), existing.getTestCaseGroups());
+			tp.setId(exId);
 			tp.setTestCases(mergedTc);
 			tp.setTestCaseGroups(mergedTcg);
-			System.out.println("TestCaseGroups");
-			for(TestCaseGroup tcg : mergedTcg){
-				System.out.println(tcg.getId());
-			}
-			
-			this.testPlanRepository.save(tp);
 		}
-		this.flush();
+		
+		this.testPlanRepository.saveAndFlush(tp);
 	}
 
 	// ---- Helper Functions
-
-	@Override
-	public List<TestStep> mergeTS(List<TestStep> newL, List<TestStep> oldL) {
-		int index = -1;
-		List<TestStep> tmp = new ArrayList<TestStep>();
-		tmp.addAll(oldL);
-
-		for (TestStep tcs : newL) {
-
-			if ((index = tmp.indexOf(tcs)) != -1) {
-				tmp.set(index, tcs);
-			} else
-				tmp.add(tcs);
-		}
-
-		return tmp;
-	}
+	// Creation Methods
 
 	@Override
 	public List<TestStep> createTS() throws IOException {
@@ -377,8 +397,40 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 		}
 		return tmp;
 	}
-
+	
 	@Override
+	public List<CFTestInstance> createCFTC() throws IOException {
+		
+		List<CFTestInstance> tmp = new ArrayList<CFTestInstance>();
+		List<Resource> resources = getDirectories("*");
+		for (Resource resource : resources) {
+			String fileName = resource.getFilename();
+			CFTestInstance testObject = testObject(fileName+"/");
+			if (testObject != null) {
+				tmp.add(testObject);
+			}
+		}
+		return tmp;
+	}
+	
+	// Merge Methods
+
+	public List<TestStep> mergeTS(List<TestStep> newL, List<TestStep> oldL) {
+		int index = -1;
+		List<TestStep> tmp = new ArrayList<TestStep>();
+		tmp.addAll(oldL);
+
+		for (TestStep tcs : newL) {
+
+			if ((index = tmp.indexOf(tcs)) != -1) {
+				tmp.set(index, tcs);
+			} else
+				tmp.add(tcs);
+		}
+
+		return tmp;
+	}
+	
 	public List<TestCase> mergeTC(List<TestCase> newL, List<TestCase> oldL) {
 		int index = -1;
 		List<TestCase> tmp = new ArrayList<TestCase>();
@@ -399,7 +451,6 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 		return tmp;
 	}
 
-	@Override
 	public List<TestCaseGroup> mergeTCG(List<TestCaseGroup> newL,
 			List<TestCaseGroup> oldL) {
 		int index = -1;
@@ -425,7 +476,32 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 		}
 		return tmp;
 	}
+	
+	public List<CFTestInstance> mergeCFTC(List<CFTestInstance> newL, List<CFTestInstance> oldL) {
+		int index = -1;
+		List<CFTestInstance> tmp = new ArrayList<CFTestInstance>();
+		tmp.addAll(oldL);
 
+		for (CFTestInstance tcs : newL) {
+
+			if ((index = tmp.indexOf(tcs)) != -1) {
+				CFTestInstance existing = tmp.get(index);
+				if(existing.getChildren() != null && existing.getChildren().size() > 0){
+					if(tcs.getChildren() != null && tcs.getChildren().size() > 0){
+						List<CFTestInstance> children = mergeCFTC(tcs.getChildren(),existing.getChildren());
+						tcs.setChildren(children);
+					}
+					else {
+						tcs.setChildren(existing.getChildren());
+					}
+				}
+				tmp.set(index, tcs);
+			} else
+				tmp.add(tcs);
+		}
+		return tmp;
+	}
+	
 	public void flush() {
 		this.testStepRepository.flush();
 		this.testCaseRepository.flush();

@@ -165,7 +165,6 @@ public class HL7V2ResourcebundleLoaderImpl extends ResourcebundleLoader {
 		vocabLibrary.setXml(content);
 		vocabLibrary.setJson(obm.writeValueAsString(valueSetLibrarySerializer
 				.toObject(content)));
-		vocabularyLibraryRepository.save(vocabLibrary);
 		return vocabLibrary;
 	}
 

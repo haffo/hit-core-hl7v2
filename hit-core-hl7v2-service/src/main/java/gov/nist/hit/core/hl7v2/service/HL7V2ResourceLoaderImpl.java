@@ -115,6 +115,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 							.getVocabularyLibrary(vocabLibrary.getSourceId());
 					if (exist != null) {
 						System.out.println("Replace");
+						vocabLibrary.setId(exist.getId());
 						vocabLibrary.setSourceId(exist.getSourceId());
 					} else {
 						System.out.println("Add");
@@ -145,6 +146,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 							.getSourceId());
 					if (exist != null) {
 						System.out.println("Replace");
+						constraint.setId(exist.getId());
 						constraint.setSourceId(exist.getSourceId());
 					} else {
 						System.out.println("Add");
@@ -175,6 +177,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 							.findBySourceId(integrationP.getSourceId());
 					if (exist != null) {
 						System.out.println("Replace");
+						integrationP.setId(exist.getId());
 						integrationP.setSourceId(exist.getSourceId());
 					} else {
 						System.out.println("Add");
@@ -423,6 +426,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 		for (TestStep tcs : newL) {
 
 			if ((index = tmp.indexOf(tcs)) != -1) {
+				tcs.setId(tmp.get(index).getId());
 				tmp.set(index, tcs);
 			} else
 				tmp.add(tcs);
@@ -444,6 +448,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 				tcs.setTestSteps(newLs);
 				TestCase existing = tmp.get(index);
 				tcs.setDataMappings(existing.getDataMappings());
+				tcs.setId(existing.getId());
 				tmp.set(index, tcs);
 			} else
 				tmp.add(tcs);
@@ -470,6 +475,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 									.getTestCaseGroups());
 					tcs.setTestCaseGroups(newLsg);
 				}
+				tcs.setId(tmp.get(index).getId());
 				tmp.set(index, tcs);
 			} else
 				tmp.add(tcs);
@@ -495,12 +501,56 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 						tcs.setChildren(existing.getChildren());
 					}
 				}
+				tcs.setId(tmp.get(index).getId());
 				tmp.set(index, tcs);
 			} else
 				tmp.add(tcs);
 		}
 		return tmp;
 	}
+	
+	//Delete
+	@Override
+	public void deleteTS(Long id) throws NotFoundException{
+		TestStep s = this.testStepRepository.getByPersistentId(id);
+		if(s == null)
+			throw new NotFoundException();
+		this.testStepRepository.delete(s.getId());
+		
+	}
+
+	@Override
+	public void deleteTC(Long id) throws NotFoundException {
+		TestCase s = this.testCaseRepository.getByPersistentId(id);
+		if(s == null)
+			throw new NotFoundException();
+		this.testCaseRepository.delete(s.getId());
+	}
+
+	@Override
+	public void deleteTCG(Long id) throws NotFoundException {
+		TestCaseGroup s = this.testCaseGroupRepository.getByPersistentId(id);
+		if(s == null)
+			throw new NotFoundException();
+		this.testCaseGroupRepository.delete(s.getId());
+	}
+
+	@Override
+	public void deleteTP(Long id) throws NotFoundException {
+		TestPlan s = this.testPlanRepository.getByPersistentId(id);
+		if(s == null)
+			throw new NotFoundException();
+		this.testPlanRepository.delete(s.getId());
+	}
+
+	@Override
+	public void deleteCFTC(Long id) throws NotFoundException {
+		CFTestInstance s = this.testInstanceRepository.getByPersistentId(id);
+		if(s == null)
+			throw new NotFoundException();
+		this.testInstanceRepository.delete(s.getId());
+	}
+	
 	
 	public void flush() {
 		this.testStepRepository.flush();

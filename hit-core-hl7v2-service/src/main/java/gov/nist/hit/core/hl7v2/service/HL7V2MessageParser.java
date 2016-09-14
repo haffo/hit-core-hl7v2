@@ -220,7 +220,6 @@ public abstract class HL7V2MessageParser implements MessageParser {
           }
         }
       }
-
     }
   }
 

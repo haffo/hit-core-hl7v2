@@ -354,7 +354,7 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
       while (dynIt.hasNext()) {
         DynMapping d = dynIt.next();
         Set<String> ids = new HashSet<String>();
-        Iterator<Datatype> mapIt = (Iterator<Datatype>) d.map().values();
+        Iterator<Datatype> mapIt = d.map().valuesIterator();
         while (mapIt.hasNext()) {
           Datatype da = mapIt.next();
           ids.add(da.id());

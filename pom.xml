@@ -15,13 +15,13 @@
 
 	<properties>
 		<core.version>1.0.48</core.version>
-		<hitcore.version>1.0.17</hitcore.version>
+		<hitcore.version>1.0.18-SNAPSHOT</hitcore.version>
 		<additionalparam>-Xdoclint:none</additionalparam>
 	</properties>
 
-	<dependencies>
+	<dependencyManagement>
 
-
+		<dependencies>
 		<dependency>
 			<groupId>gov.nist.hit.core</groupId>
 			<artifactId>hit-core-domain</artifactId>
@@ -46,6 +46,11 @@
 			<artifactId>hit-core-transport</artifactId>
 			<version>${hitcore.version}</version>
 		</dependency>
+		</dependencies>
+
+	</dependencyManagement>
+
+	<dependencies>
 
 		<dependency>
             <groupId>gov.nist</groupId>
@@ -62,7 +67,18 @@
             <artifactId>report-filter</artifactId>
             <version>1.0.5</version>
         </dependency>
-        
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.7.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.12</version>
+		</dependency>
         
         
 	</dependencies>

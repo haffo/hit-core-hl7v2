@@ -14,11 +14,15 @@
 	<dependencies>
 
 		<dependency>
-			<groupId>gov.nist.hit.core.hl7v2</groupId>
-			<artifactId>hit-core-hl7v2-repo</artifactId>
-						<version>${project.version}</version>
+			<groupId>gov.nist.hit.core</groupId>
+			<artifactId>hit-core-service</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>gov.nist.hit.core.hl7v2</groupId>
+			<artifactId>hit-core-hl7v2-repo</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
 		<dependency>
 			<groupId>junit</groupId>

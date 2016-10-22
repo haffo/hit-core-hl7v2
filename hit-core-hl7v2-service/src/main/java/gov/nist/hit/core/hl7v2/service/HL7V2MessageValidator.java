@@ -21,6 +21,7 @@ import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
 import gov.nist.hit.core.service.MessageValidator;
 import gov.nist.hit.core.service.exception.MessageException;
 import gov.nist.hit.core.service.exception.MessageValidationException;
+import gov.nist.hit.core.service.util.ValidationLogUtil;
 import hl7.v2.validation.content.ConformanceContext;
 import hl7.v2.validation.content.DefaultConformanceContext;
 import hl7.v2.validation.vs.ValueSetLibrary;
@@ -32,9 +33,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public abstract class HL7V2MessageValidator implements MessageValidator {
+
+  static final Logger logger = LoggerFactory.getLogger(HL7V2MessageValidator.class);
 
   @Override
   public MessageValidationResult validate(TestContext testContext, MessageValidationCommand command)
@@ -47,6 +52,7 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
           report.setTestCase(nav.get("testPlan"), nav.get("testGroup"), nav.get("testCase"),
               nav.get("testStep"));
         }
+        logger.info(ValidationLogUtil.generateValidationLog(testContext,report));
         return new MessageValidationResult(report.to("json").toString(), report.render("iz-report",
             null));
       }

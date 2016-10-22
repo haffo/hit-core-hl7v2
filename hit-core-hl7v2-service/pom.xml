@@ -16,9 +16,8 @@
 		<dependency>
 			<groupId>gov.nist.hit.core.hl7v2</groupId>
 			<artifactId>hit-core-hl7v2-repo</artifactId>
-						<version>${project.version}</version>
+			<version>${project.version}</version>
 		</dependency>
-
 
 		<dependency>
 			<groupId>junit</groupId>

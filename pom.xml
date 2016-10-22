@@ -19,39 +19,27 @@
 		<additionalparam>-Xdoclint:none</additionalparam>
 	</properties>
 
-	<dependencyManagement>
-
-		<dependencies>
+	<dependencies>
 		<dependency>
 			<groupId>gov.nist.hit.core</groupId>
 			<artifactId>hit-core-domain</artifactId>
 			<version>${hitcore.version}</version>
 		</dependency>
-
 		<dependency>
 			<groupId>gov.nist.hit.core</groupId>
 			<artifactId>hit-core-service</artifactId>
 			<version>${hitcore.version}</version>
 		</dependency>
-
-
 		<dependency>
 			<groupId>gov.nist.hit.core</groupId>
 			<artifactId>hit-core-repo</artifactId>
 			<version>${hitcore.version}</version>
 		</dependency>
-
 		<dependency>
 			<groupId>gov.nist.hit.core</groupId>
 			<artifactId>hit-core-transport</artifactId>
 			<version>${hitcore.version}</version>
 		</dependency>
-		</dependencies>
-
-	</dependencyManagement>
-
-	<dependencies>
-
 		<dependency>
             <groupId>gov.nist</groupId>
             <artifactId>hl7-v2-validation</artifactId>

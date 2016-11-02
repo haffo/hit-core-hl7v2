@@ -354,8 +354,7 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
       while (dynIt.hasNext()) {
         DynMapping d = dynIt.next();
         Set<String> ids = new HashSet<String>();
-        scala.collection.immutable.Map<String, Datatype> map = d.map();
-        Iterator<Datatype> mapIt = map.valuesIterator();
+        Iterator<Datatype> mapIt = d.map().valuesIterator();
         while (mapIt.hasNext()) {
           Datatype da = mapIt.next();
           ids.add(da.id());

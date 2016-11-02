@@ -1,48 +1,48 @@
 package gov.nist.hit.core.hl7v2.service;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.transaction.Transactional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 
-import gov.nist.hit.core.domain.AbstractTestCase;
-import gov.nist.hit.core.domain.CFTestInstance;
+import gov.nist.hit.core.domain.ConformanceProfile;
 import gov.nist.hit.core.domain.Constraints;
 import gov.nist.hit.core.domain.IntegrationProfile;
-import gov.nist.hit.core.domain.TestCase;
-import gov.nist.hit.core.domain.TestCaseGroup;
-import gov.nist.hit.core.domain.TestPlan;
-import gov.nist.hit.core.domain.TestStep;
+import gov.nist.hit.core.domain.ProfileModel;
+import gov.nist.hit.core.domain.TestCaseDocument;
+import gov.nist.hit.core.domain.TestContext;
 import gov.nist.hit.core.domain.TestingStage;
 import gov.nist.hit.core.domain.VocabularyLibrary;
-import gov.nist.hit.core.repo.TestCaseGroupRepository;
-import gov.nist.hit.core.repo.TestCaseRepository;
-import gov.nist.hit.core.repo.TestStepRepository;
-import gov.nist.hit.core.service.ResourceLoader;
-import gov.nist.hit.core.service.exception.NotFoundException;
+import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
+import gov.nist.hit.core.hl7v2.domain.HLV2TestCaseDocument;
+import gov.nist.hit.core.hl7v2.repo.HL7V2TestContextRepository;
+import gov.nist.hit.core.service.ValueSetLibrarySerializer;
 import gov.nist.hit.core.service.exception.ProfileParserException;
+import gov.nist.hit.core.service.impl.ValueSetLibrarySerializerImpl;
 import gov.nist.hit.core.service.util.FileUtil;
-import gov.nist.hit.core.service.util.ResourcebundleHelper;
 
-public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
-		implements ResourceLoader {
+public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 
-	@Autowired
-	private TestCaseRepository testCaseRepository;
+	static final Logger logger = LoggerFactory.getLogger(HL7V2ResourcebundleLoaderImpl.class);
+	static final String FORMAT = "hl7v2";
 
 	@Autowired
-	private TestCaseGroupRepository testCaseGroupRepository;
+	HL7V2TestContextRepository testContextRepository;
 
-	@Autowired
-	private TestStepRepository testStepRepository;
+	HL7V2ProfileParser profileParser = new HL7V2ProfileParserImpl();
+	ValueSetLibrarySerializer valueSetLibrarySerializer = new ValueSetLibrarySerializerImpl();
 
 	@Autowired
 	@PersistenceContext(unitName = "base-tool")
@@ -61,29 +61,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 	}
 
 	@Override
-	public List<Resource> getDirectories(String pattern) throws IOException {
-		// System.out.println("GET DIRS " + directory + pattern);
-		List<Resource> res = ResourcebundleHelper.getDirectoriesFile(directory
-				+ pattern);
-		// System.out.println(res.size());
-		return res;
-	}
-
-	@Override
-	public Resource getResource(String pattern) throws IOException {
-		// System.out.println("GET RES " + directory + pattern);
-		return ResourcebundleHelper.getResourceFile(directory + pattern);
-	}
-
-	@Override
-	public List<Resource> getResources(String pattern) throws IOException {
-		// System.out.println("GET RESS " + directory + pattern);
-		return ResourcebundleHelper.getResourcesFile(directory + pattern);
-	}
-
-	@Override
-	protected VocabularyLibrary getVocabularyLibrary(String id)
-			throws IOException {
+	protected VocabularyLibrary getVocabularyLibrary(String id) throws IOException {
 		return this.vocabularyLibraryRepository.findOneBySourceId(id);
 	}
 
@@ -93,8 +71,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 	}
 
 	@Override
-	protected IntegrationProfile getIntegrationProfile(String id)
-			throws IOException {
+	protected IntegrationProfile getIntegrationProfile(String id) throws IOException {
 		return this.integrationProfileRepository.findByMessageId(id);
 	}
 
@@ -111,8 +88,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 				try {
 					VocabularyLibrary vocabLibrary = vocabLibrary(content);
 
-					VocabularyLibrary exist = this
-							.getVocabularyLibrary(vocabLibrary.getSourceId());
+					VocabularyLibrary exist = this.getVocabularyLibrary(vocabLibrary.getSourceId());
 					if (exist != null) {
 						System.out.println("Replace");
 						vocabLibrary.setId(exist.getId());
@@ -142,8 +118,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 				try {
 					Constraints constraint = constraint(content);
 
-					Constraints exist = this.getConstraints(constraint
-							.getSourceId());
+					Constraints exist = this.getConstraints(constraint.getSourceId());
 					if (exist != null) {
 						System.out.println("Replace");
 						constraint.setId(exist.getId());
@@ -192,371 +167,90 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourcebundleLoaderImpl
 		}
 	}
 
-	// ------ Context-Free test Case
-	
 	@Override
-	public void handleCFTC(Long testCaseId, CFTestInstance tc) throws NotFoundException {
-
-		CFTestInstance existing = this.testInstanceRepository.getByPersistentId(tc.getPersistentId());
-		
-		if(existing != null){
-			Long exId = existing.getId();
-			tc.setId(exId);
-			List<CFTestInstance> merged = this.mergeCFTC(tc.getChildren(), existing.getChildren());
-			tc.setChildren(merged);
-			this.testInstanceRepository.saveAndFlush(tc);
+	public TestCaseDocument generateTestCaseDocument(TestContext c) throws IOException {
+		HLV2TestCaseDocument doc = new HLV2TestCaseDocument();
+		if (c != null) {
+			HL7V2TestContext context = testContextRepository.findOne(c.getId());
+			doc.setExMsgPresent(context.getMessage() != null && context.getMessage().getContent() != null);
+			doc.setXmlConfProfilePresent(
+					context.getConformanceProfile() != null && context.getConformanceProfile().getJson() != null);
+			doc.setXmlValueSetLibraryPresent(
+					context.getVocabularyLibrary() != null && context.getVocabularyLibrary().getJson() != null);
+			doc.setXmlConstraintsPresent(context.getAddditionalConstraints() != null
+					&& context.getAddditionalConstraints().getXml() != null);
 		}
-		else {
-			if(testCaseId != null && testCaseId != -1){
-				CFTestInstance parent = this.testInstanceRepository.getByPersistentId(testCaseId);
-				if (parent == null)
-					throw new NotFoundException();
-				parent.getChildren().add(tc);
-				this.testInstanceRepository.saveAndFlush(parent);
+		return doc;
+	}
+
+	@Override
+	public TestContext testContext(String path, JsonNode formatObj, TestingStage stage) throws IOException {
+		// for backward compatibility
+		formatObj = formatObj.findValue(FORMAT) != null ? formatObj.findValue(FORMAT) : formatObj;
+
+		JsonNode messageId = formatObj.findValue("messageId");
+		JsonNode constraintId = formatObj.findValue("constraintId");
+		JsonNode valueSetLibraryId = formatObj.findValue("valueSetLibraryId");
+		JsonNode dqa = formatObj.findValue("dqa");
+
+		if (messageId != null) {
+			HL7V2TestContext testContext = new HL7V2TestContext();
+			testContext.setFormat(FORMAT);
+			testContext.setStage(stage);
+
+			if (valueSetLibraryId != null && !"".equals(valueSetLibraryId.textValue())) {
+				testContext.setVocabularyLibrary((getVocabularyLibrary(valueSetLibraryId.textValue())));
 			}
-			else {
-				tc.setRoot(true);
-				this.testInstanceRepository.saveAndFlush(tc);
+			if (constraintId != null && !"".equals(constraintId.textValue())) {
+				testContext.setConstraints(getConstraints(constraintId.textValue()));
 			}
-		}
-
-	}
-
-	// ------ Context-Based test Case
-
-	@Override
-	public void handleTS(Long testCaseId, TestStep ts) throws NotFoundException {
-
-		TestStep existing = this.testStepRepository.getByPersistentId(ts.getPersistentId());
-		
-		if(existing != null){
-			Long exId = existing.getId();
-			ts.setId(exId);
-			ts.setTestCase(existing.getTestCase());
-			this.testStepRepository.saveAndFlush(ts);
-		}
-		else {
-			TestCase tc = this.testCaseRepository.getByPersistentId(testCaseId);
-			if (tc == null)
-				throw new NotFoundException();
-			tc.addTestStep(ts);
-			this.testCaseRepository.saveAndFlush(tc);
-		}
-
-	}
-
-	@Override
-	public void addTC(Long parentId, TestCase tc, String where) throws NotFoundException {
-		
-		if(where.toLowerCase().equals("group")){
-			TestCaseGroup tcg = this.testCaseGroupRepository.getByPersistentId(parentId);
-			if (tcg == null)
-				throw new NotFoundException();
-			tcg.getTestCases().add(tc);
-			this.testCaseGroupRepository.saveAndFlush(tcg);
-		}
-		else if(where.toLowerCase().equals("plan")){
-			TestPlan tp = this.testPlanRepository.getByPersistentId(parentId);
-			if (tp == null)
-				throw new NotFoundException();
-			tp.getTestCases().add(tc);
-			this.testPlanRepository.saveAndFlush(tp);
-		}
-		
-	}
-	
-	@Override
-	public void updateTC(TestCase tc) throws NotFoundException {
-		
-		TestCase existing = this.testCaseRepository.getByPersistentId(tc.getPersistentId());
-		
-		if(existing != null){
-			Long exId = existing.getId();
-			List<TestStep> merged = this.mergeTS(tc.getTestSteps(), existing.getTestSteps());
-			tc.setId(exId);
-			tc.setDataMappings(existing.getDataMappings());
-			tc.setTestSteps(merged);
-			this.testCaseRepository.saveAndFlush(tc);
-		}
-		else {
-			throw new NotFoundException();
-		}
-
-	}
-
-	@Override
-	public void addTCG(Long parentId, TestCaseGroup tcg, String where) throws NotFoundException {
-		if(where.toLowerCase().equals("plan")){
-			TestPlan tp = this.testPlanRepository.getByPersistentId(parentId);
-			if (tp == null)
-				throw new NotFoundException();
-			tp.getTestCaseGroups().add(tcg);
-			this.testPlanRepository.saveAndFlush(tp);
-		}
-		else if(where.toLowerCase().equals("group")){
-			TestCaseGroup tcgg = this.testCaseGroupRepository.getByPersistentId(parentId);
-			if (tcgg == null)
-				throw new NotFoundException();
-			tcgg.getTestCaseGroups().add(tcg);
-			this.testCaseGroupRepository.saveAndFlush(tcgg);
-		}
-	}
-	
-	@Override
-	public void updateTCG(TestCaseGroup tcg) throws NotFoundException {
-		TestCaseGroup existing = this.testCaseGroupRepository.getByPersistentId(tcg.getPersistentId());
-		
-		if(existing != null){
-			Long exId = existing.getId();
-			List<TestCase> mergedTc = this.mergeTC(tcg.getTestCases(), existing.getTestCases());
-			List<TestCaseGroup> mergedTcg = this.mergeTCG(tcg.getTestCaseGroups(), existing.getTestCaseGroups());
-			tcg.setId(exId);
-			tcg.setTestCases(mergedTc);
-			tcg.setTestCaseGroups(mergedTcg);
-			this.testCaseGroupRepository.saveAndFlush(tcg);
-		}
-		else {
-			
-			throw new NotFoundException();
-			
-		}
-	}
-	
-	@Override
-	public void handleTP(TestPlan tp) {
-		
-		TestPlan existing = this.testPlanRepository.getByPersistentId(tp.getPersistentId());
-		
-		if(existing != null){
-			Long exId = existing.getId();
-			List<TestCase> mergedTc = this.mergeTC(tp.getTestCases(), existing.getTestCases());
-			List<TestCaseGroup> mergedTcg = this.mergeTCG(tp.getTestCaseGroups(), existing.getTestCaseGroups());
-			tp.setId(exId);
-			tp.setTestCases(mergedTc);
-			tp.setTestCaseGroups(mergedTcg);
-		}
-		
-		this.testPlanRepository.saveAndFlush(tp);
-	}
-
-	// ---- Helper Functions
-	// Creation Methods
-
-	@Override
-	public List<TestStep> createTS() throws IOException {
-		System.out.println("Creating TS");
-		List<TestStep> tmp = new ArrayList<TestStep>();
-		List<Resource> resources = getDirectories("*");
-		System.out.println("Directories found : " + resources.size());
-		for (Resource resource : resources) {
-			String fileName = resource.getFilename();
-			System.out.println("Handling folder = " + fileName);
-			TestStep testStep = testStep(fileName + "/", null, false);
-			if (testStep != null) {
-				tmp.add(testStep);
+			testContext.setAddditionalConstraints(additionalConstraints(path + CONSTRAINTS_FILE_PATTERN));
+			testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.txt"))));
+			if (testContext.getMessage() == null) {
+				testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.text"))));
 			}
-		}
-		return tmp;
-	}
 
-	@Override
-	public List<TestCase> createTC() throws IOException {
-		List<TestCase> tmp = new ArrayList<TestCase>();
-		List<Resource> resources = getDirectories("*");
-		for (Resource resource : resources) {
-			String fileName = resource.getFilename();
-			TestCase testCase = testCase(fileName + "/", null, false);
-			if (testCase != null) {
-				tmp.add(testCase);
+			if (dqa != null && !"".equals(dqa.textValue())) {
+				testContext.setDqa(dqa.booleanValue());
 			}
-		}
-		return tmp;
-	}
 
-	@Override
-	public List<TestCaseGroup> createTCG() throws IOException {
-		List<TestCaseGroup> tmp = new ArrayList<TestCaseGroup>();
-		List<Resource> resources = getDirectories("*");
-		for (Resource resource : resources) {
-			String fileName = resource.getFilename();
-			TestCaseGroup testCaseGroup = testCaseGroup(fileName +"/", null, false);
-			if (testCaseGroup != null) {
-				tmp.add(testCaseGroup);
+			try {
+				ConformanceProfile conformanceProfile = new ConformanceProfile();
+				IntegrationProfile integrationProfile = getIntegrationProfile(messageId.textValue());
+				conformanceProfile.setJson(jsonConformanceProfile(integrationProfile.getXml(), messageId.textValue(),
+						testContext.getConstraints() != null ? testContext.getConstraints().getXml() : null,
+						testContext.getAddditionalConstraints() != null
+								? testContext.getAddditionalConstraints().getXml() : null));
+				conformanceProfile.setIntegrationProfile(integrationProfile);
+				conformanceProfile.setSourceId(messageId.textValue());
+				testContext.setConformanceProfile(conformanceProfile);
+			} catch (ProfileParserException e) {
+				throw new RuntimeException("Failed to parse integrationProfile at " + path);
 			}
+			return testContext;
 		}
-		return tmp;
+		return null;
 	}
 
 	@Override
-	public List<TestPlan> createTP() throws IOException {
-		List<TestPlan> tmp = new ArrayList<TestPlan>();
-		List<Resource> resources = getDirectories("*");
-		for (Resource resource : resources) {
-			String fileName = resource.getFilename();
-			TestPlan testPlan = testPlan(fileName +"/", TestingStage.CB);
-			if (testPlan != null) {
-				tmp.add(testPlan);
-			}
-		}
-		return tmp;
-	}
-	
-	@Override
-	public List<CFTestInstance> createCFTC() throws IOException {
-		
-		List<CFTestInstance> tmp = new ArrayList<CFTestInstance>();
-		List<Resource> resources = getDirectories("*");
-		for (Resource resource : resources) {
-			String fileName = resource.getFilename();
-			CFTestInstance testObject = testObject(fileName+"/");
-			if (testObject != null) {
-				tmp.add(testObject);
-			}
-		}
-		return tmp;
-	}
-	
-	// Merge Methods
-
-	public List<TestStep> mergeTS(List<TestStep> newL, List<TestStep> oldL) {
-		int index = -1;
-		List<TestStep> tmp = new ArrayList<TestStep>();
-		tmp.addAll(oldL);
-
-		for (TestStep tcs : newL) {
-
-			if ((index = tmp.indexOf(tcs)) != -1) {
-				tcs.setId(tmp.get(index).getId());
-				tmp.set(index, tcs);
-			} else
-				tmp.add(tcs);
-		}
-
-		return tmp;
-	}
-	
-	public List<TestCase> mergeTC(List<TestCase> newL, List<TestCase> oldL) {
-		int index = -1;
-		List<TestCase> tmp = new ArrayList<TestCase>();
-		tmp.addAll(oldL);
-
-		for (TestCase tcs : newL) {
-
-			if ((index = tmp.indexOf(tcs)) != -1) {
-				List<TestStep> newLs = mergeTS(tcs.getTestSteps(),
-						tmp.get(index).getTestSteps());
-				tcs.setTestSteps(newLs);
-				TestCase existing = tmp.get(index);
-				tcs.setDataMappings(existing.getDataMappings());
-				tcs.setId(existing.getId());
-				tmp.set(index, tcs);
-			} else
-				tmp.add(tcs);
-		}
-		return tmp;
-	}
-
-	public List<TestCaseGroup> mergeTCG(List<TestCaseGroup> newL,
-			List<TestCaseGroup> oldL) {
-		int index = -1;
-		List<TestCaseGroup> tmp = new ArrayList<TestCaseGroup>();
-		tmp.addAll(oldL);
-
-		for (TestCaseGroup tcs : newL) {
-
-			if ((index = tmp.indexOf(tcs)) != -1) {
-				List<TestCase> newLs = mergeTC(tcs.getTestCases(),
-						tmp.get(index).getTestCases());
-				tcs.setTestCases(newLs);
-				if (tcs.getTestCaseGroups() != null
-						&& tcs.getTestCaseGroups().size() > 0) {
-					List<TestCaseGroup> newLsg = mergeTCG(
-							tcs.getTestCaseGroups(), tmp.get(index)
-									.getTestCaseGroups());
-					tcs.setTestCaseGroups(newLsg);
-				}
-				tcs.setId(tmp.get(index).getId());
-				tmp.set(index, tcs);
-			} else
-				tmp.add(tcs);
-		}
-		return tmp;
-	}
-	
-	public List<CFTestInstance> mergeCFTC(List<CFTestInstance> newL, List<CFTestInstance> oldL) {
-		int index = -1;
-		List<CFTestInstance> tmp = new ArrayList<CFTestInstance>();
-		tmp.addAll(oldL);
-
-		for (CFTestInstance tcs : newL) {
-
-			if ((index = tmp.indexOf(tcs)) != -1) {
-				CFTestInstance existing = tmp.get(index);
-				if(existing.getChildren() != null && existing.getChildren().size() > 0){
-					if(tcs.getChildren() != null && tcs.getChildren().size() > 0){
-						List<CFTestInstance> children = mergeCFTC(tcs.getChildren(),existing.getChildren());
-						tcs.setChildren(children);
-					}
-					else {
-						tcs.setChildren(existing.getChildren());
-					}
-				}
-				tcs.setId(tmp.get(index).getId());
-				tmp.set(index, tcs);
-			} else
-				tmp.add(tcs);
-		}
-		return tmp;
-	}
-	
-	//Delete
-	@Override
-	public void deleteTS(Long id) throws NotFoundException{
-		TestStep s = this.testStepRepository.getByPersistentId(id);
-		if(s == null)
-			throw new NotFoundException();
-		this.testStepRepository.delete(s.getId());
-		
+	public ProfileModel parseProfile(String integrationProfileXml, String conformanceProfileId, String constraintsXml,
+			String additionalConstraintsXml) throws ProfileParserException {
+		return profileParser.parse(integrationProfileXml, conformanceProfileId, constraintsXml,
+				additionalConstraintsXml);
 	}
 
 	@Override
-	public void deleteTC(Long id) throws NotFoundException {
-		TestCase s = this.testCaseRepository.getByPersistentId(id);
-		if(s == null)
-			throw new NotFoundException();
-		this.testCaseRepository.delete(s.getId());
-	}
-
-	@Override
-	public void deleteTCG(Long id) throws NotFoundException {
-		TestCaseGroup s = this.testCaseGroupRepository.getByPersistentId(id);
-		if(s == null)
-			throw new NotFoundException();
-		this.testCaseGroupRepository.delete(s.getId());
-	}
-
-	@Override
-	public void deleteTP(Long id) throws NotFoundException {
-		TestPlan s = this.testPlanRepository.getByPersistentId(id);
-		if(s == null)
-			throw new NotFoundException();
-		this.testPlanRepository.delete(s.getId());
-	}
-
-	@Override
-	public void deleteCFTC(Long id) throws NotFoundException {
-		CFTestInstance s = this.testInstanceRepository.getByPersistentId(id);
-		if(s == null)
-			throw new NotFoundException();
-		this.testInstanceRepository.delete(s.getId());
-	}
-	
-	
-	public void flush() {
-		this.testStepRepository.flush();
-		this.testCaseRepository.flush();
-		this.testCaseGroupRepository.flush();
-		this.testPlanRepository.flush();
+	public VocabularyLibrary vocabLibrary(String content)
+			throws JsonGenerationException, JsonMappingException, IOException {
+		Document doc = this.stringToDom(content);
+		VocabularyLibrary vocabLibrary = new VocabularyLibrary();
+		Element valueSetLibraryeElement = (Element) doc.getElementsByTagName("ValueSetLibrary").item(0);
+		vocabLibrary.setSourceId(valueSetLibraryeElement.getAttribute("ValueSetLibraryIdentifier"));
+		vocabLibrary.setName(valueSetLibraryeElement.getAttribute("Name"));
+		vocabLibrary.setDescription(valueSetLibraryeElement.getAttribute("Description"));
+		vocabLibrary.setXml(content);
+		vocabLibrary.setJson(obm.writeValueAsString(valueSetLibrarySerializer.toObject(content)));
+		return vocabLibrary;
 	}
 
 }

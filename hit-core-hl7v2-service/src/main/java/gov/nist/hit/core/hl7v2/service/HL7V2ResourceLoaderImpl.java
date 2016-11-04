@@ -35,7 +35,7 @@ import gov.nist.hit.core.service.util.FileUtil;
 
 public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 
-	static final Logger logger = LoggerFactory.getLogger(HL7V2ResourcebundleLoaderImpl.class);
+	static final Logger logger = LoggerFactory.getLogger(HL7V2ResourceLoaderImpl.class);
 	static final String FORMAT = "hl7v2";
 
 	@Autowired
@@ -81,7 +81,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	public void addOrReplaceValueSet() throws IOException {
 		System.out.println("AddOrReplace VS");
 
-		List<Resource> resources = this.getResources("*.xml");
+		List<Resource> resources = this.getApiResources("*.xml");
 		if (resources != null && !resources.isEmpty()) {
 			for (Resource resource : resources) {
 				String content = FileUtil.getContent(resource);
@@ -111,7 +111,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	public void addOrReplaceConstraints() throws IOException {
 		System.out.println("AddOrReplace Constraints");
 
-		List<Resource> resources = this.getResources("*.xml");
+		List<Resource> resources = this.getApiResources("*.xml");
 		if (resources != null && !resources.isEmpty()) {
 			for (Resource resource : resources) {
 				String content = FileUtil.getContent(resource);
@@ -141,7 +141,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	public void addOrReplaceIntegrationProfile() throws IOException {
 		System.out.println("AddOrReplace integration profile");
 
-		List<Resource> resources = this.getResources("*.xml");
+		List<Resource> resources = this.getApiResources("*.xml");
 		if (resources != null && !resources.isEmpty()) {
 			for (Resource resource : resources) {
 				String content = FileUtil.getContent(resource);

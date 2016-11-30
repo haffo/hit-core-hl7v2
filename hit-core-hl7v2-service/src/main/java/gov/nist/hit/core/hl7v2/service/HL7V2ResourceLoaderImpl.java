@@ -1,6 +1,8 @@
 package gov.nist.hit.core.hl7v2.service;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -21,8 +23,13 @@ import gov.nist.hit.core.domain.ConformanceProfile;
 import gov.nist.hit.core.domain.Constraints;
 import gov.nist.hit.core.domain.IntegrationProfile;
 import gov.nist.hit.core.domain.ProfileModel;
+import gov.nist.hit.core.domain.ResourceType;
+import gov.nist.hit.core.domain.ResourceUploadAction;
+import gov.nist.hit.core.domain.ResourceUploadResult;
+import gov.nist.hit.core.domain.ResourceUploadStatus;
 import gov.nist.hit.core.domain.TestCaseDocument;
 import gov.nist.hit.core.domain.TestContext;
+import gov.nist.hit.core.domain.TestStep;
 import gov.nist.hit.core.domain.TestingStage;
 import gov.nist.hit.core.domain.VocabularyLibrary;
 import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
@@ -48,18 +55,6 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	@PersistenceContext(unitName = "base-tool")
 	protected EntityManager entityManager;
 
-	private String directory;
-
-	@Override
-	public void setDirectory(String dir) {
-		this.directory = dir;
-	}
-
-	@Override
-	public String getDirectory() {
-		return this.directory;
-	}
-
 	@Override
 	protected VocabularyLibrary getVocabularyLibrary(String id) throws IOException {
 		return this.vocabularyLibraryRepository.findOneBySourceId(id);
@@ -78,93 +73,164 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	// ----- Global -> ValueSet, Constraints, IntegrationProfile
 
 	@Override
-	public void addOrReplaceValueSet() throws IOException {
+	public List<ResourceUploadStatus> addOrReplaceValueSet() {
 		System.out.println("AddOrReplace VS");
-
-		List<Resource> resources = this.getApiResources("*.xml");
-		if (resources != null && !resources.isEmpty()) {
-			for (Resource resource : resources) {
-				String content = FileUtil.getContent(resource);
-				try {
-					VocabularyLibrary vocabLibrary = vocabLibrary(content);
-
-					VocabularyLibrary exist = this.getVocabularyLibrary(vocabLibrary.getSourceId());
-					if (exist != null) {
-						System.out.println("Replace");
-						vocabLibrary.setId(exist.getId());
-						vocabLibrary.setSourceId(exist.getSourceId());
-					} else {
-						System.out.println("Add");
-					}
-
-					this.vocabularyLibraryRepository.save(vocabLibrary);
-
-				} catch (UnsupportedOperationException e) {
-
-				}
+		
+		List<Resource> resources;
+		try {
+			resources = this.getApiResources("*.xml");
+			if (resources == null || resources.isEmpty()) {
+				ResourceUploadStatus result = new ResourceUploadStatus();
+				result.setType(ResourceType.VALUESETLIBRARY);
+				result.setStatus(ResourceUploadResult.FAILURE);
+				result.setMessage("No resource found");
+				return Arrays.asList(result);
 			}
+		} catch (IOException e1) {
+			ResourceUploadStatus result = new ResourceUploadStatus();
+			result.setType(ResourceType.VALUESETLIBRARY);
+			result.setStatus(ResourceUploadResult.FAILURE);
+			result.setMessage("Error while parsing resources");
+			return Arrays.asList(result);
 		}
+		
+		List<ResourceUploadStatus> results = new ArrayList<ResourceUploadStatus>();
 
+		for (Resource resource : resources) {
+			ResourceUploadStatus result = new ResourceUploadStatus();
+			result.setType(ResourceType.VALUESETLIBRARY);
+			String content = FileUtil.getContent(resource);
+			try {
+				VocabularyLibrary vocabLibrary = vocabLibrary(content);
+				result.setId(vocabLibrary.getSourceId());
+				VocabularyLibrary exist = this.getVocabularyLibrary(vocabLibrary.getSourceId());
+				if (exist != null) {
+					System.out.println("Replace");
+					result.setAction(ResourceUploadAction.UPDATE);
+					vocabLibrary.setId(exist.getId());
+					vocabLibrary.setSourceId(exist.getSourceId());
+				} else {
+					result.setAction(ResourceUploadAction.ADD);
+				}
+
+				this.vocabularyLibraryRepository.save(vocabLibrary);
+				result.setStatus(ResourceUploadResult.SUCCESS);
+
+			} catch (Exception e) {
+				result.setStatus(ResourceUploadResult.FAILURE);
+				result.setMessage(e.getMessage());
+			}
+			results.add(result);
+		}
+		return results;
 	}
 
 	@Override
-	public void addOrReplaceConstraints() throws IOException {
+	public List<ResourceUploadStatus> addOrReplaceConstraints() {
 		System.out.println("AddOrReplace Constraints");
 
-		List<Resource> resources = this.getApiResources("*.xml");
-		if (resources != null && !resources.isEmpty()) {
-			for (Resource resource : resources) {
-				String content = FileUtil.getContent(resource);
-				try {
-					Constraints constraint = constraint(content);
-
-					Constraints exist = this.getConstraints(constraint.getSourceId());
-					if (exist != null) {
-						System.out.println("Replace");
-						constraint.setId(exist.getId());
-						constraint.setSourceId(exist.getSourceId());
-					} else {
-						System.out.println("Add");
-					}
-
-					this.constraintsRepository.save(constraint);
-
-				} catch (UnsupportedOperationException e) {
-
-				}
+		List<Resource> resources;
+		try {
+			resources = this.getApiResources("*.xml");
+			if (resources == null || resources.isEmpty()) {
+				ResourceUploadStatus result = new ResourceUploadStatus();
+				result.setType(ResourceType.CONSTRAINTS);
+				result.setStatus(ResourceUploadResult.FAILURE);
+				result.setMessage("No resource found");
+				return Arrays.asList(result);
 			}
+		} catch (IOException e1) {
+			ResourceUploadStatus result = new ResourceUploadStatus();
+			result.setType(ResourceType.CONSTRAINTS);
+			result.setStatus(ResourceUploadResult.FAILURE);
+			result.setMessage("Error while parsing resources");
+			return Arrays.asList(result);
 		}
+		
+		List<ResourceUploadStatus> results = new ArrayList<ResourceUploadStatus>();
+		
+		for (Resource resource : resources) {
+			ResourceUploadStatus result = new ResourceUploadStatus();
+			result.setType(ResourceType.CONSTRAINTS);
+			String content = FileUtil.getContent(resource);
+			try {
+				Constraints constraint = constraint(content);
+				result.setId(constraint.getSourceId());
+				Constraints exist = this.getConstraints(constraint.getSourceId());
+				if (exist != null) {
+					System.out.println("Replace");
+					result.setAction(ResourceUploadAction.UPDATE);
+					constraint.setId(exist.getId());
+					constraint.setSourceId(exist.getSourceId());
+				} else {
+					result.setAction(ResourceUploadAction.ADD);
+					System.out.println("Add");
+				}
 
+				this.constraintsRepository.save(constraint);
+				result.setStatus(ResourceUploadResult.SUCCESS);
+
+			} catch (Exception e) {
+				result.setStatus(ResourceUploadResult.FAILURE);
+				result.setMessage(e.getMessage());
+			}
+			results.add(result);
+		}
+		return results;
 	}
 
 	@Override
-	public void addOrReplaceIntegrationProfile() throws IOException {
+	public List<ResourceUploadStatus> addOrReplaceIntegrationProfile() {
 		System.out.println("AddOrReplace integration profile");
 
-		List<Resource> resources = this.getApiResources("*.xml");
-		if (resources != null && !resources.isEmpty()) {
-			for (Resource resource : resources) {
-				String content = FileUtil.getContent(resource);
-				try {
-					IntegrationProfile integrationP = integrationProfile(content);
-
-					IntegrationProfile exist = this.integrationProfileRepository
-							.findBySourceId(integrationP.getSourceId());
-					if (exist != null) {
-						System.out.println("Replace");
-						integrationP.setId(exist.getId());
-						integrationP.setSourceId(exist.getSourceId());
-					} else {
-						System.out.println("Add");
-					}
-
-					this.integrationProfileRepository.save(integrationP);
-
-				} catch (UnsupportedOperationException e) {
-
-				}
+		List<Resource> resources;
+		try {
+			resources = this.getApiResources("*.xml");
+			if (resources == null || resources.isEmpty()) {
+				ResourceUploadStatus result = new ResourceUploadStatus();
+				result.setType(ResourceType.PROFILE);
+				result.setStatus(ResourceUploadResult.FAILURE);
+				result.setMessage("No resource found");
+				return Arrays.asList(result);
 			}
+		} catch (IOException e1) {
+			ResourceUploadStatus result = new ResourceUploadStatus();
+			result.setType(ResourceType.PROFILE);
+			result.setStatus(ResourceUploadResult.FAILURE);
+			result.setMessage("Error while parsing resources");
+			return Arrays.asList(result);
 		}
+		
+		List<ResourceUploadStatus> results = new ArrayList<ResourceUploadStatus>();
+		for (Resource resource : resources) {
+			ResourceUploadStatus result = new ResourceUploadStatus();
+			result.setType(ResourceType.PROFILE);
+			String content = FileUtil.getContent(resource);
+			try {
+				IntegrationProfile integrationP = integrationProfile(content);
+				result.setId(integrationP.getSourceId());
+				IntegrationProfile exist = this.integrationProfileRepository
+						.findBySourceId(integrationP.getSourceId());
+				if (exist != null) {
+					System.out.println("Replace");
+					result.setAction(ResourceUploadAction.UPDATE);
+					integrationP.setId(exist.getId());
+					integrationP.setSourceId(exist.getSourceId());
+				} else {
+					result.setAction(ResourceUploadAction.ADD);
+					System.out.println("Add");
+				}
+
+				this.integrationProfileRepository.save(integrationP);
+				result.setStatus(ResourceUploadResult.SUCCESS);
+			} catch (Exception e) {
+				result.setStatus(ResourceUploadResult.FAILURE);
+				result.setMessage(e.getMessage());
+			}
+			results.add(result);
+		}
+		return results;
+		
 	}
 
 	@Override

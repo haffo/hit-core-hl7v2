@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>gov.nist.hit.core.hl7v2</groupId>
 	<artifactId>hit-core-hl7v2</artifactId>
-	<version>1.0.11-SNAPSHOT</version>
+	<version>1.0.12-SNAPSHOT</version>
 	<name>hit-core-hl7v2</name>
 	<description>hit-core-hl7v2</description>
 	<packaging>pom</packaging>
@@ -15,7 +15,7 @@
 
 	<properties>
 		<core.version>1.0.48</core.version>
-		<hitcore.version>1.0.18-SNAPSHOT</hitcore.version>
+		<hitcore.version>1.0.18</hitcore.version>
 		<additionalparam>-Xdoclint:none</additionalparam>
 	</properties>
 

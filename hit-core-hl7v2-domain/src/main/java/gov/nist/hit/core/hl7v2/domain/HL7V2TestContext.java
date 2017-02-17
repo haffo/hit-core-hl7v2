@@ -1,10 +1,5 @@
 package gov.nist.hit.core.hl7v2.domain;
 
-import gov.nist.hit.core.domain.ConformanceProfile;
-import gov.nist.hit.core.domain.Constraints;
-import gov.nist.hit.core.domain.TestContext;
-import gov.nist.hit.core.domain.VocabularyLibrary;
-
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
@@ -13,6 +8,11 @@ import javax.persistence.OneToOne;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import gov.nist.hit.core.domain.ConformanceProfile;
+import gov.nist.hit.core.domain.Constraints;
+import gov.nist.hit.core.domain.TestContext;
+import gov.nist.hit.core.domain.VocabularyLibrary;
 
 @Entity
 public class HL7V2TestContext extends TestContext {
@@ -40,7 +40,9 @@ public class HL7V2TestContext extends TestContext {
   protected Constraints addditionalConstraints;
 
 
-  public HL7V2TestContext() {}
+  public HL7V2TestContext() {
+    this.format = "hl7v2";
+  }
 
   public ConformanceProfile getConformanceProfile() {
     return conformanceProfile;

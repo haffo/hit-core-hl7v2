@@ -48,6 +48,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	@Autowired
 	HL7V2TestContextRepository testContextRepository;
 
+
 	HL7V2ProfileParser profileParser = new HL7V2ProfileParserImpl();
 	ValueSetLibrarySerializer valueSetLibrarySerializer = new ValueSetLibrarySerializerImpl();
 
@@ -248,7 +249,16 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		}
 		return doc;
 	}
-
+	
+	private Constraints createAdditionalConstraint(String path) throws IOException{
+		Constraints constraint = additionalConstraints(path);
+		Constraints existing = this.constraintsRepository.findOneBySourceId(constraint.getSourceId());
+		if(existing != null){
+			constraint.setId(existing.getId());
+		}
+		return constraint;
+	}
+	
 	@Override
 	public TestContext testContext(String path, JsonNode formatObj, TestingStage stage) throws IOException {
 		// for backward compatibility
@@ -270,7 +280,8 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			if (constraintId != null && !"".equals(constraintId.textValue())) {
 				testContext.setConstraints(getConstraints(constraintId.textValue()));
 			}
-			testContext.setAddditionalConstraints(additionalConstraints(path + CONSTRAINTS_FILE_PATTERN));
+		
+			testContext.setAddditionalConstraints(createAdditionalConstraint(path + CONSTRAINTS_FILE_PATTERN));
 			testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.txt"))));
 			if (testContext.getMessage() == null) {
 				testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.text"))));

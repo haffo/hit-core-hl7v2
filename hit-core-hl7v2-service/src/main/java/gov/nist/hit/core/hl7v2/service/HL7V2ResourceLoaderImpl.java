@@ -29,7 +29,6 @@ import gov.nist.hit.core.domain.ResourceUploadResult;
 import gov.nist.hit.core.domain.ResourceUploadStatus;
 import gov.nist.hit.core.domain.TestCaseDocument;
 import gov.nist.hit.core.domain.TestContext;
-import gov.nist.hit.core.domain.TestStep;
 import gov.nist.hit.core.domain.TestingStage;
 import gov.nist.hit.core.domain.VocabularyLibrary;
 import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
@@ -75,7 +74,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	@Override
 	public List<ResourceUploadStatus> addOrReplaceValueSet() {
 		System.out.println("AddOrReplace VS");
-		
+
 		List<Resource> resources;
 		try {
 			resources = this.getApiResources("*.xml");
@@ -93,7 +92,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			result.setMessage("Error while parsing resources");
 			return Arrays.asList(result);
 		}
-		
+
 		List<ResourceUploadStatus> results = new ArrayList<ResourceUploadStatus>();
 
 		for (Resource resource : resources) {
@@ -146,9 +145,9 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			result.setMessage("Error while parsing resources");
 			return Arrays.asList(result);
 		}
-		
+
 		List<ResourceUploadStatus> results = new ArrayList<ResourceUploadStatus>();
-		
+
 		for (Resource resource : resources) {
 			ResourceUploadStatus result = new ResourceUploadStatus();
 			result.setType(ResourceType.CONSTRAINTS);
@@ -200,7 +199,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			result.setMessage("Error while parsing resources");
 			return Arrays.asList(result);
 		}
-		
+
 		List<ResourceUploadStatus> results = new ArrayList<ResourceUploadStatus>();
 		for (Resource resource : resources) {
 			ResourceUploadStatus result = new ResourceUploadStatus();
@@ -209,8 +208,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			try {
 				IntegrationProfile integrationP = integrationProfile(content);
 				result.setId(integrationP.getSourceId());
-				IntegrationProfile exist = this.integrationProfileRepository
-						.findBySourceId(integrationP.getSourceId());
+				IntegrationProfile exist = this.integrationProfileRepository.findBySourceId(integrationP.getSourceId());
 				if (exist != null) {
 					System.out.println("Replace");
 					result.setAction(ResourceUploadAction.UPDATE);
@@ -230,7 +228,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			results.add(result);
 		}
 		return results;
-		
+
 	}
 
 	@Override
@@ -247,6 +245,17 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 					&& context.getAddditionalConstraints().getXml() != null);
 		}
 		return doc;
+	}
+
+	private Constraints createAdditionalConstraint(String path) throws IOException {
+		Constraints constraint = additionalConstraints(path);
+		if (constraint != null) {
+			Constraints existing = this.constraintsRepository.findOneBySourceId(constraint.getSourceId());
+			if (existing != null) {
+				constraint.setId(existing.getId());
+			}
+		}
+		return constraint;
 	}
 
 	@Override
@@ -270,7 +279,8 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			if (constraintId != null && !"".equals(constraintId.textValue())) {
 				testContext.setConstraints(getConstraints(constraintId.textValue()));
 			}
-			testContext.setAddditionalConstraints(additionalConstraints(path + CONSTRAINTS_FILE_PATTERN));
+
+			testContext.setAddditionalConstraints(createAdditionalConstraint(path + CONSTRAINTS_FILE_PATTERN));
 			testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.txt"))));
 			if (testContext.getMessage() == null) {
 				testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.text"))));

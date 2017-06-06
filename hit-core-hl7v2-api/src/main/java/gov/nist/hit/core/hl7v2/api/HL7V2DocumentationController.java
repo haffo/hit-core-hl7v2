@@ -12,14 +12,6 @@
 
 package gov.nist.hit.core.hl7v2.api;
 
-import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
-import gov.nist.hit.core.hl7v2.repo.HL7V2TestContextRepository;
-import gov.nist.hit.core.repo.TestCaseDocumentationRepository;
-import gov.nist.hit.core.service.exception.DownloadDocumentException;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-
 import java.io.InputStream;
 
 import javax.servlet.http.HttpServletRequest;
@@ -35,30 +27,33 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
+import gov.nist.hit.core.hl7v2.repo.HL7V2TestContextRepository;
+import gov.nist.hit.core.service.exception.DownloadDocumentException;
+import io.swagger.annotations.ApiParam;
+
 /**
  * @author Harold Affo (NIST)
  * 
  */
-@Api(value = "HL7 V2 Documentation API", tags = "HL7 V2 Documentation")
 @RequestMapping("/hl7v2/documentation")
 @RestController
 public class HL7V2DocumentationController {
 
   static final Logger logger = LoggerFactory.getLogger(HL7V2DocumentationController.class);
 
-  @Autowired
-  private TestCaseDocumentationRepository testCaseDocumentationRepository;
 
   @Autowired
   protected HL7V2TestContextRepository testContextRepository;
 
 
-  @ApiOperation(value = "Download an example message file", nickname = "downloadExampeMessage")
   @RequestMapping(value = "/message", method = RequestMethod.POST,
       consumes = "application/x-www-form-urlencoded; charset=UTF-8")
   public String downloadExampeMessage(
-      @ApiParam(value = "the id of the example message", required = true) @RequestParam("targetId") Long targetId,
-      @ApiParam(value = "the title of the downloaded example message", required = true) @RequestParam("targetTitle") String targetTitle,
+      @ApiParam(value = "the id of the example message",
+          required = true) @RequestParam("targetId") Long targetId,
+      @ApiParam(value = "the title of the downloaded example message",
+          required = true) @RequestParam("targetTitle") String targetTitle,
       HttpServletRequest request, HttpServletResponse response) {
     try {
       logger.info("Downloading message of element with id " + targetId);
@@ -78,12 +73,13 @@ public class HL7V2DocumentationController {
     return null;
   }
 
-  @ApiOperation(value = "Download a conformance profile file", nickname = "downloadProfile")
   @RequestMapping(value = "/profile", method = RequestMethod.POST,
       consumes = "application/x-www-form-urlencoded; charset=UTF-8")
   public String downloadProfile(
-      @ApiParam(value = "the id of the conformance profile", required = true) @RequestParam("targetId") Long targetId,
-      @ApiParam(value = "the title of the downloaded conformance profile", required = true) @RequestParam("targetTitle") String targetTitle,
+      @ApiParam(value = "the id of the conformance profile",
+          required = true) @RequestParam("targetId") Long targetId,
+      @ApiParam(value = "the title of the downloaded conformance profile",
+          required = true) @RequestParam("targetTitle") String targetTitle,
       HttpServletRequest request, HttpServletResponse response) {
     try {
       logger.info("Downloading Profile of element with id " + targetId);
@@ -103,12 +99,13 @@ public class HL7V2DocumentationController {
     return null;
   }
 
-  @ApiOperation(value = "Download a constraint file", nickname = "downloadConstraint")
   @RequestMapping(value = "/constraints", method = RequestMethod.POST,
       consumes = "application/x-www-form-urlencoded; charset=UTF-8")
   public String downloadConstraint(
-      @ApiParam(value = "the id of the constraint", required = true) @RequestParam("targetId") Long targetId,
-      @ApiParam(value = "the title of the downloaded constraint", required = true) @RequestParam("targetTitle") String targetTitle,
+      @ApiParam(value = "the id of the constraint",
+          required = true) @RequestParam("targetId") Long targetId,
+      @ApiParam(value = "the title of the downloaded constraint",
+          required = true) @RequestParam("targetTitle") String targetTitle,
       HttpServletRequest request, HttpServletResponse response) {
     try {
       logger.info("Downloading constraint of element with id " + targetId);
@@ -133,12 +130,13 @@ public class HL7V2DocumentationController {
   }
 
 
-  @ApiOperation(value = "Download a value set library file", nickname = "downloadValueSetlib")
   @RequestMapping(value = "/valuesetlib", method = RequestMethod.POST,
       consumes = "application/x-www-form-urlencoded; charset=UTF-8")
   public String downloadValueSetlib(
-      @ApiParam(value = "the id of the value set library", required = true) @RequestParam("targetId") Long targetId,
-      @ApiParam(value = "the title of the downloaded value set library", required = true) @RequestParam("targetTitle") String targetTitle,
+      @ApiParam(value = "the id of the value set library",
+          required = true) @RequestParam("targetId") Long targetId,
+      @ApiParam(value = "the title of the downloaded value set library",
+          required = true) @RequestParam("targetTitle") String targetTitle,
       HttpServletRequest request, HttpServletResponse response) {
     try {
       logger.info("Downloading ValueSetLibrary of element with id " + targetId);

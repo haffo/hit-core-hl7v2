@@ -12,6 +12,12 @@
 
 package gov.nist.hit.core.hl7v2.api;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import gov.nist.hit.core.api.TestContextController;
 import gov.nist.hit.core.domain.TestContext;
 import gov.nist.hit.core.hl7v2.repo.HL7V2TestContextRepository;
@@ -21,17 +27,11 @@ import gov.nist.hit.core.hl7v2.service.HL7V2ValidationReportConverter;
 import gov.nist.hit.core.service.ValidationReportConverter;
 import io.swagger.annotations.Api;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 /**
  * @author Harold Affo (NIST)
  * 
  */
-@Api(value = "HL7 V2 Test Context", tags = "HL7 V2 Test Context")
+@Api(value = "HL7 V2 Test Context", tags = "HL7 V2 Test Context", position = 3)
 @RequestMapping("/hl7v2/testcontext")
 @RestController
 public class HL7V2TestContextController extends TestContextController {

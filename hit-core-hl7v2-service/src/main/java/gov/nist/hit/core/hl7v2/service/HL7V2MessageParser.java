@@ -72,7 +72,7 @@ public abstract class HL7V2MessageParser implements MessageParser {
 	private final static String SEGMENT_SEPERATOR = "segment_separator";
 	private final static String OTHER_SEPERATOR = "other_separator";
 
-	/** 
+	/**  
 	 *  
 	 */
 	@Override
@@ -90,7 +90,7 @@ public abstract class HL7V2MessageParser implements MessageParser {
 					InputStream profileStream = IOUtils.toInputStream(profileXml);
 					Profile profile = XMLDeserializer.deserialize(profileStream).get();
 					JParser p = new JParser();
-					Message message = p.jparse(er7Message, profile.messages().apply(conformanceProfileId));
+					Message message = p.jparse(er7Message, profile.getMessage(conformanceProfileId));
 					return parse(message, er7Message);
 				}
 			} else {

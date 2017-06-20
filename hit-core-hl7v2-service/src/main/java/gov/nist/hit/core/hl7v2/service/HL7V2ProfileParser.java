@@ -101,7 +101,7 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
 				p = XMLDeserializer.deserialize(profileStream).get();
 				cachedIntegrationProfilesMap.put(integrationProfileId, p);
 			}
-			Message m = p.messages().apply(conformanceProfileId);
+			Message m = p.getMessage(conformanceProfileId);
 			return parse(m, constraints);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -343,7 +343,7 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
 			while (dynIt.hasNext()) {
 				DynMapping d = dynIt.next();
 				Set<String> ids = new HashSet<String>();
-				Iterator<Datatype> mapIt = d.map().valuesIterator();
+				java.util.Iterator<Datatype> mapIt = d.getDatatypes().iterator();
 				while (mapIt.hasNext()) {
 					Datatype da = mapIt.next();
 					ids.add(da.id());

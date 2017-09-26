@@ -11,11 +11,12 @@
 		<module>hit-core-hl7v2-repo</module>
 		<module>hit-core-hl7v2-service</module>
 		<module>hit-core-hl7v2-api</module>
+		<module>?</module>
 	</modules>
 
 	<properties>
 		<core.version>1.0.48</core.version>
-		<hitcore.version>1.0.24-SNAPSHOT</hitcore.version>
+		<hitcore.version>1.0.24</hitcore.version>
 		<additionalparam>-Xdoclint:none</additionalparam>
 		<java.version>1.8</java.version>
 	</properties>

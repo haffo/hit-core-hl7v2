@@ -11,7 +11,6 @@
 		<module>hit-core-hl7v2-repo</module>
 		<module>hit-core-hl7v2-service</module>
 		<module>hit-core-hl7v2-api</module>
-		<module>?</module>
 	</modules>
 
 	<properties>

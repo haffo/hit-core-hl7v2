@@ -1,8 +1,9 @@
-package gov.nist.hit.core.hl7v2.service;
+package gov.nist.hit.core.hl7v2.service.impl;
 
 import gov.nist.hit.core.domain.MessageValidationCommand;
 import gov.nist.hit.core.domain.MessageValidationResult;
 import gov.nist.hit.core.domain.TestContext;
+import gov.nist.hit.core.hl7v2.service.HL7V2MessageValidator;
 import gov.nist.hit.core.service.exception.MessageValidationException;
 
 

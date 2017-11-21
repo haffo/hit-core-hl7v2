@@ -9,9 +9,9 @@
  * works bear some notice that they are derived from it, and any modified versions bear some notice
  * that they have been modified.
  */
-package gov.nist.hit.core.hl7v2.service;
+package gov.nist.hit.core.hl7v2.service.impl;
 
-
+import gov.nist.hit.core.hl7v2.service.HL7V2ProfileParser;
 
 /**
  * 

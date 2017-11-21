@@ -1,4 +1,4 @@
-package gov.nist.hit.core.hl7v2.service;
+package gov.nist.hit.core.hl7v2.service.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,6 +34,8 @@ import gov.nist.hit.core.domain.VocabularyLibrary;
 import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
 import gov.nist.hit.core.hl7v2.domain.HLV2TestCaseDocument;
 import gov.nist.hit.core.hl7v2.repo.HL7V2TestContextRepository;
+import gov.nist.hit.core.hl7v2.service.HL7V2ProfileParser;
+import gov.nist.hit.core.hl7v2.service.HL7V2ResourceLoader;
 import gov.nist.hit.core.service.ValueSetLibrarySerializer;
 import gov.nist.hit.core.service.exception.ProfileParserException;
 import gov.nist.hit.core.service.impl.ValueSetLibrarySerializerImpl;

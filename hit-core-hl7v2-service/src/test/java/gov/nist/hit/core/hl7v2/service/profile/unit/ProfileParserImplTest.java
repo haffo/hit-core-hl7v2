@@ -11,7 +11,7 @@ import org.junit.Test;
 
 import gov.nist.hit.core.domain.ProfileElement;
 import gov.nist.hit.core.domain.ProfileModel;
-import gov.nist.hit.core.hl7v2.service.HL7V2ProfileParserImpl;
+import gov.nist.hit.core.hl7v2.service.impl.HL7V2ProfileParserImpl;
 import gov.nist.hit.core.service.ProfileParser;
 import gov.nist.hit.core.service.exception.ProfileParserException;
 

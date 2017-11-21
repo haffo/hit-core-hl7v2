@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -251,12 +252,14 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 
 	private Constraints createAdditionalConstraint(String path) throws IOException {
 		Constraints constraint = additionalConstraints(path);
-		if (constraint != null) {
-			Constraints existing = this.constraintsRepository.findOneBySourceId(constraint.getSourceId());
-			if (existing != null) {
-				constraint.setId(existing.getId());
-			}
-		}
+//		if (constraint != null) {
+//			Constraints existing = this.constraintsRepository.findOneBySourceId(constraint.getSourceId());
+//			if (existing != null) {
+//				constraint.setId(existing.getId());
+//			}
+//		}
+
+		constraint.setSourceId(UUID.randomUUID().toString());
 		return constraint;
 	}
 

@@ -147,7 +147,7 @@ public class HL7V2CFManagementController {
    * @throws MessageUploadException
    */
   @PreAuthorize("hasRole('tester')")
-  @RequestMapping(value = "/uploadProfile", method = RequestMethod.POST,
+  @RequestMapping(value = "/uploadProfiles", method = RequestMethod.POST,
       consumes = {"multipart/form-data"})
   @ResponseBody
   public Map<String, Object> uploadProfile(ServletRequest request,

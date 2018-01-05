@@ -22,7 +22,7 @@ public class HL7V2TestContext extends TestContext {
 
   private boolean dqa;
 
-  @OneToOne(cascade = CascadeType.ALL)
+  @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(unique = true, nullable = false, insertable = true, updatable = true)
   @JsonProperty(value = "profile")
   protected ConformanceProfile conformanceProfile;
@@ -35,7 +35,7 @@ public class HL7V2TestContext extends TestContext {
   protected Constraints constraints;
 
   @JsonIgnore
-  @OneToOne(cascade = CascadeType.ALL)
+  @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(unique = true, nullable = true, insertable = true, updatable = true)
   protected Constraints addditionalConstraints;
 

@@ -11,6 +11,13 @@
  */
 package gov.nist.hit.core.hl7v2.service;
 
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.io.IOUtils;
+
 import gov.nist.healthcare.unified.enums.Context;
 import gov.nist.healthcare.unified.model.EnhancedReport;
 import gov.nist.healthcare.unified.proxy.ValidationProxy;
@@ -26,108 +33,92 @@ import hl7.v2.validation.content.DefaultConformanceContext;
 import hl7.v2.validation.vs.ValueSetLibrary;
 import hl7.v2.validation.vs.ValueSetLibraryImpl;
 
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.io.IOUtils;
-
-
 public abstract class HL7V2MessageValidator implements MessageValidator {
 
-  @Override
-  public MessageValidationResult validate(TestContext testContext, MessageValidationCommand command)
-      throws MessageValidationException {
-    try {
-      EnhancedReport report = generateReport(testContext, command);
-      if (report != null) {
-        Map<String, String> nav = command.getNav();
-        if (nav != null && !nav.isEmpty()) {
-          report.setTestCase(nav.get("testPlan"), nav.get("testGroup"), nav.get("testCase"),
-              nav.get("testStep"));
-        }
-        return new MessageValidationResult(report.to("json").toString(), report.render("report",
-            null));
-      }
-      throw new MessageValidationException();
-    } catch (MessageException e) {
-      throw new MessageValidationException(e.getLocalizedMessage());
-    } catch (RuntimeException e) {
-      throw new MessageValidationException(e.getLocalizedMessage());
-    } catch (Exception e) {
-      throw new MessageValidationException(e.getLocalizedMessage());
-    }
-  }
+	@Override
+	public MessageValidationResult validate(TestContext testContext, MessageValidationCommand command)
+			throws MessageValidationException {
+		try {
+			EnhancedReport report = generateReport(testContext, command);
+			if (report != null) {
+				Map<String, String> nav = command.getNav();
+				if (nav != null && !nav.isEmpty()) {
+					report.setTestCase(nav.get("testPlan"), nav.get("testGroup"), nav.get("testCase"),
+							nav.get("testStep"));
+				}
+				return new MessageValidationResult(report.to("json").toString(), report.render("report", null));
+			}
+			throw new MessageValidationException();
+		} catch (MessageException e) {
+			throw new MessageValidationException(e.getLocalizedMessage());
+		} catch (RuntimeException e) {
+			throw new MessageValidationException(e.getLocalizedMessage());
+		} catch (Exception e) {
+			throw new MessageValidationException(e.getLocalizedMessage());
+		}
+	}
 
+	public EnhancedReport generateReport(TestContext testContext, MessageValidationCommand command)
+			throws MessageValidationException {
+		try {
+			if (testContext instanceof HL7V2TestContext) {
+				HL7V2TestContext v2TestContext = (HL7V2TestContext) testContext;
+				String contextType = command.getContextType();
+				String message = getMessageContent(command);
+				String conformanceProfielId = v2TestContext.getConformanceProfile().getSourceId();
+				String integrationProfileXml = v2TestContext.getConformanceProfile().getIntegrationProfile().getXml();
+				String valueSets = v2TestContext.getVocabularyLibrary().getXml();
+				String c1 = v2TestContext.getConstraints() != null ? v2TestContext.getConstraints().getXml() : null;
+				;
+				String c2 = v2TestContext.getAddditionalConstraints() != null
+						? v2TestContext.getAddditionalConstraints().getXml() : null;
+				InputStream c1Stream = c1 != null ? IOUtils.toInputStream(c1) : null;
+				InputStream c2Stream = c2 != null ? IOUtils.toInputStream(c2) : null;
+				List<InputStream> cStreams = new ArrayList<InputStream>();
+				if (c1Stream != null)
+					cStreams.add(c1Stream);
+				if (c2Stream != null)
+					cStreams.add(c2Stream);
+				ConformanceContext c = getConformanceContext(cStreams);
+				ValueSetLibrary vsLib = valueSets != null ? getValueSetLibrary(IOUtils.toInputStream(valueSets)) : null;
+				ValidationProxy vp = new ValidationProxy("NIST Validation Tool", "NIST");
+				EnhancedReport report = vp.validate(message, integrationProfileXml, c, vsLib, conformanceProfielId,
+						Context.valueOf(contextType));
+				if (report != null) {
+					Map<String, String> nav = command.getNav();
+					if (nav != null && !nav.isEmpty()) {
+						report.setTestCase(nav.get("testPlan"), nav.get("testGroup"), nav.get("testCase"),
+								nav.get("testStep"));
+					}
+				}
+				return report;
+			}
+			throw new MessageValidationException();
+		} catch (MessageException e) {
+			throw new MessageValidationException(e.getLocalizedMessage());
+		} catch (RuntimeException e) {
+			throw new MessageValidationException(e.getLocalizedMessage());
+		} catch (Exception e) {
+			throw new MessageValidationException(e.getLocalizedMessage());
+		}
+	}
 
-  public EnhancedReport generateReport(TestContext testContext, MessageValidationCommand command)
-      throws MessageValidationException {
-    try {
-      if (testContext instanceof HL7V2TestContext) {
-        HL7V2TestContext v2TestContext = (HL7V2TestContext) testContext;
-        String contextType = command.getContextType();
-        String message = getMessageContent(command);
-        String conformanceProfielId = v2TestContext.getConformanceProfile().getSourceId();
-        String integrationProfileXml =
-            v2TestContext.getConformanceProfile().getIntegrationProfile().getXml();
-        String valueSets = v2TestContext.getVocabularyLibrary().getXml();
-        String c1 = v2TestContext.getConstraints().getXml();
-        String c2 =
-            v2TestContext.getAddditionalConstraints() != null ? v2TestContext
-                .getAddditionalConstraints().getXml() : null;
-        InputStream c1Stream = c1 != null ? IOUtils.toInputStream(c1) : null;
-        InputStream c2Stream = c2 != null ? IOUtils.toInputStream(c2) : null;
-        List<InputStream> cStreams = new ArrayList<InputStream>();
-        if (c1Stream != null)
-          cStreams.add(c1Stream);
-        if (c2Stream != null)
-          cStreams.add(c2Stream);
-        ConformanceContext c = getConformanceContext(cStreams);
-        ValueSetLibrary vsLib =
-            valueSets != null ? getValueSetLibrary(IOUtils.toInputStream(valueSets)) : null;
-        ValidationProxy vp = new ValidationProxy("NIST Validation Tool", "NIST");
-        EnhancedReport report =
-            vp.validate(message, integrationProfileXml, c, vsLib, conformanceProfielId,
-                Context.valueOf(contextType));
-        if (report != null) {
-          Map<String, String> nav = command.getNav();
-          if (nav != null && !nav.isEmpty()) {
-            report.setTestCase(nav.get("testPlan"), nav.get("testGroup"), nav.get("testCase"),
-                nav.get("testStep"));
-          }
-        }
-        return report;
-      }
-      throw new MessageValidationException();
-    } catch (MessageException e) {
-      throw new MessageValidationException(e.getLocalizedMessage());
-    } catch (RuntimeException e) {
-      throw new MessageValidationException(e.getLocalizedMessage());
-    } catch (Exception e) {
-      throw new MessageValidationException(e.getLocalizedMessage());
-    }
-  }
+	protected ConformanceContext getConformanceContext(List<InputStream> confContexts) {
+		ConformanceContext c = DefaultConformanceContext.apply(confContexts).get();
+		return c;
+	}
 
+	protected ValueSetLibrary getValueSetLibrary(InputStream vsLibXML) {
+		ValueSetLibrary valueSetLibrary = ValueSetLibraryImpl.apply(vsLibXML).get();
+		return valueSetLibrary;
+	}
 
-  protected ConformanceContext getConformanceContext(List<InputStream> confContexts) {
-    ConformanceContext c = DefaultConformanceContext.apply(confContexts).get();
-    return c;
-  }
-
-  protected ValueSetLibrary getValueSetLibrary(InputStream vsLibXML) {
-    ValueSetLibrary valueSetLibrary = ValueSetLibraryImpl.apply(vsLibXML).get();
-    return valueSetLibrary;
-  }
-
-
-  public static String getMessageContent(MessageValidationCommand command) throws MessageException {
-    String message = command.getContent();
-    if (message == null) {
-      throw new MessageException("No message provided");
-    }
-    return message;
-  }
-
+	public static String getMessageContent(MessageValidationCommand command) throws MessageException {
+		String message = command.getContent();
+		if (message == null) {
+			throw new MessageException("No message provided");
+		}
+		return message;
+	}
 
 }

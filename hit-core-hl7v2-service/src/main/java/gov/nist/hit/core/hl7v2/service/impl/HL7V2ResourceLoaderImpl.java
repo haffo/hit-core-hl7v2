@@ -1,20 +1,24 @@
 package gov.nist.hit.core.hl7v2.service.impl;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -31,12 +35,15 @@ import gov.nist.hit.core.domain.ResourceUploadStatus;
 import gov.nist.hit.core.domain.TestCaseDocument;
 import gov.nist.hit.core.domain.TestContext;
 import gov.nist.hit.core.domain.TestingStage;
+import gov.nist.hit.core.domain.UploadedProfileModel;
 import gov.nist.hit.core.domain.VocabularyLibrary;
 import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
 import gov.nist.hit.core.hl7v2.domain.HLV2TestCaseDocument;
 import gov.nist.hit.core.hl7v2.repo.HL7V2TestContextRepository;
 import gov.nist.hit.core.hl7v2.service.HL7V2ProfileParser;
 import gov.nist.hit.core.hl7v2.service.HL7V2ResourceLoader;
+import gov.nist.hit.core.hl7v2.service.PackagingHandler;
+import gov.nist.hit.core.repo.ConformanceProfileRepository;
 import gov.nist.hit.core.service.ValueSetLibrarySerializer;
 import gov.nist.hit.core.service.exception.ProfileParserException;
 import gov.nist.hit.core.service.impl.ValueSetLibrarySerializerImpl;
@@ -47,8 +54,16 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	static final Logger logger = LoggerFactory.getLogger(HL7V2ResourceLoaderImpl.class);
 	static final String FORMAT = "hl7v2";
 
+	public static final String TMP_DIR = new File(System.getProperty("java.io.tmpdir")).getAbsolutePath() + "/cf";
+
 	@Autowired
 	HL7V2TestContextRepository testContextRepository;
+
+	@Autowired
+	private ConformanceProfileRepository conformanceProfileRepository;
+
+	@Autowired
+	private PackagingHandler packagingHandler;
 
 	HL7V2ProfileParser profileParser = new HL7V2ProfileParserImpl();
 	ValueSetLibrarySerializer valueSetLibrarySerializer = new ValueSetLibrarySerializerImpl();
@@ -250,8 +265,8 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		return doc;
 	}
 
-	private Constraints createAdditionalConstraint(String path) throws IOException {
-		Constraints constraint = additionalConstraints(path);
+	private Constraints createAdditionalConstraint(String content) throws IOException {
+		Constraints constraint = additionalConstraints(content);
 		// if (constraint != null) {
 		// Constraints existing =
 		// this.constraintsRepository.findOneBySourceId(constraint.getSourceId());
@@ -265,6 +280,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		return constraint;
 	}
 
+	@SuppressWarnings("unused")
 	@Override
 	public TestContext testContext(String path, JsonNode formatObj, TestingStage stage) throws IOException {
 		// for backward compatibility
@@ -274,29 +290,54 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		JsonNode constraintId = formatObj.findValue("constraintId");
 		JsonNode valueSetLibraryId = formatObj.findValue("valueSetLibraryId");
 		JsonNode dqa = formatObj.findValue("dqa");
+		HL7V2TestContext testContext = new HL7V2TestContext();
+		testContext.setFormat(FORMAT);
+		testContext.setStage(stage);
+
+		if (valueSetLibraryId != null && !"".equals(valueSetLibraryId.textValue())) {
+			testContext.setVocabularyLibrary((getVocabularyLibrary(valueSetLibraryId.textValue())));
+		} else {
+			try {
+				Resource resource = this.getResource(path + "ValueSets.xml");
+				if (resource != null) {
+					String content = IOUtils.toString(resource.getInputStream());
+					content = packagingHandler.changeVsId(content);
+					VocabularyLibrary vocabLibrary = vocabLibrary(content);
+					this.vocabularyLibraryRepository.save(vocabLibrary);
+					testContext.setVocabularyLibrary(vocabLibrary);
+				}
+
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to parse the value sets at " + path);
+			}
+		}
+
+		if (constraintId != null && !"".equals(constraintId.textValue())) {
+			testContext.setConstraints(getConstraints(constraintId.textValue()));
+		}
+
+		try {
+			Resource resource = this.getResource(path + CONSTRAINTS_FILE_PATTERN);
+			if (resource != null) {
+				String content = IOUtils.toString(resource.getInputStream());
+				content = packagingHandler.changeConstraintId(content);
+				Constraints co = createAdditionalConstraint(content);
+				testContext.setAddditionalConstraints(co);
+			}
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to parse the constraints at " + path);
+		}
+
+		testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.txt"))));
+		if (testContext.getMessage() == null) {
+			testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.text"))));
+		}
+
+		if (dqa != null && !"".equals(dqa.textValue())) {
+			testContext.setDqa(dqa.booleanValue());
+		}
 
 		if (messageId != null) {
-			HL7V2TestContext testContext = new HL7V2TestContext();
-			testContext.setFormat(FORMAT);
-			testContext.setStage(stage);
-
-			if (valueSetLibraryId != null && !"".equals(valueSetLibraryId.textValue())) {
-				testContext.setVocabularyLibrary((getVocabularyLibrary(valueSetLibraryId.textValue())));
-			}
-			if (constraintId != null && !"".equals(constraintId.textValue())) {
-				testContext.setConstraints(getConstraints(constraintId.textValue()));
-			}
-
-			testContext.setAddditionalConstraints(createAdditionalConstraint(path + CONSTRAINTS_FILE_PATTERN));
-			testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.txt"))));
-			if (testContext.getMessage() == null) {
-				testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.text"))));
-			}
-
-			if (dqa != null && !"".equals(dqa.textValue())) {
-				testContext.setDqa(dqa.booleanValue());
-			}
-
 			try {
 				ConformanceProfile conformanceProfile = new ConformanceProfile();
 				IntegrationProfile integrationProfile = getIntegrationProfile(messageId.textValue());
@@ -310,9 +351,69 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			} catch (ProfileParserException e) {
 				throw new RuntimeException("Failed to parse integrationProfile at " + path);
 			}
-			return testContext;
+		} else {
+			try {
+				Resource resource = this.getResource(path + "Profile.xml");
+				String content = IOUtils.toString(resource.getInputStream());
+				List<UploadedProfileModel> list = packagingHandler.getUploadedProfiles(content);
+				content = packagingHandler.removeUnusedAndDuplicateMessages(content,
+						new HashSet<UploadedProfileModel>(Arrays.asList(list.get(0))));
+				content = packagingHandler.changeProfileId(content);
+				String messageID = getMessageId(content);
+				IntegrationProfile integrationProfile = createIntegrationProfile(content);
+				integrationProfile.setPreloaded(false);
+				integrationProfileRepository.save(integrationProfile);
+				ConformanceProfile conformanceProfile = new ConformanceProfile();
+				conformanceProfile.setJson(
+						jsonConformanceProfile(content, messageID, null, testContext.getAddditionalConstraints() != null
+								? testContext.getAddditionalConstraints().getXml() : null));
+				conformanceProfile.setIntegrationProfile(integrationProfile);
+				conformanceProfile.setSourceId(messageID);
+				testContext.setConformanceProfile(conformanceProfile);
+
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to parse integrationProfile at " + path);
+			}
 		}
-		return null;
+		return testContext;
+	}
+
+	private IntegrationProfile createIntegrationProfile(String content) {
+		Document doc = this.stringToDom(content);
+		IntegrationProfile integrationProfile = new IntegrationProfile();
+		Element profileElement = (Element) doc.getElementsByTagName("ConformanceProfile").item(0);
+		integrationProfile.setSourceId(profileElement.getAttribute("ID"));
+		Element metaDataElement = (Element) profileElement.getElementsByTagName("MetaData").item(0);
+		integrationProfile.setName(metaDataElement.getAttribute("Name"));
+		integrationProfile.setXml(content);
+		Element conformanceProfilElementRoot = (Element) profileElement.getElementsByTagName("Messages").item(0);
+		NodeList messages = conformanceProfilElementRoot.getElementsByTagName("Message");
+
+		// Message IDs
+		List<String> ids = new ArrayList<String>();
+
+		for (int j = 0; j < messages.getLength(); j++) {
+			Element elmCode = (Element) messages.item(j);
+			String id = elmCode.getAttribute("ID");
+			ids.add(id);
+		}
+		integrationProfile.setMessages(ids);
+		return integrationProfile;
+	}
+
+	private String getMessageId(String content) {
+		Document doc = this.stringToDom(content);
+		IntegrationProfile integrationProfile = new IntegrationProfile();
+		Element profileElement = (Element) doc.getElementsByTagName("ConformanceProfile").item(0);
+		integrationProfile.setSourceId(profileElement.getAttribute("ID"));
+		Element metaDataElement = (Element) profileElement.getElementsByTagName("MetaData").item(0);
+		integrationProfile.setName(metaDataElement.getAttribute("Name"));
+		integrationProfile.setXml(content);
+		Element conformanceProfilElementRoot = (Element) profileElement.getElementsByTagName("Messages").item(0);
+		NodeList messages = conformanceProfilElementRoot.getElementsByTagName("Message");
+		// Message IDs
+		Element elmCode = (Element) messages.item(0);
+		return elmCode.getAttribute("ID");
 	}
 
 	@Override

@@ -20,4 +20,10 @@ public interface PackagingHandler {
 
 	public File zip(List<File> files, String filename) throws Exception;
 
+	public String changeProfileId(String file) throws Exception;
+
+	public String changeConstraintId(String file) throws Exception;
+
+	public String changeVsId(String file) throws Exception;
+
 }

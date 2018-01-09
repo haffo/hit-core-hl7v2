@@ -54,8 +54,10 @@ import gov.nist.hit.core.api.ContextFreeController;
 import gov.nist.hit.core.domain.CFTestPlan;
 import gov.nist.hit.core.domain.CFTestStep;
 import gov.nist.hit.core.domain.GVTSaveInstance;
+import gov.nist.hit.core.domain.Message;
 import gov.nist.hit.core.domain.ResourceUploadResult;
 import gov.nist.hit.core.domain.TestCaseWrapper;
+import gov.nist.hit.core.domain.TestContext;
 import gov.nist.hit.core.domain.TestScope;
 import gov.nist.hit.core.domain.UploadStatus;
 import gov.nist.hit.core.domain.UploadedProfileModel;
@@ -520,7 +522,7 @@ public class HL7V2CFManagementController {
         for (UploadedProfileModel model : removed) {
           Long id = Long.valueOf(model.getId());
           CFTestStep found = findTestStep(id, testPlan);
-          if (found != null) {
+          if (found != null && testPlan.getTestCases() != null) {
             testPlan.getTestCases().remove(found);
           }
         }
@@ -534,6 +536,17 @@ public class HL7V2CFManagementController {
           if (found != null) {
             found.setName(model.getName());
             found.setDescription(model.getDescription());
+            TestContext context = found.getTestContext();
+            Message message = context.getMessage();
+            if (model.getExampleMessage() != null) {
+              if (message == null) {
+                message = new Message();
+                message.setName(model.getName());
+                message.setDescription(model.getDescription());
+                context.setMessage(message);
+              }
+              message.setContent(model.getExampleMessage());
+            }
           }
         }
       }
@@ -558,6 +571,9 @@ public class HL7V2CFManagementController {
             ts.put("messageId", upm.getId());
             ts.put("description", upm.getDescription());
             ts.put("scope", scope);
+            if (upm.getExampleMessage() != null) {
+              ts.put("exampleMessage", upm.getExampleMessage());
+            }
             testSteps.put(ts);
           }
           testCaseJson.put("testCases", testSteps);

@@ -536,6 +536,7 @@ public class HL7V2CFManagementController {
           if (found != null) {
             found.setName(model.getName());
             found.setDescription(model.getDescription());
+            found.setPosition(model.getPosition());
             TestContext context = found.getTestContext();
             Message message = context.getMessage();
             if (model.getExampleMessage() != null) {
@@ -570,6 +571,7 @@ public class HL7V2CFManagementController {
             ts.put("name", upm.getName());
             ts.put("messageId", upm.getId());
             ts.put("description", upm.getDescription());
+            ts.put("position", upm.getPosition());
             ts.put("scope", scope);
             if (upm.getExampleMessage() != null) {
               ts.put("exampleMessage", upm.getExampleMessage());

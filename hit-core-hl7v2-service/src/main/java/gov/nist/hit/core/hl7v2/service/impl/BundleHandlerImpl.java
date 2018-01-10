@@ -259,6 +259,7 @@ public class BundleHandlerImpl implements BundleHandler {
 			// cfti.setRoot(true);
 			cfti.setTestContext(testContext);
 			cfti.setPersistentId(id);
+			cfti.setPosition(tcO.findValue("position").asInt());
 			// ---
 			tp.getTestCases().add(cfti);
 		}

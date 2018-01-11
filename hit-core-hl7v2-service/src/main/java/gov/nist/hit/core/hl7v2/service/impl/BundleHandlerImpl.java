@@ -216,7 +216,7 @@ public class BundleHandlerImpl implements BundleHandler {
 		save.vs = v;
 
 		Iterator<JsonNode> testCasesIter = testCasesObj.findValue("testCases").elements();
-		int i = tp.getTestCases().size();
+		int size = tp.getTestCases().size();
 		while (testCasesIter.hasNext()) {
 			JsonNode tcO = testCasesIter.next();
 			CFTestStep cfti = new CFTestStep();
@@ -258,7 +258,7 @@ public class BundleHandlerImpl implements BundleHandler {
 			// cfti.setRoot(true);
 			cfti.setTestContext(testContext);
 			cfti.setPersistentId(id);
-			cfti.setPosition(i + tcO.findValue("position").asInt());
+			cfti.setPosition(size + tcO.findValue("position").asInt());
 			// ---
 			tp.getTestCases().add(cfti);
 		}

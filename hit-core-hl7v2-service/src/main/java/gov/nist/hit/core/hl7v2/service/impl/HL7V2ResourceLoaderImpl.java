@@ -43,7 +43,6 @@ import gov.nist.hit.core.hl7v2.repo.HL7V2TestContextRepository;
 import gov.nist.hit.core.hl7v2.service.HL7V2ProfileParser;
 import gov.nist.hit.core.hl7v2.service.HL7V2ResourceLoader;
 import gov.nist.hit.core.hl7v2.service.PackagingHandler;
-import gov.nist.hit.core.repo.ConformanceProfileRepository;
 import gov.nist.hit.core.service.ValueSetLibrarySerializer;
 import gov.nist.hit.core.service.exception.ProfileParserException;
 import gov.nist.hit.core.service.impl.ValueSetLibrarySerializerImpl;
@@ -58,9 +57,6 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 
 	@Autowired
 	HL7V2TestContextRepository testContextRepository;
-
-	@Autowired
-	private ConformanceProfileRepository conformanceProfileRepository;
 
 	@Autowired
 	private PackagingHandler packagingHandler;
@@ -90,12 +86,12 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	// ----- Global -> ValueSet, Constraints, IntegrationProfile
 
 	@Override
-	public List<ResourceUploadStatus> addOrReplaceValueSet() {
+	public List<ResourceUploadStatus> addOrReplaceValueSet(String rootPath) {
 		System.out.println("AddOrReplace VS");
 
 		List<Resource> resources;
 		try {
-			resources = this.getApiResources("*.xml");
+			resources = this.getApiResources("*.xml", rootPath);
 			if (resources == null || resources.isEmpty()) {
 				ResourceUploadStatus result = new ResourceUploadStatus();
 				result.setType(ResourceType.VALUESETLIBRARY);
@@ -143,12 +139,12 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	}
 
 	@Override
-	public List<ResourceUploadStatus> addOrReplaceConstraints() {
+	public List<ResourceUploadStatus> addOrReplaceConstraints(String rootPath) {
 		System.out.println("AddOrReplace Constraints");
 
 		List<Resource> resources;
 		try {
-			resources = this.getApiResources("*.xml");
+			resources = this.getApiResources("*.xml", rootPath);
 			if (resources == null || resources.isEmpty()) {
 				ResourceUploadStatus result = new ResourceUploadStatus();
 				result.setType(ResourceType.CONSTRAINTS);
@@ -197,12 +193,12 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	}
 
 	@Override
-	public List<ResourceUploadStatus> addOrReplaceIntegrationProfile() {
+	public List<ResourceUploadStatus> addOrReplaceIntegrationProfile(String rootPath) {
 		System.out.println("AddOrReplace integration profile");
 
 		List<Resource> resources;
 		try {
-			resources = this.getApiResources("*.xml");
+			resources = this.getApiResources("*.xml", rootPath);
 			if (resources == null || resources.isEmpty()) {
 				ResourceUploadStatus result = new ResourceUploadStatus();
 				result.setType(ResourceType.PROFILE);
@@ -282,7 +278,8 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 
 	@SuppressWarnings("unused")
 	@Override
-	public TestContext testContext(String path, JsonNode formatObj, TestingStage stage) throws IOException {
+	public TestContext testContext(String path, JsonNode formatObj, TestingStage stage, String rootPath)
+			throws IOException {
 		// for backward compatibility
 		formatObj = formatObj.findValue(FORMAT) != null ? formatObj.findValue(FORMAT) : formatObj;
 
@@ -298,7 +295,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			testContext.setVocabularyLibrary((getVocabularyLibrary(valueSetLibraryId.textValue())));
 		} else {
 			try {
-				Resource resource = this.getResource(path + "ValueSets.xml");
+				Resource resource = this.getResource(path + "ValueSets.xml", rootPath);
 				if (resource != null) {
 					String content = IOUtils.toString(resource.getInputStream());
 					content = packagingHandler.changeVsId(content);
@@ -317,7 +314,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		}
 
 		try {
-			Resource resource = this.getResource(path + CONSTRAINTS_FILE_PATTERN);
+			Resource resource = this.getResource(path + CONSTRAINTS_FILE_PATTERN, rootPath);
 			if (resource != null) {
 				String content = IOUtils.toString(resource.getInputStream());
 				content = packagingHandler.changeConstraintId(content);
@@ -328,9 +325,9 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			throw new RuntimeException("Failed to parse the constraints at " + path);
 		}
 
-		testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.txt"))));
+		testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.txt", rootPath))));
 		if (testContext.getMessage() == null) {
-			testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.text"))));
+			testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.text", rootPath))));
 		}
 
 		if (dqa != null && !"".equals(dqa.textValue())) {
@@ -353,7 +350,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			}
 		} else {
 			try {
-				Resource resource = this.getResource(path + "Profile.xml");
+				Resource resource = this.getResource(path + "Profile.xml", rootPath);
 				String content = IOUtils.toString(resource.getInputStream());
 				List<UploadedProfileModel> list = packagingHandler.getUploadedProfiles(content);
 				content = packagingHandler.removeUnusedAndDuplicateMessages(content,

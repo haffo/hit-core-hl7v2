@@ -68,6 +68,7 @@ import gov.nist.hit.core.repo.ConstraintsRepository;
 import gov.nist.hit.core.repo.IntegrationProfileRepository;
 import gov.nist.hit.core.repo.UserTestCaseGroupRepository;
 import gov.nist.hit.core.repo.VocabularyLibraryRepository;
+import gov.nist.hit.core.service.AppInfoService;
 import gov.nist.hit.core.service.BundleHandler;
 import gov.nist.hit.core.service.CFTestPlanService;
 import gov.nist.hit.core.service.ProfileParser;
@@ -129,6 +130,18 @@ public class HL7V2CFManagementController {
   private CFTestPlanService testPlanService;
 
 
+  @Autowired
+  private AppInfoService appInfoService;
+
+
+  private void checkManagementSupport() throws Exception {
+    if (!appInfoService.get().isCfManagementSupported()) {
+      throw new Exception("This operation is not supported by this tool");
+    }
+  }
+
+
+
   /**
    * Upload a single XML profile file and may returns errors
    * 
@@ -137,7 +150,7 @@ public class HL7V2CFManagementController {
    * @param token Token used for saving file
    * @param p Principal
    * @return A list of profiles or a list of errors
-   * @throws MessageUploadException
+   * @throws Exception
    */
   @PreAuthorize("hasRole('tester')")
   @RequestMapping(value = "/uploadProfiles", method = RequestMethod.POST,
@@ -145,7 +158,8 @@ public class HL7V2CFManagementController {
   @ResponseBody
   public Map<String, Object> uploadProfile(ServletRequest request,
       @RequestPart("file") MultipartFile part, @RequestParam("token") String token, Principal p)
-      throws MessageUploadException {
+      throws Exception {
+    checkManagementSupport();
     Map<String, Object> resultMap = new HashMap<String, Object>();
     try {
       if (!part.getContentType().equalsIgnoreCase("text/xml"))
@@ -214,6 +228,7 @@ public class HL7V2CFManagementController {
   public Map<String, Object> uploadVS(ServletRequest request,
       @RequestPart("file") MultipartFile part, @RequestParam("token") String token, Principal p)
       throws MessageUploadException {
+    checkManagementSupport();
     Map<String, Object> resultMap = new HashMap<String, Object>();
     try {
       if (!part.getContentType().equalsIgnoreCase("text/xml"))
@@ -281,6 +296,8 @@ public class HL7V2CFManagementController {
   public Map<String, Object> uploadContraints(ServletRequest request,
       @RequestPart("file") MultipartFile part, @RequestParam("token") String token, Principal p)
       throws MessageUploadException {
+    checkManagementSupport();
+
     Map<String, Object> resultMap = new HashMap<String, Object>();
     try {
       if (!part.getContentType().equalsIgnoreCase("text/xml"))
@@ -347,6 +364,8 @@ public class HL7V2CFManagementController {
   @ResponseBody
   public Map<String, Object> uploadZip(ServletRequest request,
       @RequestPart("file") MultipartFile part, Principal p) throws MessageUploadException {
+    checkManagementSupport();
+
     Map<String, Object> resultMap = new HashMap<String, Object>();
     try {
       if (!part.getContentType().equalsIgnoreCase("application/zip"))
@@ -403,13 +422,15 @@ public class HL7V2CFManagementController {
    * @param token token from uploaded files
    * @param p Principal
    * @return A list of profiles
-   * @throws MessageUploadException
+   * @throws Exception
    */
   @PreAuthorize("hasRole('tester')")
   @RequestMapping(value = "/tokens/{token}/profiles", method = RequestMethod.GET)
   @ResponseBody
   public Map<String, Object> getTokenProfiles(ServletRequest request,
-      @PathVariable("token") String token, Principal p) throws MessageUploadException {
+      @PathVariable("token") String token, Principal p) throws Exception {
+    checkManagementSupport();
+
     Map<String, Object> resultMap = new HashMap<String, Object>();
     try {
 
@@ -482,6 +503,7 @@ public class HL7V2CFManagementController {
   public UploadStatus saveGrop(HttpServletRequest request, @PathVariable("groupId") Long groupId,
       @RequestBody TestCaseWrapper wrapper, Principal p) {
     try {
+      checkManagementSupport();
       // String username = null;
       String username = userIdService.getCurrentUserName(p);
       if (username == null)
@@ -629,14 +651,16 @@ public class HL7V2CFManagementController {
    * @param lr Profile id
    * @param p Principal
    * @return True/False as success indicator
-   * @throws NoUserFoundException
+   * @throws Exception
    */
   @PreAuthorize("hasRole('tester')")
   @RequestMapping(value = "/profiles/{profileId}/delete", method = RequestMethod.POST)
   @ResponseBody
   @Transactional(value = "transactionManager")
   public boolean deleteProfile(ServletRequest request, @PathVariable("profileId") Long profileId,
-      Principal p) throws NoUserFoundException {
+      Principal p) throws Exception {
+    checkManagementSupport();
+
     boolean res = true;
     String userName = userIdService.getCurrentUserName(p);
 

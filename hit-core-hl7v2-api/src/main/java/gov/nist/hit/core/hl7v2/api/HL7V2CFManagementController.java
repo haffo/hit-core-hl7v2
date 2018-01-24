@@ -219,7 +219,7 @@ public class HL7V2CFManagementController {
    * @param token Token used for saving file
    * @param p Principal
    * @return May return a list of errors
-   * @throws MessageUploadException
+   * @throws Exception
    */
   @PreAuthorize("hasRole('tester')")
   @RequestMapping(value = "/uploadValueSets", method = RequestMethod.POST,
@@ -227,7 +227,7 @@ public class HL7V2CFManagementController {
   @ResponseBody
   public Map<String, Object> uploadVS(ServletRequest request,
       @RequestPart("file") MultipartFile part, @RequestParam("token") String token, Principal p)
-      throws MessageUploadException {
+      throws Exception {
     checkManagementSupport();
     Map<String, Object> resultMap = new HashMap<String, Object>();
     try {
@@ -287,7 +287,7 @@ public class HL7V2CFManagementController {
    * @param token Token used for saving file
    * @param p Principal
    * @return May return a list of errors
-   * @throws MessageUploadException
+   * @throws Exception
    */
   @PreAuthorize("hasRole('tester')")
   @RequestMapping(value = "/uploadConstraints", method = RequestMethod.POST,
@@ -295,7 +295,7 @@ public class HL7V2CFManagementController {
   @ResponseBody
   public Map<String, Object> uploadContraints(ServletRequest request,
       @RequestPart("file") MultipartFile part, @RequestParam("token") String token, Principal p)
-      throws MessageUploadException {
+      throws Exception {
     checkManagementSupport();
 
     Map<String, Object> resultMap = new HashMap<String, Object>();
@@ -356,14 +356,14 @@ public class HL7V2CFManagementController {
    * @param part Zip file
    * @param p Principal
    * @return a token or some errors
-   * @throws MessageUploadException
+   * @throws Exception
    */
   @PreAuthorize("hasRole('tester')")
   @RequestMapping(value = "/uploadZip", method = RequestMethod.POST,
       consumes = {"multipart/form-data"})
   @ResponseBody
   public Map<String, Object> uploadZip(ServletRequest request,
-      @RequestPart("file") MultipartFile part, Principal p) throws MessageUploadException {
+      @RequestPart("file") MultipartFile part, Principal p) throws Exception {
     checkManagementSupport();
 
     Map<String, Object> resultMap = new HashMap<String, Object>();

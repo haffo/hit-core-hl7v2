@@ -10,17 +10,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import gov.nist.hit.core.domain.SessionTestCases;
-import gov.nist.hit.core.repo.ConstraintsRepository;
-import gov.nist.hit.core.repo.IntegrationProfileRepository;
 import gov.nist.hit.core.repo.UserTestCaseGroupRepository;
-import gov.nist.hit.core.repo.VocabularyLibraryRepository;
-import gov.nist.hit.core.service.AccountService;
-import gov.nist.hit.core.service.BundleHandler;
-import gov.nist.hit.core.service.CFTestPlanService;
-import gov.nist.hit.core.service.ResourceLoader;
-import gov.nist.hit.core.service.Streamer;
 import gov.nist.hit.core.service.UserIdService;
-import gov.nist.hit.core.service.UserService;
 import gov.nist.hit.core.service.exception.NoUserFoundException;
 import io.swagger.annotations.Api;
 
@@ -35,34 +26,7 @@ public class HL7V2CFTestCaseController {
   private UserTestCaseGroupRepository testCaseGroupRepository;
 
   @Autowired
-  private IntegrationProfileRepository ipRepository;
-
-  @Autowired
-  private ConstraintsRepository csRepository;
-
-  @Autowired
-  private VocabularyLibraryRepository vsRepository;
-
-  @Autowired
   private UserIdService userIdService;
-
-  @Autowired
-  private BundleHandler bundleHandler;
-
-  @Autowired
-  private CFTestPlanService testPlanService;
-
-  @Autowired
-  private AccountService accountService;
-
-  @Autowired
-  private Streamer streamer;
-
-  @Autowired
-  private ResourceLoader resouceLoader;
-
-  @Autowired
-  private UserService userService;
 
   @PreAuthorize("hasRole('tester')")
   @RequestMapping(value = "/", method = RequestMethod.GET)

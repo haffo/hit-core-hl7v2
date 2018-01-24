@@ -68,10 +68,8 @@ import gov.nist.hit.core.repo.ConstraintsRepository;
 import gov.nist.hit.core.repo.IntegrationProfileRepository;
 import gov.nist.hit.core.repo.UserTestCaseGroupRepository;
 import gov.nist.hit.core.repo.VocabularyLibraryRepository;
-import gov.nist.hit.core.service.AccountService;
 import gov.nist.hit.core.service.BundleHandler;
 import gov.nist.hit.core.service.CFTestPlanService;
-import gov.nist.hit.core.service.CFTestStepService;
 import gov.nist.hit.core.service.ProfileParser;
 import gov.nist.hit.core.service.UserIdService;
 import gov.nist.hit.core.service.UserService;
@@ -125,14 +123,7 @@ public class HL7V2CFManagementController {
   private FileValidationHandler fileValidationHandler;
 
   @Autowired
-  private AccountService accountService;
-
-  @Autowired
   private UserService userService;
-
-
-  @Autowired
-  private CFTestStepService testStepService;
 
   @Autowired
   private CFTestPlanService testPlanService;

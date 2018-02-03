@@ -81,7 +81,7 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
 					cStreams.add(c2Stream);
 				ConformanceContext c = getConformanceContext(cStreams);
 				ValueSetLibrary vsLib = valueSets != null ? getValueSetLibrary(IOUtils.toInputStream(valueSets)) : null;
-				ValidationProxy vp = new ValidationProxy("NIST Validation Tool", "NIST");
+				ValidationProxy vp = new ValidationProxy(getValidationServiceName(), getProviderName());
 				EnhancedReport report = vp.validate(message, integrationProfileXml, c, vsLib, conformanceProfielId,
 						Context.valueOf(contextType));
 				if (report != null) {

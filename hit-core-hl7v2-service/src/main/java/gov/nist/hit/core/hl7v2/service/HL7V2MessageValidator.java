@@ -69,7 +69,6 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
 				String integrationProfileXml = v2TestContext.getConformanceProfile().getIntegrationProfile().getXml();
 				String valueSets = v2TestContext.getVocabularyLibrary().getXml();
 				String c1 = v2TestContext.getConstraints() != null ? v2TestContext.getConstraints().getXml() : null;
-				;
 				String c2 = v2TestContext.getAddditionalConstraints() != null
 						? v2TestContext.getAddditionalConstraints().getXml() : null;
 				InputStream c1Stream = c1 != null ? IOUtils.toInputStream(c1) : null;

@@ -16,20 +16,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.PostConstruct;
-
 import org.apache.commons.io.IOUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import gov.nist.healthcare.unified.enums.Context;
 import gov.nist.healthcare.unified.model.EnhancedReport;
 import gov.nist.healthcare.unified.proxy.ValidationProxy;
-import gov.nist.hit.core.Constant;
 import gov.nist.hit.core.domain.MessageValidationCommand;
 import gov.nist.hit.core.domain.MessageValidationResult;
 import gov.nist.hit.core.domain.TestContext;
 import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
-import gov.nist.hit.core.service.AppInfoService;
 import gov.nist.hit.core.service.MessageValidator;
 import gov.nist.hit.core.service.exception.MessageException;
 import gov.nist.hit.core.service.exception.MessageValidationException;
@@ -39,16 +34,6 @@ import hl7.v2.validation.vs.ValueSetLibrary;
 import hl7.v2.validation.vs.ValueSetLibraryImpl;
 
 public abstract class HL7V2MessageValidator implements MessageValidator {
-
-	@Autowired
-	AppInfoService appInfoService;
-
-	private String organizationName;
-
-	@PostConstruct
-	public void init() {
-		organizationName = appInfoService.get().getOptions().get(Constant.ORGANIZATION_NAME);
-	}
 
 	@Override
 	public MessageValidationResult validate(TestContext testContext, MessageValidationCommand command)
@@ -135,16 +120,26 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
 		return message;
 	}
 
+	private String organizationName;
+
 	@Override
 	public String getProviderName() {
 		// TODO Auto-generated method stub
-		return organizationName;
+		return organizationName != null ? organizationName : "NIST";
 	}
 
 	@Override
 	public String getValidationServiceName() {
 		// TODO Auto-generated method stub
-		return organizationName + " Validation Tool";
+		return getProviderName() + " Validation Tool";
+	}
+
+	public String getOrganizationName() {
+		return organizationName;
+	}
+
+	public void setOrganizationName(String organizationName) {
+		this.organizationName = organizationName;
 	}
 
 }

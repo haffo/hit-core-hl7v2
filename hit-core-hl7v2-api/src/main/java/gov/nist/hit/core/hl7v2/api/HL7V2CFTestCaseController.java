@@ -13,12 +13,10 @@ import gov.nist.hit.core.domain.SessionTestCases;
 import gov.nist.hit.core.repo.UserTestCaseGroupRepository;
 import gov.nist.hit.core.service.UserIdService;
 import gov.nist.hit.core.service.exception.NoUserFoundException;
-import io.swagger.annotations.Api;
 
 
 
 @RequestMapping("/cf/hl7v2/groups")
-@Api(hidden = true)
 @Controller
 public class HL7V2CFTestCaseController {
 

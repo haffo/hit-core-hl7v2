@@ -77,7 +77,6 @@ import gov.nist.hit.core.service.UserService;
 import gov.nist.hit.core.service.exception.MessageUploadException;
 import gov.nist.hit.core.service.exception.NoUserFoundException;
 import gov.nist.hit.core.service.exception.NotValidToken;
-import io.swagger.annotations.Api;
 
 /**
  * @author Nicolas Crouzier (NIST)
@@ -86,7 +85,6 @@ import io.swagger.annotations.Api;
  */
 
 @RequestMapping("/cf/hl7v2/management")
-@Api(hidden = true)
 @Controller
 public class HL7V2CFManagementController {
 

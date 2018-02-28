@@ -476,8 +476,8 @@ public class HL7V2CFManagementController {
 
 
   private CFTestStep findTestStep(Long id, CFTestPlan testPlan) {
-    if (testPlan != null && testPlan.getTestCases() != null) {
-      for (CFTestStep testStep : testPlan.getTestCases()) {
+    if (testPlan != null && testPlan.getTestSteps() != null) {
+      for (CFTestStep testStep : testPlan.getTestSteps()) {
         if (testStep.getId().equals(id)) {
           return testStep;
         }
@@ -533,8 +533,8 @@ public class HL7V2CFManagementController {
         for (UploadedProfileModel model : removed) {
           Long id = Long.valueOf(model.getId());
           CFTestStep found = findTestStep(id, testPlan);
-          if (found != null && testPlan.getTestCases() != null) {
-            testPlan.getTestCases().remove(found);
+          if (found != null && testPlan.getTestSteps() != null) {
+            testPlan.getTestSteps().remove(found);
           }
         }
       }
@@ -669,8 +669,7 @@ public class HL7V2CFManagementController {
     List<CFTestPlan> list = testCaseGroupRepository.userExclusive(userName);
     boolean found = false;
     for (CFTestPlan utg : list) {
-
-      for (Iterator<CFTestStep> iterator = utg.getTestCases().iterator(); iterator.hasNext();) {
+      for (Iterator<CFTestStep> iterator = utg.getTestSteps().iterator(); iterator.hasNext();) {
         CFTestStep ucf = iterator.next();
         if (ucf.getId().equals(profileId)) {
           iterator.remove();
@@ -678,7 +677,7 @@ public class HL7V2CFManagementController {
         }
       }
       if (found) {
-        if (utg.getTestCases().size() == 0) {
+        if (utg.getTestSteps().size() == 0) {
           testCaseGroupRepository.delete(utg);
           res = true;
         } else {

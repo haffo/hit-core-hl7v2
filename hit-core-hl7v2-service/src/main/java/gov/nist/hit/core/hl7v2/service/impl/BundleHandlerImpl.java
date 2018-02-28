@@ -6,10 +6,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -126,7 +124,6 @@ public class BundleHandlerImpl implements BundleHandler {
 
 		save.vs = v;
 
-		Set<CFTestStep> testCases = new HashSet<>();
 		Iterator<JsonNode> testCasesIter = testCasesObj.findValue("testCases").elements();
 		int i = 1;
 		while (testCasesIter.hasNext()) {
@@ -162,10 +159,9 @@ public class BundleHandlerImpl implements BundleHandler {
 			cfti.setTestContext(testContext);
 			cfti.setPersistentId(id);
 			// ---
-			testCases.add(cfti);
+			gtcg.getTestSteps().add(cfti);
 		}
 
-		gtcg.setTestCases(testCases);
 		return save;
 	}
 
@@ -216,7 +212,7 @@ public class BundleHandlerImpl implements BundleHandler {
 		save.vs = v;
 
 		Iterator<JsonNode> testCasesIter = testCasesObj.findValue("testCases").elements();
-		int size = tp.getTestCases().size();
+		int size = tp.getTestSteps().size();
 		while (testCasesIter.hasNext()) {
 			JsonNode tcO = testCasesIter.next();
 			CFTestStep cfti = new CFTestStep();
@@ -260,7 +256,7 @@ public class BundleHandlerImpl implements BundleHandler {
 			cfti.setPersistentId(id);
 			cfti.setPosition(size + tcO.findValue("position").asInt());
 			// ---
-			tp.getTestCases().add(cfti);
+			tp.getTestSteps().add(cfti);
 		}
 
 		return save;

@@ -36,7 +36,7 @@ public class HL7V2TestContext extends TestContext {
 
   @JsonIgnore
   @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
-  @JoinColumn(unique = true, nullable = true, insertable = true, updatable = true)
+  @JoinColumn(nullable = true, insertable = true, updatable = true)
   protected Constraints addditionalConstraints;
 
 

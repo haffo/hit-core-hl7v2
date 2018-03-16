@@ -70,9 +70,9 @@ import io.swagger.annotations.ApiParam;
 @RequestMapping("/cf/management")
 @RestController
 @Api(value = "Context-free Testing", tags = "Context-free Testing", position = 1)
-public class ContextFreeManagementController {
+public class CFManagementController {
 
-  static final Logger logger = LoggerFactory.getLogger(ContextFreeManagementController.class);
+  static final Logger logger = LoggerFactory.getLogger(CFManagementController.class);
 
   public static final String CF_UPLOAD_DIR =
       new File(System.getProperty("java.io.tmpdir")).getAbsolutePath() + "/cf";

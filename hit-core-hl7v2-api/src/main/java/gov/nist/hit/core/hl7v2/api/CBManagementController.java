@@ -80,9 +80,9 @@ import io.swagger.annotations.ApiParam;
 @RequestMapping("/cb/management")
 @RestController
 @Api(value = "Context-based Testing", tags = "Context-free Testing", position = 1)
-public class ContextBasedManagementController {
+public class CBManagementController {
 
-  static final Logger logger = LoggerFactory.getLogger(ContextBasedManagementController.class);
+  static final Logger logger = LoggerFactory.getLogger(CBManagementController.class);
 
   // public static final String CB_UPLOAD_DIR = new
   // File(System.getProperty("java.io.tmpdir")).getAbsolutePath() + "/cb";

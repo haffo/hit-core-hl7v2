@@ -86,7 +86,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	// ----- Global -> ValueSet, Constraints, IntegrationProfile
 
 	@Override
-	public List<ResourceUploadStatus> addOrReplaceValueSet(String rootPath) {
+	public List<ResourceUploadStatus> addOrReplaceValueSet(String rootPath, String domain) {
 		System.out.println("AddOrReplace VS");
 
 		List<Resource> resources;
@@ -114,8 +114,9 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			result.setType(ResourceType.VALUESETLIBRARY);
 			String content = FileUtil.getContent(resource);
 			try {
-				VocabularyLibrary vocabLibrary = vocabLibrary(content);
+				VocabularyLibrary vocabLibrary = vocabLibrary(content, domain);
 				result.setId(vocabLibrary.getSourceId());
+				vocabLibrary.setDomain(domain);
 				VocabularyLibrary exist = this.getVocabularyLibrary(vocabLibrary.getSourceId());
 				if (exist != null) {
 					System.out.println("Replace");
@@ -139,7 +140,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	}
 
 	@Override
-	public List<ResourceUploadStatus> addOrReplaceConstraints(String rootPath) {
+	public List<ResourceUploadStatus> addOrReplaceConstraints(String rootPath, String domain) {
 		System.out.println("AddOrReplace Constraints");
 
 		List<Resource> resources;
@@ -167,7 +168,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			result.setType(ResourceType.CONSTRAINTS);
 			String content = FileUtil.getContent(resource);
 			try {
-				Constraints constraint = constraint(content);
+				Constraints constraint = constraint(content, domain);
 				result.setId(constraint.getSourceId());
 				Constraints exist = this.getConstraints(constraint.getSourceId());
 				if (exist != null) {
@@ -193,7 +194,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	}
 
 	@Override
-	public List<ResourceUploadStatus> addOrReplaceIntegrationProfile(String rootPath) {
+	public List<ResourceUploadStatus> addOrReplaceIntegrationProfile(String rootPath, String domain) {
 		System.out.println("AddOrReplace integration profile");
 
 		List<Resource> resources;
@@ -220,7 +221,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			result.setType(ResourceType.PROFILE);
 			String content = FileUtil.getContent(resource);
 			try {
-				IntegrationProfile integrationP = integrationProfile(content);
+				IntegrationProfile integrationP = integrationProfile(content, domain);
 				result.setId(integrationP.getSourceId());
 				IntegrationProfile exist = this.integrationProfileRepository.findBySourceId(integrationP.getSourceId());
 				if (exist != null) {
@@ -232,7 +233,6 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 					result.setAction(ResourceUploadAction.ADD);
 					System.out.println("Add");
 				}
-
 				this.integrationProfileRepository.save(integrationP);
 				result.setStatus(ResourceUploadResult.SUCCESS);
 			} catch (Exception e) {
@@ -261,8 +261,8 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		return doc;
 	}
 
-	private Constraints createAdditionalConstraint(String content) throws IOException {
-		Constraints constraint = additionalConstraints(content);
+	private Constraints createAdditionalConstraint(String content, String domain) throws IOException {
+		Constraints constraint = additionalConstraints(content, domain);
 		// if (constraint != null) {
 		// Constraints existing =
 		// this.constraintsRepository.findOneBySourceId(constraint.getSourceId());
@@ -278,7 +278,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 
 	@SuppressWarnings("unused")
 	@Override
-	public TestContext testContext(String path, JsonNode formatObj, TestingStage stage, String rootPath)
+	public TestContext testContext(String path, JsonNode formatObj, TestingStage stage, String rootPath, String domain)
 			throws IOException {
 		// for backward compatibility
 		formatObj = formatObj.findValue(FORMAT) != null ? formatObj.findValue(FORMAT) : formatObj;
@@ -290,6 +290,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		HL7V2TestContext testContext = new HL7V2TestContext();
 		testContext.setFormat(FORMAT);
 		testContext.setStage(stage);
+		testContext.setDomain(domain);
 
 		if (valueSetLibraryId != null && !"".equals(valueSetLibraryId.textValue())) {
 			testContext.setVocabularyLibrary((getVocabularyLibrary(valueSetLibraryId.textValue())));
@@ -299,7 +300,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 				if (resource != null) {
 					String content = IOUtils.toString(resource.getInputStream());
 					content = packagingHandler.changeVsId(content);
-					VocabularyLibrary vocabLibrary = vocabLibrary(content);
+					VocabularyLibrary vocabLibrary = vocabLibrary(content, domain);
 					this.vocabularyLibraryRepository.save(vocabLibrary);
 					testContext.setVocabularyLibrary(vocabLibrary);
 				}
@@ -310,7 +311,9 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		}
 
 		if (constraintId != null && !"".equals(constraintId.textValue())) {
-			testContext.setConstraints(getConstraints(constraintId.textValue()));
+			Constraints co = getConstraints(constraintId.textValue());
+			co.setDomain(domain);
+			testContext.setConstraints(co);
 		}
 
 		try {
@@ -318,16 +321,16 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			if (resource != null) {
 				String content = IOUtils.toString(resource.getInputStream());
 				content = packagingHandler.changeConstraintId(content);
-				Constraints co = createAdditionalConstraint(content);
+				Constraints co = createAdditionalConstraint(content, domain);
 				testContext.setAddditionalConstraints(co);
 			}
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to parse the constraints at " + path);
 		}
 
-		testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.txt", rootPath))));
+		testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.txt", rootPath)), domain));
 		if (testContext.getMessage() == null) {
-			testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.text", rootPath))));
+			testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.text", rootPath)), domain));
 		}
 
 		if (dqa != null && !"".equals(dqa.textValue())) {
@@ -344,6 +347,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 								? testContext.getAddditionalConstraints().getXml() : null));
 				conformanceProfile.setIntegrationProfile(integrationProfile);
 				conformanceProfile.setSourceId(messageId.textValue());
+				conformanceProfile.setDomain(domain);
 				testContext.setConformanceProfile(conformanceProfile);
 			} catch (ProfileParserException e) {
 				throw new RuntimeException("Failed to parse integrationProfile at " + path);
@@ -357,7 +361,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 						new HashSet<UploadedProfileModel>(Arrays.asList(list.get(0))));
 				content = packagingHandler.changeProfileId(content);
 				String messageID = getMessageId(content);
-				IntegrationProfile integrationProfile = createIntegrationProfile(content);
+				IntegrationProfile integrationProfile = createIntegrationProfile(content, domain);
 				integrationProfile.setPreloaded(false);
 				integrationProfileRepository.save(integrationProfile);
 				ConformanceProfile conformanceProfile = new ConformanceProfile();
@@ -365,6 +369,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 						jsonConformanceProfile(content, messageID, null, testContext.getAddditionalConstraints() != null
 								? testContext.getAddditionalConstraints().getXml() : null));
 				conformanceProfile.setIntegrationProfile(integrationProfile);
+				conformanceProfile.setDomain(domain);
 				conformanceProfile.setSourceId(messageID);
 				testContext.setConformanceProfile(conformanceProfile);
 
@@ -375,7 +380,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		return testContext;
 	}
 
-	private IntegrationProfile createIntegrationProfile(String content) {
+	private IntegrationProfile createIntegrationProfile(String content, String domain) {
 		Document doc = this.stringToDom(content);
 		IntegrationProfile integrationProfile = new IntegrationProfile();
 		Element profileElement = (Element) doc.getElementsByTagName("ConformanceProfile").item(0);
@@ -395,6 +400,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			ids.add(id);
 		}
 		integrationProfile.setMessages(ids);
+		integrationProfile.setDomain(domain);
 		return integrationProfile;
 	}
 
@@ -421,7 +427,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	}
 
 	@Override
-	public VocabularyLibrary vocabLibrary(String content)
+	public VocabularyLibrary vocabLibrary(String content, String domain)
 			throws JsonGenerationException, JsonMappingException, IOException {
 		Document doc = this.stringToDom(content);
 		VocabularyLibrary vocabLibrary = new VocabularyLibrary();
@@ -430,6 +436,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		vocabLibrary.setName(valueSetLibraryeElement.getAttribute("Name"));
 		vocabLibrary.setDescription(valueSetLibraryeElement.getAttribute("Description"));
 		vocabLibrary.setXml(content);
+		vocabLibrary.setDomain(domain);
 		vocabLibrary.setJson(obm.writeValueAsString(valueSetLibrarySerializer.toObject(content)));
 		return vocabLibrary;
 	}

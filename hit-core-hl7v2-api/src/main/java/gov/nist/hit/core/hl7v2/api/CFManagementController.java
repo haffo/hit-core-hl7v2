@@ -115,10 +115,11 @@ public class CFManagementController {
 
   @PreAuthorize("hasRole('tester')")
   @RequestMapping(value = "/groups", method = RequestMethod.GET, produces = "application/json")
-  public List<CFTestPlan> getGroupsByScope(
+  public List<CFTestPlan> getGroupsByScopeAndDomain(
       @ApiParam(value = "the scope of the test plans",
           required = false) @RequestParam(required = true) TestScope scope,
-      HttpServletRequest request, HttpServletResponse response) throws Exception {
+      HttpServletRequest request, HttpServletResponse response,
+      @RequestParam(required = true) String domain) throws Exception {
     checkManagementSupport();
     scope = scope == null ? TestScope.GLOBAL : scope;
     String username = null;
@@ -129,7 +130,7 @@ public class CFManagementController {
         username = account.getUsername();
       }
     }
-    return testPlanService.findShortAllByScopeAndUsername(scope, username);
+    return testPlanService.findShortAllByScopeAndUsernameAndDomain(scope, username, domain);
   }
 
   @PreAuthorize("hasRole('tester')")
@@ -137,7 +138,8 @@ public class CFManagementController {
       produces = "application/json", consumes = {"application/x-www-form-urlencoded;"})
   public CFTestPlan createGroup(HttpServletRequest request,
       @RequestParam("category") String category, @RequestParam("scope") TestScope scope,
-      Principal p, @RequestParam("position") Integer position) throws Exception {
+      @RequestParam(required = true) String domain, Principal p,
+      @RequestParam("position") Integer position) throws Exception {
     checkManagementSupport();
     // String username = null;
     String username = userIdService.getCurrentUserName(p);
@@ -162,6 +164,7 @@ public class CFManagementController {
     testPlan.setName("Group" + new Date().getTime());
     testPlan.setPersistentId(new Date().getTime());
     testPlan.setPosition(position);
+    testPlan.setDomain(domain);
     testPlanService.save(testPlan);
     return testPlan;
   }
@@ -295,7 +298,8 @@ public class CFManagementController {
   public Set<String> getTestPlanCategories(
       @ApiParam(value = "the scope of the test plans",
           required = false) @RequestParam(required = true) TestScope scope,
-      HttpServletRequest request, HttpServletResponse response) throws Exception {
+      @RequestParam(required = true) String domain, HttpServletRequest request,
+      HttpServletResponse response) throws Exception {
     checkManagementSupport();
     Set<String> results = null;
     scope = scope == null ? TestScope.GLOBAL : scope;
@@ -308,9 +312,9 @@ public class CFManagementController {
       }
     }
     if (scope.equals(TestScope.GLOBAL)) {
-      results = testPlanService.findAllCategoriesByScope(scope);
+      results = testPlanService.findAllCategoriesByScopeAndDomain(scope, domain);
     } else {
-      results = testPlanService.findAllCategoriesByScopeAndUser(scope, username);
+      results = testPlanService.findAllCategoriesByScopeAndUserAndDomain(scope, username, domain);
     }
     return results;
   }

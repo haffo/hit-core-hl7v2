@@ -144,7 +144,8 @@ public class CBManagementController {
   public List<TestPlan> getTestPlans(
       @ApiParam(value = "the scope of the test plans",
           required = false) @RequestParam(required = false) TestScope scope,
-      HttpServletRequest request, HttpServletResponse response) throws Exception {
+      HttpServletRequest request, HttpServletResponse response,
+      @RequestParam(required = true) String domain) throws Exception {
     checkManagementSupport();
     logger.info("Fetching all testplans of type=" + scope + "...");
     scope = scope == null ? TestScope.GLOBAL : scope;
@@ -156,7 +157,8 @@ public class CBManagementController {
         username = account.getUsername();
       }
     }
-    return testPlanService.findAllShortByStageAndUsernameAndScope(TestingStage.CB, username, scope);
+    return testPlanService.findAllShortByStageAndUsernameAndScopeAndDomain(TestingStage.CB,
+        username, scope, domain);
   }
 
   @ApiOperation(value = "Find a context-based test plan by its id", nickname = "getOneTestPlanById")
@@ -641,7 +643,8 @@ public class CBManagementController {
       consumes = {"multipart/form-data"})
   @ResponseBody
   public ResourceUploadStatus uploadZip(ServletRequest request,
-      @RequestPart("file") MultipartFile part, Principal p) throws MessageUploadException {
+      @RequestPart("file") MultipartFile part, Principal p, @RequestPart("domain") String domain)
+      throws MessageUploadException {
     try {
       checkManagementSupport();
       if (!part.getContentType().equalsIgnoreCase("application/zip"))
@@ -658,7 +661,7 @@ public class CBManagementController {
           CB_RESOURCE_BUNDLE_DIR + "/" + token + "/" + filename);
 
       List<TestPlan> plans =
-          resourceLoader.createTP(directory.substring(0, directory.lastIndexOf("/")) + "/");
+          resourceLoader.createTP(directory.substring(0, directory.lastIndexOf("/")) + "/", domain);
       TestPlan tp = plans.get(0);
       updateToUser(tp, TestScope.USER, username);
       ResourceUploadStatus result = resourceLoader.handleTP(tp);

@@ -498,8 +498,8 @@ public class HL7V2CFManagementController {
   @PreAuthorize("hasRole('tester')")
   @RequestMapping(value = "/groups/{groupId}", method = RequestMethod.POST)
   @ResponseBody
-  public UploadStatus saveGrop(HttpServletRequest request, @PathVariable("groupId") Long groupId,
-      @RequestBody TestCaseWrapper wrapper, Principal p) {
+  public UploadStatus saveProfileGroup(HttpServletRequest request,
+      @PathVariable("groupId") Long groupId, @RequestBody TestCaseWrapper wrapper, Principal p) {
     try {
       checkManagementSupport();
       // String username = null;
@@ -555,6 +555,7 @@ public class HL7V2CFManagementController {
                 message = new Message();
                 message.setName(model.getName());
                 message.setDescription(model.getDescription());
+                message.setDomain(context.getDomain());
                 context.setMessage(message);
               }
               message.setContent(model.getExampleMessage());
@@ -572,6 +573,7 @@ public class HL7V2CFManagementController {
         testCaseJson.put("constraints", "Constraints.xml");
         testCaseJson.put("vs", "ValueSets.xml");
         testCaseJson.put("scope", scope);
+        testCaseJson.put("domain", testPlan.getDomain());
         testCaseJson.put("category", wrapper.getCategory());
 
         Set<UploadedProfileModel> added = wrapper.getAdded();
@@ -584,6 +586,7 @@ public class HL7V2CFManagementController {
             ts.put("description", upm.getDescription());
             ts.put("position", upm.getPosition());
             ts.put("scope", scope);
+            ts.put("domain", testPlan.getDomain());
             if (upm.getExampleMessage() != null) {
               ts.put("exampleMessage", upm.getExampleMessage());
             }

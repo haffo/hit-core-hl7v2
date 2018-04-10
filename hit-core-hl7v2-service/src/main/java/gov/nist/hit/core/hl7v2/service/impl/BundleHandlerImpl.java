@@ -73,7 +73,8 @@ public class BundleHandlerImpl implements BundleHandler {
 	}
 
 	@Override
-	public GVTSaveInstance createGVTSaveInstance(String dir, String domain) throws IOException, ProfileParserException {
+	public GVTSaveInstance createGVTSaveInstance(String dir, String domain, String authorUsername, boolean preloaded)
+			throws IOException, ProfileParserException {
 		GVTSaveInstance save = new GVTSaveInstance();
 		File testCasesFile = new File(dir + "/TestCases.json");
 		if (!testCasesFile.exists()) {
@@ -91,6 +92,8 @@ public class BundleHandlerImpl implements BundleHandler {
 		gtcg.setPreloaded(false);
 		gtcg.setScope(testCasesObj.get("scope") != null && testCasesObj.get("scope").asText() != null
 				? TestScope.valueOf(testCasesObj.get("scope").asText()) : TestScope.USER);
+		gtcg.setAuthorUsername(authorUsername);
+		gtcg.setPreloaded(preloaded);
 		save.tcg = gtcg;
 
 		// Profile
@@ -99,8 +102,8 @@ public class BundleHandlerImpl implements BundleHandler {
 		if (!profileFile.exists()) {
 			throw new IllegalArgumentException("Profile " + profileName + " not found");
 		}
-		IntegrationProfile p = resourceLoader.integrationProfile(FileUtils.readFileToString(profileFile), domain);
-		p.setPreloaded(false);
+		IntegrationProfile p = resourceLoader.integrationProfile(FileUtils.readFileToString(profileFile), domain,
+				gtcg.getScope(), authorUsername, preloaded);
 		save.ip = p;
 
 		// Constraints
@@ -109,8 +112,8 @@ public class BundleHandlerImpl implements BundleHandler {
 		if (!constraintsFile.exists()) {
 			throw new IllegalArgumentException("Constraints " + constraintName + " not found");
 		}
-		Constraints c = resourceLoader.constraint(FileUtils.readFileToString(constraintsFile), domain);
-		c.setPreloaded(false);
+		Constraints c = resourceLoader.constraint(FileUtils.readFileToString(constraintsFile), domain, gtcg.getScope(),
+				authorUsername, preloaded);
 		save.ct = c;
 
 		// VS
@@ -119,8 +122,8 @@ public class BundleHandlerImpl implements BundleHandler {
 		if (!vsFile.exists()) {
 			throw new IllegalArgumentException("VocabularyLibrary " + vocabName + " not found");
 		}
-		VocabularyLibrary v = resourceLoader.vocabLibrary(FileUtils.readFileToString(vsFile), domain);
-		v.setPreloaded(false);
+		VocabularyLibrary v = resourceLoader.vocabLibrary(FileUtils.readFileToString(vsFile), domain, gtcg.getScope(),
+				authorUsername, preloaded);
 
 		save.vs = v;
 
@@ -138,6 +141,7 @@ public class BundleHandlerImpl implements BundleHandler {
 			String description = tcO.findValue("description").asText();
 			Long id = new Random().nextLong();
 			cfti.setDomain(domain);
+			cfti.setScope(gtcg.getScope());
 			// ---
 			ConformanceProfile conformanceProfile = new ConformanceProfile();
 			conformanceProfile.setJson(resourceLoader.jsonConformanceProfile(p.getXml(), messageId, c.getXml(), null));
@@ -145,6 +149,9 @@ public class BundleHandlerImpl implements BundleHandler {
 			conformanceProfile.setIntegrationProfile(p);
 			conformanceProfile.setSourceId(messageId);
 			conformanceProfile.setDomain(domain);
+			conformanceProfile.setScope(gtcg.getScope());
+			conformanceProfile.setAuthorUsername(authorUsername);
+			conformanceProfile.setPreloaded(preloaded);
 			// ---
 			HL7V2TestContext testContext = new HL7V2TestContext();
 			testContext.setVocabularyLibrary(v);
@@ -189,9 +196,8 @@ public class BundleHandlerImpl implements BundleHandler {
 			throw new IllegalArgumentException("Profile " + profileName + " not found");
 		}
 		IntegrationProfile p = resourceLoader.integrationProfile(FileUtils.readFileToString(profileFile),
-				tp.getDomain());
+				tp.getDomain(), tp.getScope(), tp.getAuthorUsername(), tp.isPreloaded());
 		p.setDomain(tp.getDomain());
-		p.setPreloaded(false);
 		save.ip = p;
 
 		// Constraints
@@ -200,8 +206,8 @@ public class BundleHandlerImpl implements BundleHandler {
 		if (!constraintsFile.exists()) {
 			throw new IllegalArgumentException("Constraints " + constraintName + " not found");
 		}
-		Constraints c = resourceLoader.constraint(FileUtils.readFileToString(constraintsFile), tp.getDomain());
-		c.setPreloaded(false);
+		Constraints c = resourceLoader.constraint(FileUtils.readFileToString(constraintsFile), tp.getDomain(),
+				tp.getScope(), tp.getAuthorUsername(), tp.isPreloaded());
 		save.ct = c;
 
 		// VS
@@ -210,8 +216,8 @@ public class BundleHandlerImpl implements BundleHandler {
 		if (!vsFile.exists()) {
 			throw new IllegalArgumentException("VocabularyLibrary " + vocabName + " not found");
 		}
-		VocabularyLibrary v = resourceLoader.vocabLibrary(FileUtils.readFileToString(vsFile), tp.getDomain());
-		v.setPreloaded(false);
+		VocabularyLibrary v = resourceLoader.vocabLibrary(FileUtils.readFileToString(vsFile), tp.getDomain(),
+				tp.getScope(), tp.getAuthorUsername(), tp.isPreloaded());
 
 		save.vs = v;
 
@@ -220,7 +226,7 @@ public class BundleHandlerImpl implements BundleHandler {
 		while (testCasesIter.hasNext()) {
 			JsonNode tcO = testCasesIter.next();
 			CFTestStep cfti = new CFTestStep();
-			cfti.setPreloaded(false);
+			cfti.setPreloaded(tp.isPreloaded());
 			cfti.setScope(tcO.get("scope") != null && tcO.get("scope").asText() != null
 					? TestScope.valueOf(tcO.get("scope").asText()) : TestScope.USER);
 			String messageId = tcO.findValue("messageId").asText();
@@ -228,6 +234,9 @@ public class BundleHandlerImpl implements BundleHandler {
 			String description = tcO.findValue("description").asText();
 			Long id = new Random().nextLong();
 			cfti.setDomain(tp.getDomain());
+			cfti.setScope(tp.getScope());
+			cfti.setAuthorUsername(tp.getAuthorUsername());
+			cfti.setPreloaded(tp.isPreloaded());
 
 			// ---
 			ConformanceProfile conformanceProfile = new ConformanceProfile();
@@ -236,6 +245,7 @@ public class BundleHandlerImpl implements BundleHandler {
 			conformanceProfile.setIntegrationProfile(p);
 			conformanceProfile.setSourceId(messageId);
 			conformanceProfile.setDomain(tp.getDomain());
+			conformanceProfile.setScope(tp.getScope());
 			// ---
 			HL7V2TestContext testContext = new HL7V2TestContext();
 			testContext.setVocabularyLibrary(v);
@@ -251,6 +261,9 @@ public class BundleHandlerImpl implements BundleHandler {
 					message = new Message();
 					message.setName(name);
 					message.setDomain(tp.getDomain());
+					message.setScope(tp.getScope());
+					message.setAuthorUsername(tp.getAuthorUsername());
+					message.setPreloaded(tp.isPreloaded());
 					message.setDescription(description);
 					testContext.setMessage(message);
 				}

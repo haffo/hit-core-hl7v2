@@ -30,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -643,8 +644,8 @@ public class CBManagementController {
       consumes = {"multipart/form-data"})
   @ResponseBody
   public ResourceUploadStatus uploadZip(ServletRequest request,
-      @RequestPart("file") MultipartFile part, Principal p, @RequestPart("domain") String domain)
-      throws MessageUploadException {
+      @RequestPart("file") MultipartFile part, Principal p, @RequestPart("domain") String domain,
+      Authentication u) throws MessageUploadException {
     try {
       checkManagementSupport();
       if (!part.getContentType().equalsIgnoreCase("application/zip"))
@@ -661,7 +662,8 @@ public class CBManagementController {
           CB_RESOURCE_BUNDLE_DIR + "/" + token + "/" + filename);
 
       List<TestPlan> plans =
-          resourceLoader.createTP(directory.substring(0, directory.lastIndexOf("/")) + "/", domain);
+          resourceLoader.createTP(directory.substring(0, directory.lastIndexOf("/")) + "/", domain,
+              TestScope.USER, u.getName(), false);
       TestPlan tp = plans.get(0);
       updateToUser(tp, TestScope.USER, username);
       ResourceUploadStatus result = resourceLoader.handleTP(tp);

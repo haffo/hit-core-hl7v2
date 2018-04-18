@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import gov.nist.healthcare.unified.enums.Context;
 import gov.nist.healthcare.unified.model.EnhancedReport;
@@ -26,6 +27,7 @@ import gov.nist.hit.core.domain.MessageValidationResult;
 import gov.nist.hit.core.domain.TestContext;
 import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
 import gov.nist.hit.core.service.MessageValidator;
+import gov.nist.hit.core.service.ValidationLogService;
 import gov.nist.hit.core.service.exception.MessageException;
 import gov.nist.hit.core.service.exception.MessageValidationException;
 import hl7.v2.validation.content.ConformanceContext;
@@ -34,6 +36,9 @@ import hl7.v2.validation.vs.ValueSetLibrary;
 import hl7.v2.validation.vs.ValueSetLibraryImpl;
 
 public abstract class HL7V2MessageValidator implements MessageValidator {
+
+	@Autowired
+	private ValidationLogService validationLogService;
 
 	@Override
 	public MessageValidationResult validate(TestContext testContext, MessageValidationCommand command)
@@ -90,6 +95,8 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
 								nav.get("testStep"));
 					}
 				}
+
+				validationLogService.generateAndSave(command.getUserId(), testContext, report);
 				return report;
 			}
 			throw new MessageValidationException();
@@ -140,6 +147,14 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
 
 	public void setOrganizationName(String organizationName) {
 		this.organizationName = organizationName;
+	}
+
+	public ValidationLogService getValidationLogService() {
+		return validationLogService;
+	}
+
+	public void setValidationLogService(ValidationLogService validationLogService) {
+		this.validationLogService = validationLogService;
 	}
 
 }

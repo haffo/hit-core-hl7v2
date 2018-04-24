@@ -27,11 +27,11 @@ public class HL7V2TestContext extends TestContext {
   @JsonProperty(value = "profile")
   protected ConformanceProfile conformanceProfile;
 
-  @ManyToOne
+  @ManyToOne(cascade = {CascadeType.ALL})
   protected VocabularyLibrary vocabularyLibrary;
 
   @JsonIgnore
-  @ManyToOne
+  @ManyToOne(cascade = {CascadeType.ALL})
   protected Constraints constraints;
 
   @JsonIgnore

@@ -14,4 +14,12 @@ public class HL7V2MessageValidatorImpl extends HL7V2MessageValidator {
 		return super.validate(testContext, command);
 	}
 
+	
+	public MessageValidationResult validateOnlyErrorsOnly(TestContext testContext, MessageValidationCommand command)
+			throws MessageValidationException{
+		return super.validateErrorsOnly(testContext, command);
+	}
+	
+	
+
 }

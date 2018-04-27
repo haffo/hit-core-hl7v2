@@ -70,6 +70,32 @@
 			<artifactId>validation</artifactId>
 			<version>${resourcesValidation.version}</version>
 		</dependency>
+		
+		
+		<dependency>
+			<groupId>gov.nist.hit.hl7</groupId>
+			<artifactId>profile-validation</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+			<exclusions>
+				<exclusion>
+					<groupId>gov.nist</groupId>
+					<artifactId>hl7-v2-validation</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>gov.nist.healthcare.hl7.v2.unifiedreport</groupId>
+					<artifactId>validation-proxy</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>gov.nist.healthcare.hl7.v2.unifiedreport</groupId>
+					<artifactId>report-filter</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>gov.nist.healthcare.resources</groupId>
+					<artifactId>validation</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		
         
         
         

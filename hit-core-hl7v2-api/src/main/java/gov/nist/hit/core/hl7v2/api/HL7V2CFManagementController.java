@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 
@@ -37,6 +38,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,8 +51,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-import gov.nist.healthcare.resources.domain.XMLError;
-import gov.nist.hit.core.api.ContextFreeController;
 import gov.nist.hit.core.domain.CFTestPlan;
 import gov.nist.hit.core.domain.CFTestStep;
 import gov.nist.hit.core.domain.GVTSaveInstance;
@@ -63,6 +63,7 @@ import gov.nist.hit.core.domain.UploadStatus;
 import gov.nist.hit.core.domain.UploadedProfileModel;
 import gov.nist.hit.core.hl7v2.service.FileValidationHandler;
 import gov.nist.hit.core.hl7v2.service.PackagingHandler;
+import gov.nist.hit.core.hl7v2.service.impl.FileValidationHandlerImpl.InvalidFileTypeException;
 import gov.nist.hit.core.hl7v2.service.impl.HL7V2ProfileParserImpl;
 import gov.nist.hit.core.repo.ConstraintsRepository;
 import gov.nist.hit.core.repo.IntegrationProfileRepository;
@@ -77,6 +78,7 @@ import gov.nist.hit.core.service.UserService;
 import gov.nist.hit.core.service.exception.MessageUploadException;
 import gov.nist.hit.core.service.exception.NoUserFoundException;
 import gov.nist.hit.core.service.exception.NotValidToken;
+import gov.nist.hit.hl7.profile.validation.domain.ProfileValidationReport;
 
 /**
  * @author Nicolas Crouzier (NIST)
@@ -89,9 +91,12 @@ import gov.nist.hit.core.service.exception.NotValidToken;
 public class HL7V2CFManagementController {
 
   static final Logger logger = LoggerFactory.getLogger(HL7V2CFManagementController.class);
+  
+  @Value("${UPLOADED_RESOURCE_BUNDLE:/sites/data/uploaded_resource_bundles}")
+  private String UPLOADED_RESOURCE_BUNDLE;
 
-  private static final String CF_UPLOAD_DIR = ContextFreeController.CF_UPLOAD_DIR;
-
+  private String CF_RESOURCE_BUNDLE_DIR;
+  
   ProfileParser parser = new HL7V2ProfileParserImpl();
 
   @Autowired
@@ -131,6 +136,10 @@ public class HL7V2CFManagementController {
   @Autowired
   private AppInfoService appInfoService;
 
+	@PostConstruct
+	  public void init() {
+	    CF_RESOURCE_BUNDLE_DIR = UPLOADED_RESOURCE_BUNDLE + "/cf";
+	  }
 
   private void checkManagementSupport() throws Exception {
     if (!appInfoService.get().isCfManagementSupported()) {
@@ -150,64 +159,111 @@ public class HL7V2CFManagementController {
    * @return A list of profiles or a list of errors
    * @throws Exception
    */
-  @PreAuthorize("hasRole('tester')")
-  @RequestMapping(value = "/uploadProfiles", method = RequestMethod.POST,
-      consumes = {"multipart/form-data"})
-  @ResponseBody
-  public Map<String, Object> uploadProfile(ServletRequest request,
-      @RequestPart("file") MultipartFile part, @RequestParam("token") String token, Principal p)
-      throws Exception {
-    checkManagementSupport();
-    Map<String, Object> resultMap = new HashMap<String, Object>();
-    try {
-      if (!part.getContentType().equalsIgnoreCase("text/xml"))
-        throw new MessageUploadException(
-            "Unsupported content type. Supported content types are: '.xml' ");
+	@PreAuthorize("hasRole('tester')")
+	@RequestMapping(value = "/validate", method = RequestMethod.GET,  produces = "application/json")
+	@ResponseBody
+	public Map<String, Object> validate(ServletRequest request,
+			@RequestParam("token") String token, Principal p) throws Exception {
+		checkManagementSupport();
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		try {
+			
+			String userName = userIdService.getCurrentUserName(p);
+			if (userName == null)
+				throw new NoUserFoundException("User could not be found");
 
-      String userName = userIdService.getCurrentUserName(p);
-      if (userName == null)
-        throw new NoUserFoundException("User could not be found");
 
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      org.apache.commons.io.IOUtils.copy(part.getInputStream(), baos);
-      byte[] bytes = baos.toByteArray();
+			ProfileValidationReport report = fileValidationHandler.getHTMLValidatioReport(CF_RESOURCE_BUNDLE_DIR + "/" + userName + "/" + token);
+			
+			if ((report == null || (report != null && report.isSuccess()))) {
+			resultMap.put("success", true);
+			}else {
+				resultMap.put("success", false);
+				if(report != null) {
+					resultMap.put("report", report.generateHTML());
+				}				
+			}
+			
+			return resultMap;
+		} catch (NoUserFoundException e) {
+			resultMap.put("success", false);
+			resultMap.put("message", "An error occured. The tool could not validate the files sent");
+			resultMap.put("debugError", ExceptionUtils.getMessage(e));
+			return resultMap;
+		}  catch (InvalidFileTypeException e) {
+			resultMap.put("success", false);
+			resultMap.put("report", String.join("<br>", e.getErrors()));
+			return resultMap;
+		} catch (MessageUploadException e) {
+			resultMap.put("success", false);
+			resultMap.put("message", "An error occured. The tool could not validate the files sent");
+			resultMap.put("debugError", ExceptionUtils.getMessage(e));
+			return resultMap;
+		} catch (Exception e) {
+			resultMap.put("success", false);
+			resultMap.put("message", "An error occured. The tool could not validate the files sent");
+			resultMap.put("debugError", ExceptionUtils.getStackTrace(e));
+			return resultMap;
+		}
+	}
+  
+  /**
+   * Upload a single XML profile file and may returns errors
+   * 
+   * @param request Client request
+   * @param part Profile XML file
+   * @param token Token used for saving file
+   * @param p Principal
+   * @return A list of profiles or a list of errors
+   * @throws Exception
+   */
+	@PreAuthorize("hasRole('tester')")
+	@RequestMapping(value = "/uploadProfiles", method = RequestMethod.POST, consumes = { "multipart/form-data" })
+	@ResponseBody
+	public Map<String, Object> uploadProfile(ServletRequest request, @RequestPart("file") MultipartFile part,
+			@RequestParam("token") String token, Principal p) throws Exception {
+		checkManagementSupport();
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		try {
+			if (!part.getContentType().equalsIgnoreCase("text/xml"))
+				throw new MessageUploadException("Unsupported content type. Supported content types are: '.xml' ");
 
-      String content = IOUtils.toString(new ByteArrayInputStream(bytes));
-      List<XMLError> errors =
-          fileValidationHandler.validateProfile(content, new ByteArrayInputStream(bytes));
+			String userName = userIdService.getCurrentUserName(p);
+			if (userName == null)
+				throw new NoUserFoundException("User could not be found");
 
-      if (errors.size() > 0) {
-        resultMap.put("success", false);
-        resultMap.put("errors", errors);
-        logger.info("Uploaded profile file with errors " + part.getName());
-      } else {
-        List<UploadedProfileModel> list = packagingHandler.getUploadedProfiles(content);
-        resultMap.put("success", true);
-        resultMap.put("profiles", list);
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			org.apache.commons.io.IOUtils.copy(part.getInputStream(), baos);
+			byte[] bytes = baos.toByteArray();
 
-        File profileFile = new File(CF_UPLOAD_DIR + "/" + userName + "/" + token + "/Profile.xml");
-        FileUtils.writeStringToFile(profileFile, content);
-        logger.info("Uploaded valid profile file " + part.getName());
-      }
+			String content = IOUtils.toString(new ByteArrayInputStream(bytes));
+			File profileFile = new File(CF_RESOURCE_BUNDLE_DIR + "/" + userName + "/" + token + "/Profile.xml");
+			FileUtils.writeStringToFile(profileFile, content);
 
-      return resultMap;
-    } catch (NoUserFoundException e) {
-      resultMap.put("success", false);
-      resultMap.put("message", "An error occured. The tool could not upload the profile file sent");
-      resultMap.put("debugError", ExceptionUtils.getMessage(e));
-      return resultMap;
-    } catch (MessageUploadException e) {
-      resultMap.put("success", false);
-      resultMap.put("message", "An error occured. The tool could not upload the profile file sent");
-      resultMap.put("debugError", ExceptionUtils.getMessage(e));
-      return resultMap;
-    } catch (Exception e) {
-      resultMap.put("success", false);
-      resultMap.put("message", "An error occured. The tool could not upload the profile file sent");
-      resultMap.put("debugError", ExceptionUtils.getStackTrace(e));
-      return resultMap;
-    }
-  }
+		
+			List<UploadedProfileModel> list = packagingHandler.getUploadedProfiles(content);
+			resultMap.put("success", true);
+			resultMap.put("profiles", list);
+					
+
+			return resultMap;
+		} catch (NoUserFoundException e) {
+			resultMap.put("success", false);
+			resultMap.put("message", "An error occured. The tool could not upload the profile file sent");
+			resultMap.put("debugError", ExceptionUtils.getMessage(e));
+			return resultMap;
+		} catch (MessageUploadException e) {
+			resultMap.put("success", false);
+			resultMap.put("message", "An error occured. The tool could not upload the profile file sent");
+			resultMap.put("debugError", ExceptionUtils.getMessage(e));
+			return resultMap;
+		} catch (Exception e) {
+			resultMap.put("success", false);
+			resultMap.put("message", "An error occured. The tool could not upload the profile file sent");
+			resultMap.put("debugError", ExceptionUtils.getStackTrace(e));
+			return resultMap;
+		}
+	}
 
   /**
    * Upload a single XML value set file and may returns errors
@@ -241,20 +297,11 @@ public class HL7V2CFManagementController {
       org.apache.commons.io.IOUtils.copy(part.getInputStream(), baos);
       byte[] bytes = baos.toByteArray();
       String content = IOUtils.toString(new ByteArrayInputStream(bytes));
-      List<XMLError> errors =
-          fileValidationHandler.validateVocabulary(content, new ByteArrayInputStream(bytes));
-
-      if (errors.size() > 0) {
-        resultMap.put("success", false);
-        resultMap.put("errors", errors);
-        logger.info("Uploaded value set file with errors " + part.getName());
-      } else {
-        resultMap.put("success", true);
-
-        File vsFile = new File(CF_UPLOAD_DIR + "/" + userName + "/" + token + "/ValueSets.xml");
-        FileUtils.writeStringToFile(vsFile, content);
-        logger.info("Uploaded value set file " + part.getName());
-      }
+      File vsFile = new File(CF_RESOURCE_BUNDLE_DIR + "/" + userName + "/" + token + "/ValueSets.xml");
+      FileUtils.writeStringToFile(vsFile, content);
+      
+		resultMap.put("success", true);
+	
       return resultMap;
     } catch (NoUserFoundException e) {
       resultMap.put("success", false);
@@ -287,65 +334,50 @@ public class HL7V2CFManagementController {
    * @return May return a list of errors
    * @throws Exception
    */
-  @PreAuthorize("hasRole('tester')")
-  @RequestMapping(value = "/uploadConstraints", method = RequestMethod.POST,
-      consumes = {"multipart/form-data"})
-  @ResponseBody
-  public Map<String, Object> uploadContraints(ServletRequest request,
-      @RequestPart("file") MultipartFile part, @RequestParam("token") String token, Principal p)
-      throws Exception {
-    checkManagementSupport();
+	@PreAuthorize("hasRole('tester')")
+	@RequestMapping(value = "/uploadConstraints", method = RequestMethod.POST, consumes = { "multipart/form-data" })
+	@ResponseBody
+	public Map<String, Object> uploadContraints(ServletRequest request, @RequestPart("file") MultipartFile part,
+			@RequestParam("token") String token, Principal p) throws Exception {
+		checkManagementSupport();
 
-    Map<String, Object> resultMap = new HashMap<String, Object>();
-    try {
-      if (!part.getContentType().equalsIgnoreCase("text/xml"))
-        throw new MessageUploadException(
-            "Unsupported content type. Supported content types are: '.xml' ");
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		try {
+			if (!part.getContentType().equalsIgnoreCase("text/xml"))
+				throw new MessageUploadException("Unsupported content type. Supported content types are: '.xml' ");
 
-      String userName = userIdService.getCurrentUserName(p);
-      if (userName == null)
-        throw new NoUserFoundException("User could not be found");
+			String userName = userIdService.getCurrentUserName(p);
+			if (userName == null)
+				throw new NoUserFoundException("User could not be found");
+			
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			org.apache.commons.io.IOUtils.copy(part.getInputStream(), baos);
+			byte[] bytes = baos.toByteArray();
+			String content = IOUtils.toString(new ByteArrayInputStream(bytes));
+			File constraintFile = new File(CF_RESOURCE_BUNDLE_DIR + "/" + userName + "/" + token + "/Constraints.xml");
+			FileUtils.writeStringToFile(constraintFile, content);
 
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      org.apache.commons.io.IOUtils.copy(part.getInputStream(), baos);
-      byte[] bytes = baos.toByteArray();
-      String content = IOUtils.toString(new ByteArrayInputStream(bytes));
-      List<XMLError> errors =
-          fileValidationHandler.validateConstraints(content, new ByteArrayInputStream(bytes));
 
-      if (errors.size() > 0) {
-        resultMap.put("success", false);
-        resultMap.put("errors", errors);
-        logger.info("Uploaded constraints file with errors " + part.getName());
-      } else {
-        resultMap.put("success", true);
+			resultMap.put("success", true);
 
-        File constraintFile =
-            new File(CF_UPLOAD_DIR + "/" + userName + "/" + token + "/Constraints.xml");
-        FileUtils.writeStringToFile(constraintFile, content);
-        logger.info("Uploaded constraints file " + part.getName());
-      }
-      return resultMap;
-    } catch (NoUserFoundException e) {
-      resultMap.put("success", false);
-      resultMap.put("message",
-          "An error occured. The tool could not upload the constraints file sent");
-      resultMap.put("debugError", ExceptionUtils.getMessage(e));
-      return resultMap;
-    } catch (MessageUploadException e) {
-      resultMap.put("success", false);
-      resultMap.put("message",
-          "An error occured. The tool could not upload the constraints file sent");
-      resultMap.put("debugError", ExceptionUtils.getMessage(e));
-      return resultMap;
-    } catch (Exception e) {
-      resultMap.put("success", false);
-      resultMap.put("message",
-          "An error occured. The tool could not upload the constraints file sent");
-      resultMap.put("debugError", ExceptionUtils.getStackTrace(e));
-      return resultMap;
-    }
-  }
+			return resultMap;
+		} catch (NoUserFoundException e) {
+			resultMap.put("success", false);
+			resultMap.put("message", "An error occured. The tool could not upload the constraints file sent");
+			resultMap.put("debugError", ExceptionUtils.getMessage(e));
+			return resultMap;
+		} catch (MessageUploadException e) {
+			resultMap.put("success", false);
+			resultMap.put("message", "An error occured. The tool could not upload the constraints file sent");
+			resultMap.put("debugError", ExceptionUtils.getMessage(e));
+			return resultMap;
+		} catch (Exception e) {
+			resultMap.put("success", false);
+			resultMap.put("message", "An error occured. The tool could not upload the constraints file sent");
+			resultMap.put("debugError", ExceptionUtils.getStackTrace(e));
+			return resultMap;
+		}
+	}
 
   /**
    * Uploads zip file and stores it in a temporary directory
@@ -375,24 +407,23 @@ public class HL7V2CFManagementController {
         throw new NoUserFoundException("User could not be found");
 
       String token = UUID.randomUUID().toString();
-      String directory =
-          bundleHandler.unzip(part.getBytes(), CF_UPLOAD_DIR + "/" + userName + "/" + token);
-      Map<String, List<XMLError>> errorMap = fileValidationHandler.unbundleAndValidate(directory);
+      String directory =  bundleHandler.unzip(part.getBytes(), CF_RESOURCE_BUNDLE_DIR + "/" + userName + "/" + token);
+      ProfileValidationReport report = fileValidationHandler.getHTMLValidatioReport(directory);
+      
+     
+      if (!report.isSuccess()) {
+            resultMap.put("success", false);
+            resultMap.put("report", report.generateHTML());            
+            FileUtils.deleteDirectory(new File(directory));
+            logger.info("Uploaded profile file with errors " + part.getName());
+          } else {
+            resultMap.put("success", true);
+            resultMap.put("report", report.generateHTML());  
+            resultMap.put("token", token);
 
-      if (errorMap.get("profileErrors").size() > 0 || errorMap.get("constraintsErrors").size() > 0
-          || errorMap.get("vsErrors").size() > 0) {
-        resultMap.put("success", false);
-        resultMap.put("profileErrors", errorMap.get("profileErrors"));
-        resultMap.put("constraintsErrors", errorMap.get("constraintsErrors"));
-        resultMap.put("vsErrors", errorMap.get("vsErrors"));
-        FileUtils.deleteDirectory(new File(directory));
-        logger.info("Uploaded profile file with errors " + part.getName());
-      } else {
-        resultMap.put("success", true);
-        resultMap.put("token", token);
-
-        logger.info("Uploaded valid zip File file " + part.getName());
-      }
+            logger.info("Uploaded valid zip File file " + part.getName());
+          }
+      
 
     } catch (NoUserFoundException e) {
       resultMap.put("success", false);
@@ -436,7 +467,7 @@ public class HL7V2CFManagementController {
       if (userName == null)
         throw new NoUserFoundException("User could not be found");
 
-      String directory = CF_UPLOAD_DIR + "/" + userName + "/" + token;
+      String directory = CF_RESOURCE_BUNDLE_DIR + "/" + userName + "/" + token;
       if (!new File(directory).exists())
         throw new NotValidToken("The provided token is not valid for this account.");
 
@@ -593,13 +624,13 @@ public class HL7V2CFManagementController {
         }
 
         File jsonFile =
-            new File(CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken() + "/TestCases.json");
+            new File(CF_RESOURCE_BUNDLE_DIR + "/" + username + "/" + wrapper.getToken() + "/TestCases.json");
         File profileFile =
-            new File(CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken() + "/Profile.xml");
+            new File(CF_RESOURCE_BUNDLE_DIR + "/" + username + "/" + wrapper.getToken() + "/Profile.xml");
         File constraintsFile = new File(
-            CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken() + "/Constraints.xml");
+        		CF_RESOURCE_BUNDLE_DIR + "/" + username + "/" + wrapper.getToken() + "/Constraints.xml");
         File vsFile =
-            new File(CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken() + "/ValueSets.xml");
+            new File(CF_RESOURCE_BUNDLE_DIR + "/" + username + "/" + wrapper.getToken() + "/ValueSets.xml");
 
         if (constraintsFile != null) {
           packagingHandler.changeConstraintId(constraintsFile);
@@ -615,14 +646,14 @@ public class HL7V2CFManagementController {
         FileUtils.writeStringToFile(jsonFile, testCaseJson.toString());
         // Use files to save to database
         GVTSaveInstance si = bundleHandler.createGVTSaveInstance(
-            CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken(), testPlan);
+        		CF_RESOURCE_BUNDLE_DIR + "/" + username + "/" + wrapper.getToken(), testPlan);
         ipRepository.save(si.ip);
         csRepository.save(si.ct);
         vsRepository.save(si.vs);
         si.tcg.setAuthorUsername(username);
         testCaseGroupRepository.saveAndFlush(si.tcg);
         FileUtils
-            .deleteDirectory(new File(CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken()));
+            .deleteDirectory(new File(CF_RESOURCE_BUNDLE_DIR + "/" + username + "/" + wrapper.getToken()));
       } else {
         testPlanService.save(testPlan);
       }

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import gov.nist.healthcare.resources.domain.XMLError;
+import gov.nist.hit.hl7.profile.validation.domain.ProfileValidationReport;
 
 public interface FileValidationHandler {
 
@@ -15,6 +16,7 @@ public interface FileValidationHandler {
 	
 	public Map<String, List<XMLError>> unbundleAndValidate(String dir) throws Exception;
 	
+	public ProfileValidationReport getHTMLValidatioReport(String dir) throws Exception;
 	
 	
 }

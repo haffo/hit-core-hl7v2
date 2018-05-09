@@ -6,8 +6,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -19,8 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gov.nist.hit.core.domain.AbstractTestCase;
 import gov.nist.hit.core.domain.CFTestPlan;
 import gov.nist.hit.core.domain.CFTestStep;
+import gov.nist.hit.core.domain.CFTestStepGroup;
 import gov.nist.hit.core.domain.ConformanceProfile;
 import gov.nist.hit.core.domain.Constraints;
 import gov.nist.hit.core.domain.GVTSaveInstance;
@@ -73,7 +77,7 @@ public class BundleHandlerImpl implements BundleHandler {
 	}
 
 	@Override
-	public GVTSaveInstance createGVTSaveInstance(String dir, String domain, String authorUsername, boolean preloaded)
+	public GVTSaveInstance createSaveInstance(String dir, String domain, String authorUsername, boolean preloaded)
 			throws IOException, ProfileParserException {
 		GVTSaveInstance save = new GVTSaveInstance();
 		File testCasesFile = new File(dir + "/TestCases.json");
@@ -160,6 +164,8 @@ public class BundleHandlerImpl implements BundleHandler {
 			testContext.setDqa(false);
 			testContext.setStage(TestingStage.CF);
 			testContext.setDomain(domain);
+			testContext.setScope(gtcg.getScope());
+			testContext.setAuthorUsername(authorUsername);
 
 			// ---
 			cfti.setName(name);
@@ -174,16 +180,12 @@ public class BundleHandlerImpl implements BundleHandler {
 		return save;
 	}
 
-	@Override
-	@Transactional(value = "transactionManager")
-	public GVTSaveInstance createGVTSaveInstance(String dir, CFTestPlan tp) throws IOException, ProfileParserException {
-		GVTSaveInstance save = new GVTSaveInstance();
+	private GVTSaveInstance setSaveInstanceValues(String dir, GVTSaveInstance save, Set<CFTestStep> testSteps,
+			AbstractTestCase tp) throws IOException, ProfileParserException {
 		File testCasesFile = new File(dir + "/TestCases.json");
 		if (!testCasesFile.exists()) {
 			throw new IllegalArgumentException("No TestCases.json found");
 		}
-
-		save.tcg = tp;
 
 		String descriptorContent = FileUtils.readFileToString(testCasesFile);
 		ObjectMapper mapper = new ObjectMapper();
@@ -222,7 +224,7 @@ public class BundleHandlerImpl implements BundleHandler {
 		save.vs = v;
 
 		Iterator<JsonNode> testCasesIter = testCasesObj.findValue("testCases").elements();
-		int size = tp.getTestSteps().size();
+		int size = testSteps.size();
 		while (testCasesIter.hasNext()) {
 			JsonNode tcO = testCasesIter.next();
 			CFTestStep cfti = new CFTestStep();
@@ -246,6 +248,7 @@ public class BundleHandlerImpl implements BundleHandler {
 			conformanceProfile.setSourceId(messageId);
 			conformanceProfile.setDomain(tp.getDomain());
 			conformanceProfile.setScope(tp.getScope());
+			conformanceProfile.setAuthorUsername(tp.getAuthorUsername());
 			// ---
 			HL7V2TestContext testContext = new HL7V2TestContext();
 			testContext.setVocabularyLibrary(v);
@@ -254,6 +257,8 @@ public class BundleHandlerImpl implements BundleHandler {
 			testContext.setDqa(false);
 			testContext.setStage(TestingStage.CF);
 			testContext.setDomain(tp.getDomain());
+			testContext.setScope(tp.getScope());
+			testContext.setAuthorUsername(tp.getAuthorUsername());
 
 			Message message = testContext.getMessage();
 			if (tcO.findValue("exampleMessage") != null) {
@@ -277,9 +282,38 @@ public class BundleHandlerImpl implements BundleHandler {
 			cfti.setPersistentId(id);
 			cfti.setPosition(size + tcO.findValue("position").asInt());
 			// ---
-			tp.getTestSteps().add(cfti);
+			testSteps.add(cfti);
 		}
+		return save;
 
+	}
+
+	@Override
+	@Transactional(value = "transactionManager")
+	public GVTSaveInstance createSaveInstance(String dir, CFTestStepGroup tp)
+			throws IOException, ProfileParserException {
+		GVTSaveInstance save = new GVTSaveInstance();
+		Set<CFTestStep> testSteps = tp.getTestSteps();
+		if (testSteps == null) {
+			testSteps = new HashSet<CFTestStep>();
+			tp.setTestSteps(testSteps);
+		}
+		save.tcg = tp;
+		setSaveInstanceValues(dir, save, tp.getTestSteps(), tp);
+		return save;
+	}
+
+	@Override
+	@Transactional(value = "transactionManager")
+	public GVTSaveInstance createSaveInstance(String dir, CFTestPlan tp) throws IOException, ProfileParserException {
+		GVTSaveInstance save = new GVTSaveInstance();
+		Set<CFTestStep> testSteps = tp.getTestSteps();
+		if (testSteps == null) {
+			testSteps = new HashSet<CFTestStep>();
+			tp.setTestSteps(testSteps);
+		}
+		save.tcg = tp;
+		setSaveInstanceValues(dir, save, tp.getTestSteps(), tp);
 		return save;
 	}
 

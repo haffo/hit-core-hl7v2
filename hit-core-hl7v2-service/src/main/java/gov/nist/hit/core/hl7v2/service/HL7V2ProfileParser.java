@@ -76,7 +76,6 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
 	public HL7V2ProfileParser() {
 	}
 
-	private final Map<String, Profile> cachedIntegrationProfilesMap = new HashMap<String, Profile>();
 	private Map<String, ProfileElement> segmentsMap;
 	private Map<String, ProfileElement> datatypesMap;
 	private Constraints conformanceStatements = null;
@@ -93,14 +92,8 @@ public abstract class HL7V2ProfileParser extends ProfileParser {
 			throws ProfileParserException {
 		try {
 			Profile p = null;
-			String integrationProfileId = integrationProfileId(integrationProfileXml);
-			if (cachedIntegrationProfilesMap.containsKey(integrationProfileId)) {
-				p = cachedIntegrationProfilesMap.get(integrationProfileId);
-			} else {
-				InputStream profileStream = IOUtils.toInputStream(integrationProfileXml);
-				p = XMLDeserializer.deserialize(profileStream).get();
-				cachedIntegrationProfilesMap.put(integrationProfileId, p);
-			}
+			InputStream profileStream = IOUtils.toInputStream(integrationProfileXml);
+			p = XMLDeserializer.deserialize(profileStream).get();
 			Message m = p.getMessage(conformanceProfileId);
 			return parse(m, constraints);
 		} catch (Exception e) {

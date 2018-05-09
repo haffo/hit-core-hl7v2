@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.Principal;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,6 +55,7 @@ import gov.nist.healthcare.resources.domain.XMLError;
 import gov.nist.hit.core.api.ContextFreeController;
 import gov.nist.hit.core.domain.CFTestPlan;
 import gov.nist.hit.core.domain.CFTestStep;
+import gov.nist.hit.core.domain.CFTestStepGroup;
 import gov.nist.hit.core.domain.GVTSaveInstance;
 import gov.nist.hit.core.domain.Message;
 import gov.nist.hit.core.domain.ResourceUploadResult;
@@ -71,6 +74,7 @@ import gov.nist.hit.core.repo.VocabularyLibraryRepository;
 import gov.nist.hit.core.service.AppInfoService;
 import gov.nist.hit.core.service.BundleHandler;
 import gov.nist.hit.core.service.CFTestPlanService;
+import gov.nist.hit.core.service.CFTestStepGroupService;
 import gov.nist.hit.core.service.ProfileParser;
 import gov.nist.hit.core.service.UserIdService;
 import gov.nist.hit.core.service.UserService;
@@ -96,6 +100,8 @@ public class HL7V2CFManagementController {
 
   @Autowired
   private CFTestPlanService tpService;
+
+
 
   @Autowired
   private UserTestCaseGroupRepository testCaseGroupRepository;
@@ -130,6 +136,10 @@ public class HL7V2CFManagementController {
 
   @Autowired
   private AppInfoService appInfoService;
+
+
+  @Autowired
+  private CFTestStepGroupService testStepGroupService;
 
 
   private void checkManagementSupport() throws Exception {
@@ -361,7 +371,7 @@ public class HL7V2CFManagementController {
       consumes = {"multipart/form-data"})
   @ResponseBody
   public Map<String, Object> uploadZip(ServletRequest request,
-      @RequestPart("file") MultipartFile part, @RequestPart("domain") String domain, Principal p)
+      @RequestPart("file") MultipartFile part, @RequestParam("domain") String domain, Principal p)
       throws Exception {
     checkManagementSupport();
 
@@ -488,6 +498,19 @@ public class HL7V2CFManagementController {
   }
 
 
+
+  private CFTestStep findTestStep(Long id, Set<CFTestStep> testSteps) {
+    if (testSteps != null && testSteps != null) {
+      for (CFTestStep testStep : testSteps) {
+        if (testStep.getId().equals(id)) {
+          return testStep;
+        }
+      }
+    }
+    return null;
+  }
+
+
   /**
    * Add selected profiles to the database
    * 
@@ -497,134 +520,41 @@ public class HL7V2CFManagementController {
    * @return UploadStatus
    */
   @PreAuthorize("hasRole('tester')")
-  @RequestMapping(value = "/groups/{groupId}", method = RequestMethod.POST)
+  @RequestMapping(value = "/testPlans/{testPlanId}", method = RequestMethod.POST)
   @ResponseBody
-  public UploadStatus saveProfileGroup(HttpServletRequest request,
-      @PathVariable("groupId") Long groupId, @RequestBody TestCaseWrapper wrapper, Principal p) {
+  public UploadStatus saveTestPlan(HttpServletRequest request,
+      @PathVariable("testPlanId") Long testPlanId, @RequestBody TestCaseWrapper wrapper,
+      Authentication auth) {
     try {
       checkManagementSupport();
-      // String username = null;
-      String username = userIdService.getCurrentUserName(p);
-      if (username == null)
-        throw new NoUserFoundException("User could not be found");
-
-      if (wrapper.getScope() == null)
-        throw new NoUserFoundException("Scope not be found");
-
-      TestScope scope = TestScope.valueOf(wrapper.getScope().toUpperCase());
-      if (scope.equals(TestScope.GLOBAL) && !userService.hasGlobalAuthorities(username)) {
-        throw new NoUserFoundException("You do not have the permission to perform this task");
-      }
-
-      CFTestPlan testPlan = testPlanService.findOne(groupId);
-
+      CFTestPlan testPlan = testPlanService.findOne(testPlanId);
       if (testPlan == null) {
         throw new Exception("Profile Group could not be found");
       }
-
+      String username = auth.getName();
       if (!username.equals(testPlan.getAuthorUsername())) {
         throw new Exception("You do not have sufficient right to change this profile group");
       }
 
+      // String username = null;
+      Set<CFTestStep> testSteps = testPlan.getTestSteps();
+      if (testSteps == null) {
+        testSteps = new HashSet<CFTestStep>();
+        testPlan.setTestSteps(testSteps);
+      }
+
       testPlan.setName(wrapper.getTestcasename());
       testPlan.setDescription(wrapper.getTestcasedescription());
-
-      Set<UploadedProfileModel> removed = wrapper.getRemoved();
-      if (removed != null && !removed.isEmpty()) {
-        for (UploadedProfileModel model : removed) {
-          Long id = Long.valueOf(model.getId());
-          CFTestStep found = findTestStep(id, testPlan);
-          if (found != null && testPlan.getTestSteps() != null) {
-            testPlan.getTestSteps().remove(found);
-          }
-        }
-      }
-
-      Set<UploadedProfileModel> updated = wrapper.getUpdated();
-      if (updated != null && !updated.isEmpty()) {
-        for (UploadedProfileModel model : updated) {
-          Long id = Long.valueOf(model.getId());
-          CFTestStep found = findTestStep(id, testPlan);
-          if (found != null) {
-            found.setName(model.getName());
-            found.setDescription(model.getDescription());
-            found.setPosition(model.getPosition());
-            TestContext context = found.getTestContext();
-            Message message = context.getMessage();
-            if (model.getExampleMessage() != null) {
-              if (message == null) {
-                message = new Message();
-                message.setName(model.getName());
-                message.setDescription(model.getDescription());
-                message.setDomain(context.getDomain());
-                context.setMessage(message);
-              }
-              message.setContent(model.getExampleMessage());
-            }
-          }
-        }
-      }
-
+      createTestStepFiles(testPlan.getDomain(), testSteps, wrapper, auth);
       if (wrapper.getToken() != null) {
-        // Create needed files
-        JSONObject testCaseJson = new JSONObject();
-        testCaseJson.put("name", wrapper.getTestcasename());
-        testCaseJson.put("description", wrapper.getTestcasedescription());
-        testCaseJson.put("profile", "Profile.xml");
-        testCaseJson.put("constraints", "Constraints.xml");
-        testCaseJson.put("vs", "ValueSets.xml");
-        testCaseJson.put("scope", scope);
-        testCaseJson.put("domain", testPlan.getDomain());
-        testCaseJson.put("category", wrapper.getCategory());
-
-        Set<UploadedProfileModel> added = wrapper.getAdded();
-        if (added != null && !added.isEmpty()) {
-          JSONArray testSteps = new JSONArray();
-          for (UploadedProfileModel upm : added) {
-            JSONObject ts = new JSONObject();
-            ts.put("name", upm.getName());
-            ts.put("messageId", upm.getId());
-            ts.put("description", upm.getDescription());
-            ts.put("position", upm.getPosition());
-            ts.put("scope", scope);
-            ts.put("domain", testPlan.getDomain());
-            if (upm.getExampleMessage() != null) {
-              ts.put("exampleMessage", upm.getExampleMessage());
-            }
-            testSteps.put(ts);
-          }
-          testCaseJson.put("testCases", testSteps);
-        }
-
-        File jsonFile =
-            new File(CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken() + "/TestCases.json");
-        File profileFile =
-            new File(CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken() + "/Profile.xml");
-        File constraintsFile = new File(
-            CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken() + "/Constraints.xml");
-        File vsFile =
-            new File(CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken() + "/ValueSets.xml");
-
-        if (constraintsFile != null) {
-          packagingHandler.changeConstraintId(constraintsFile);
-        }
-        if (vsFile != null) {
-          packagingHandler.changeVsId(vsFile);
-        }
-        InputStream targetStream = new FileInputStream(profileFile);
-        String content = IOUtils.toString(targetStream);
-        String cleanedContent = packagingHandler.removeUnusedAndDuplicateMessages(content, added);
-        FileUtils.writeStringToFile(profileFile, cleanedContent);
-        packagingHandler.changeProfileId(profileFile);
-        FileUtils.writeStringToFile(jsonFile, testCaseJson.toString());
         // Use files to save to database
-        GVTSaveInstance si = bundleHandler.createGVTSaveInstance(
+        GVTSaveInstance si = bundleHandler.createSaveInstance(
             CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken(), testPlan);
         ipRepository.save(si.ip);
         csRepository.save(si.ct);
         vsRepository.save(si.vs);
         si.tcg.setAuthorUsername(username);
-        testCaseGroupRepository.saveAndFlush(si.tcg);
+        testPlanService.save((CFTestPlan) si.tcg);
         FileUtils
             .deleteDirectory(new File(CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken()));
       } else {
@@ -632,6 +562,169 @@ public class HL7V2CFManagementController {
       }
       return new UploadStatus(ResourceUploadResult.SUCCESS, "Profile Group save successfully",
           testPlan.getId());
+    } catch (IOException e) {
+      return new UploadStatus(ResourceUploadResult.FAILURE, "IO Error could not read files",
+          ExceptionUtils.getStackTrace(e));
+    } catch (NoUserFoundException e) {
+      return new UploadStatus(ResourceUploadResult.FAILURE, "User could not be found",
+          ExceptionUtils.getStackTrace(e));
+    } catch (Exception e) {
+      return new UploadStatus(ResourceUploadResult.FAILURE,
+          "An error occured while adding profiles", ExceptionUtils.getStackTrace(e));
+    }
+
+  }
+
+  public void createTestStepFiles(String domain, Set<CFTestStep> testSteps, TestCaseWrapper wrapper,
+      Authentication auth) throws Exception {
+
+    String username = auth.getName();
+    if (wrapper.getScope() == null)
+      throw new NoUserFoundException("Scope not be found");
+    TestScope scope = TestScope.valueOf(wrapper.getScope().toUpperCase());
+    if (scope.equals(TestScope.GLOBAL) && !userService.hasGlobalAuthorities(username)) {
+      throw new NoUserFoundException("You do not have the permission to perform this task");
+    }
+
+    Set<UploadedProfileModel> removed = wrapper.getRemoved();
+    if (removed != null && !removed.isEmpty()) {
+      for (UploadedProfileModel model : removed) {
+        Long id = Long.valueOf(model.getId());
+        CFTestStep found = findTestStep(id, testSteps);
+        if (found != null) {
+          testSteps.remove(found);
+        }
+      }
+    }
+
+    Set<UploadedProfileModel> updated = wrapper.getUpdated();
+    if (updated != null && !updated.isEmpty()) {
+      for (UploadedProfileModel model : updated) {
+        Long id = Long.valueOf(model.getId());
+        CFTestStep found = findTestStep(id, testSteps);
+        if (found != null) {
+          found.setName(model.getName());
+          found.setDescription(model.getDescription());
+          found.setPosition(model.getPosition());
+          TestContext context = found.getTestContext();
+          Message message = context.getMessage();
+          if (model.getExampleMessage() != null) {
+            if (message == null) {
+              message = new Message();
+              message.setName(model.getName());
+              message.setDescription(model.getDescription());
+              message.setDomain(context.getDomain());
+              message.setScope(scope);
+              message.setAuthorUsername(auth.getName());
+              context.setMessage(message);
+            }
+            message.setContent(model.getExampleMessage());
+          }
+        }
+      }
+    }
+
+    if (wrapper.getToken() != null) {
+      // Create needed files
+      JSONObject testCaseJson = new JSONObject();
+      testCaseJson.put("name", wrapper.getTestcasename());
+      testCaseJson.put("description", wrapper.getTestcasedescription());
+      testCaseJson.put("profile", "Profile.xml");
+      testCaseJson.put("constraints", "Constraints.xml");
+      testCaseJson.put("vs", "ValueSets.xml");
+      testCaseJson.put("scope", scope);
+      testCaseJson.put("domain", domain);
+      // testCaseJson.put("category", wrapper.getCategory());
+
+      Set<UploadedProfileModel> added = wrapper.getAdded();
+      if (added != null && !added.isEmpty()) {
+        JSONArray testStepArray = new JSONArray();
+        for (UploadedProfileModel upm : added) {
+          JSONObject ts = new JSONObject();
+          ts.put("name", upm.getName());
+          ts.put("messageId", upm.getId());
+          ts.put("description", upm.getDescription());
+          ts.put("position", upm.getPosition());
+          ts.put("scope", scope);
+          ts.put("domain", domain);
+          if (upm.getExampleMessage() != null) {
+            ts.put("exampleMessage", upm.getExampleMessage());
+          }
+          testStepArray.put(ts);
+        }
+        testCaseJson.put("testCases", testStepArray);
+      }
+
+      File jsonFile =
+          new File(CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken() + "/TestCases.json");
+      File profileFile =
+          new File(CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken() + "/Profile.xml");
+      File constraintsFile =
+          new File(CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken() + "/Constraints.xml");
+      File vsFile =
+          new File(CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken() + "/ValueSets.xml");
+
+      if (constraintsFile != null) {
+        packagingHandler.changeConstraintId(constraintsFile);
+      }
+      if (vsFile != null) {
+        packagingHandler.changeVsId(vsFile);
+      }
+      InputStream targetStream = new FileInputStream(profileFile);
+      String content = IOUtils.toString(targetStream);
+      String cleanedContent = packagingHandler.removeUnusedAndDuplicateMessages(content, added);
+      FileUtils.writeStringToFile(profileFile, cleanedContent);
+      packagingHandler.changeProfileId(profileFile);
+      FileUtils.writeStringToFile(jsonFile, testCaseJson.toString());
+
+
+
+    }
+  }
+
+  @PreAuthorize("hasRole('tester')")
+  @RequestMapping(value = "/testStepGroups/{testStepGroupId}", method = RequestMethod.POST)
+  @ResponseBody
+  public UploadStatus updateTestStepGroupProfiles(HttpServletRequest request,
+      @PathVariable("testStepGroupId") Long testStepGroupId, @RequestBody TestCaseWrapper wrapper,
+      Authentication auth) {
+    try {
+      checkManagementSupport();
+      CFTestStepGroup testStepGroup = testStepGroupService.findOne(testStepGroupId);
+      if (testStepGroup == null) {
+        throw new Exception("Profile Group could not be found");
+      }
+      String username = auth.getName();
+      if (!username.equals(testStepGroup.getAuthorUsername())) {
+        throw new Exception("You do not have sufficient right to change this profile group");
+      }
+
+      // String username = null;
+      Set<CFTestStep> testSteps = testStepGroup.getTestSteps();
+      if (testSteps == null) {
+        testSteps = new HashSet<CFTestStep>();
+        testStepGroup.setTestSteps(testSteps);
+      }
+
+      testStepGroup.setName(wrapper.getTestcasename());
+      testStepGroup.setDescription(wrapper.getTestcasedescription());
+      createTestStepFiles(testStepGroup.getDomain(), testSteps, wrapper, auth);
+      if (wrapper.getToken() != null) {
+        // Use files to save to database
+        GVTSaveInstance si = bundleHandler.createSaveInstance(
+            CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken(), testStepGroup);
+        ipRepository.save(si.ip);
+        csRepository.save(si.ct);
+        vsRepository.save(si.vs);
+        si.tcg.setAuthorUsername(username);
+        testStepGroupService.save((CFTestStepGroup) si.tcg);
+        FileUtils
+            .deleteDirectory(new File(CF_UPLOAD_DIR + "/" + username + "/" + wrapper.getToken()));
+      } else {
+        testStepGroupService.save(testStepGroup);
+      }
+      return new UploadStatus(ResourceUploadResult.SUCCESS, "Profile Group save successfully",
+          testStepGroup.getId());
 
     } catch (IOException e) {
       return new UploadStatus(ResourceUploadResult.FAILURE, "IO Error could not read files",
@@ -645,6 +738,7 @@ public class HL7V2CFManagementController {
     }
 
   }
+
 
   /**
    * Delete a profile from the database

@@ -2,6 +2,8 @@ package gov.nist.hit.core.hl7v2.service.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -10,6 +12,11 @@ import java.util.UUID;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -18,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
@@ -259,8 +267,9 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 					context.getConformanceProfile() != null && context.getConformanceProfile().getJson() != null);
 			doc.setXmlValueSetLibraryPresent(
 					context.getVocabularyLibrary() != null && context.getVocabularyLibrary().getJson() != null);
-			doc.setXmlConstraintsPresent(context.getAddditionalConstraints() != null
-					&& context.getAddditionalConstraints().getXml() != null);
+			doc.setXmlConstraintsPresent((context.getAddditionalConstraints() != null
+					&& context.getAddditionalConstraints().getXml() != null)
+					|| (context.getConstraints() != null && context.getConstraints().getXml() != null));
 		}
 		return doc;
 	}
@@ -273,10 +282,9 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		return constraint;
 	}
 
-	@SuppressWarnings("unused")
 	@Override
 	public TestContext testContext(String path, JsonNode formatObj, TestingStage stage, String rootPath, String domain,
-			TestScope scope, String authorUsername, boolean preloaded) throws IOException {
+			TestScope scope, String authorUsername, boolean preloaded) throws Exception {
 		// for backward compatibility
 		formatObj = formatObj.findValue(FORMAT) != null ? formatObj.findValue(FORMAT) : formatObj;
 
@@ -350,6 +358,8 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 						testContext.getConstraints() != null ? testContext.getConstraints().getXml() : null,
 						testContext.getAddditionalConstraints() != null
 								? testContext.getAddditionalConstraints().getXml() : null));
+				conformanceProfile
+						.setXml(getConformanceProfileContent(integrationProfile.getXml(), messageId.textValue()));
 				conformanceProfile.setIntegrationProfile(integrationProfile);
 				conformanceProfile.setSourceId(messageId.textValue());
 				conformanceProfile.setDomain(domain);
@@ -376,6 +386,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 				conformanceProfile.setJson(
 						jsonConformanceProfile(content, messageID, null, testContext.getAddditionalConstraints() != null
 								? testContext.getAddditionalConstraints().getXml() : null));
+				conformanceProfile.setXml(getConformanceProfileContent(integrationProfile.getXml(), messageID));
 				conformanceProfile.setIntegrationProfile(integrationProfile);
 				conformanceProfile.setDomain(domain);
 				conformanceProfile.setSourceId(messageID);
@@ -432,6 +443,41 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		// Message IDs
 		Element elmCode = (Element) messages.item(0);
 		return elmCode.getAttribute("ID");
+	}
+
+	private String getConformanceProfileContent(String integrationProfileXml, String messageId) throws Exception {
+		Document doc = this.stringToDom(integrationProfileXml);
+		IntegrationProfile integrationProfile = new IntegrationProfile();
+		Element profileElement = (Element) doc.getElementsByTagName("ConformanceProfile").item(0);
+		integrationProfile.setSourceId(profileElement.getAttribute("ID"));
+		Element conformanceProfilElementRoot = (Element) profileElement.getElementsByTagName("Messages").item(0);
+		NodeList messages = conformanceProfilElementRoot.getElementsByTagName("Message");
+		List<Node> toRemove = new ArrayList<Node>();
+		for (int index = 0; index < messages.getLength(); index++) {
+			Node node = messages.item(index);
+			Element messagesElm = (Element) node;
+			String id = messagesElm.getAttribute("ID");
+			if (!id.equals(messageId)) {
+				toRemove.add(node);
+			}
+		}
+
+		if (!toRemove.isEmpty()) {
+			for (int index = 0; index < toRemove.size(); index++) {
+				conformanceProfilElementRoot.removeChild(toRemove.get(index));
+			}
+		}
+		doc.normalize();
+		return prettyPrint(doc);
+	}
+
+	public static final String prettyPrint(Document xml) throws Exception {
+		Transformer tf = TransformerFactory.newInstance().newTransformer();
+		tf.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+		tf.setOutputProperty(OutputKeys.INDENT, "yes");
+		Writer out = new StringWriter();
+		tf.transform(new DOMSource(xml), new StreamResult(out));
+		return out.toString();
 	}
 
 	@Override

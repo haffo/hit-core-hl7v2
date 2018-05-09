@@ -12,11 +12,16 @@
 
 package gov.nist.hit.core.hl7v2.api;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +34,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
 import gov.nist.hit.core.hl7v2.repo.HL7V2TestContextRepository;
+import gov.nist.hit.core.service.Streamer;
+import gov.nist.hit.core.service.ZipGenerator;
 import gov.nist.hit.core.service.exception.DownloadDocumentException;
 import io.swagger.annotations.ApiParam;
 
@@ -46,8 +53,14 @@ public class HL7V2DocumentationController {
   @Autowired
   protected HL7V2TestContextRepository testContextRepository;
 
+  @Autowired
+  private ZipGenerator zipGenerator;
 
-  @RequestMapping(value = "/message", method = RequestMethod.POST,
+
+  @Autowired
+  private Streamer streamer;
+
+  @RequestMapping(value = "/message.txt", method = RequestMethod.POST, produces = "text/plain",
       consumes = "application/x-www-form-urlencoded; charset=UTF-8")
   public String downloadExampeMessage(
       @ApiParam(value = "the id of the example message",
@@ -62,7 +75,7 @@ public class HL7V2DocumentationController {
       String message = testContext.getMessage().getContent();
       content = IOUtils.toInputStream(message, "UTF-8");
       response.setContentType("text/plain");
-      targetTitle = targetTitle + "-" + "ExampleMessage.txt";
+      targetTitle = targetTitle + "-" + "Message.txt";
       targetTitle = targetTitle.replaceAll(" ", "-");
       response.setHeader("Content-disposition", "attachment;filename=" + targetTitle);
       FileCopyUtils.copy(content, response.getOutputStream());
@@ -73,7 +86,7 @@ public class HL7V2DocumentationController {
     return null;
   }
 
-  @RequestMapping(value = "/profile", method = RequestMethod.POST,
+  @RequestMapping(value = "/profile.xml", method = RequestMethod.POST, produces = "application/xml",
       consumes = "application/x-www-form-urlencoded; charset=UTF-8")
   public String downloadProfile(
       @ApiParam(value = "the id of the conformance profile",
@@ -85,10 +98,10 @@ public class HL7V2DocumentationController {
       logger.info("Downloading Profile of element with id " + targetId);
       InputStream content = null;
       HL7V2TestContext testContext = testContextRepository.findOne(targetId);
-      String profile = testContext.getConformanceProfile().getJson();
+      String profile = testContext.getConformanceProfile().getXml();
       content = IOUtils.toInputStream(profile, "UTF-8");
-      response.setContentType("text/plain");
-      targetTitle = targetTitle + "-" + "Profile.json";
+      response.setContentType("application/xml");
+      targetTitle = targetTitle + "-" + "Profile.xml";
       targetTitle = targetTitle.replaceAll(" ", "-");
       response.setHeader("Content-disposition", "attachment;filename=" + targetTitle);
       FileCopyUtils.copy(content, response.getOutputStream());
@@ -99,8 +112,8 @@ public class HL7V2DocumentationController {
     return null;
   }
 
-  @RequestMapping(value = "/constraints", method = RequestMethod.POST,
-      consumes = "application/x-www-form-urlencoded; charset=UTF-8")
+  @RequestMapping(value = "/constraints.zip", method = RequestMethod.POST,
+      produces = "application/zip", consumes = "application/x-www-form-urlencoded; charset=UTF-8")
   public String downloadConstraint(
       @ApiParam(value = "the id of the constraint",
           required = true) @RequestParam("targetId") Long targetId,
@@ -109,19 +122,17 @@ public class HL7V2DocumentationController {
       HttpServletRequest request, HttpServletResponse response) {
     try {
       logger.info("Downloading constraint of element with id " + targetId);
-      InputStream content = null;
       HL7V2TestContext testContext = testContextRepository.findOne(targetId);
-      gov.nist.hit.core.domain.Constraints constraints = testContext.getAddditionalConstraints();
-      response.setContentType("application/xml");
-      targetTitle = targetTitle + "-" + "Constraints.xml";
+      InputStream steram = null;
       targetTitle = targetTitle.replaceAll(" ", "-");
-      response.setHeader("Content-disposition", "attachment;filename=" + targetTitle);
-      if (constraints != null) {
-        content = IOUtils.toInputStream(constraints.getXml(), "UTF-8");
-      } else {
-        content = IOUtils.toInputStream("", "UTF-8");
+      if (testContext != null && (testContext.getAddditionalConstraints() != null
+          || testContext.getConstraints() != null)) {
+        steram = createConstraintsFile(targetTitle, testContext);
       }
-      FileCopyUtils.copy(content, response.getOutputStream());
+      response.setContentType("application/zip");
+      response.setHeader("Content-disposition",
+          "attachment;filename=" + targetTitle + "-Constraints.zip");
+      streamer.stream(response.getOutputStream(), steram);
     } catch (Exception e) {
       logger.debug(e.getMessage(), e);
       throw new DownloadDocumentException("Failed to download the conformance profile");
@@ -130,8 +141,52 @@ public class HL7V2DocumentationController {
   }
 
 
-  @RequestMapping(value = "/valuesetlib", method = RequestMethod.POST,
-      consumes = "application/x-www-form-urlencoded; charset=UTF-8")
+  public InputStream createConstraintsFile(String targetTitle, HL7V2TestContext testContext)
+      throws Exception {
+    Path path = Files.createTempDirectory(null);
+    File rootFolder = path.toFile();
+    if (!rootFolder.exists()) {
+      rootFolder.mkdir();
+    }
+    String folderToZip = rootFolder.getAbsolutePath() + File.separator + "ToZip";
+    File folder = new File(folderToZip + File.separator + targetTitle + File.separator);
+    if (testContext != null && (testContext.getAddditionalConstraints() != null
+        || testContext.getConstraints() != null)) {
+      if (!folder.exists()) {
+        folder.mkdirs();
+      }
+      int i = 1;
+      if (testContext.getAddditionalConstraints() != null) {
+        String filename = folder.getAbsolutePath() + File.separator + "Constraints" + i + ".xml";
+        File file = new File(filename);
+        if (!file.exists()) {
+          file.createNewFile();
+        }
+        FileUtils.copyInputStreamToFile(
+            IOUtils.toInputStream(testContext.getAddditionalConstraints().getXml()), file);
+        i++;
+      }
+
+      if (testContext.getConstraints() != null) {
+        String filename = folder.getAbsolutePath() + File.separator + "Constraints" + i + ".xml";
+        File file = new File(filename);
+        if (!file.exists()) {
+          file.createNewFile();
+        }
+        FileUtils.copyInputStreamToFile(
+            IOUtils.toInputStream(testContext.getConstraints().getXml()), file);
+      }
+      String zipFilename = rootFolder + File.separator + targetTitle + "Constraints.zip";
+      zipGenerator.zip(zipFilename, folderToZip);
+      FileInputStream io = new FileInputStream(new File(zipFilename));
+      return io;
+    }
+    return null;
+  }
+
+
+  @RequestMapping(value = "/valueset.xml", method = RequestMethod.POST,
+      produces = "application/xml", consumes = "application/x-www-form-urlencoded; charset=UTF-8")
   public String downloadValueSetlib(
       @ApiParam(value = "the id of the value set library",
           required = true) @RequestParam("targetId") Long targetId,
@@ -142,10 +197,10 @@ public class HL7V2DocumentationController {
       logger.info("Downloading ValueSetLibrary of element with id " + targetId);
       InputStream content = null;
       HL7V2TestContext testContext = testContextRepository.findOne(targetId);
-      String profile = testContext.getVocabularyLibrary().getJson();
+      String profile = testContext.getVocabularyLibrary().getXml();
       content = IOUtils.toInputStream(profile, "UTF-8");
-      response.setContentType("text/plain");
-      targetTitle = targetTitle + "-" + "ValueSetLibrary.json";
+      response.setContentType("application/xml");
+      targetTitle = targetTitle + "-" + "Valuesets.xml";
       targetTitle = targetTitle.replaceAll(" ", "-");
       response.setHeader("Content-disposition", "attachment;filename=" + targetTitle);
       FileCopyUtils.copy(content, response.getOutputStream());

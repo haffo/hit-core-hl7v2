@@ -13,14 +13,13 @@ package gov.nist.hit.core.hl7v2.service;
 
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import gov.nist.healthcare.unified.enums.Context;
-import gov.nist.healthcare.unified.model.Classification;
 import gov.nist.healthcare.unified.model.EnhancedReport;
 import gov.nist.healthcare.unified.proxy.ValidationProxy;
 import gov.nist.hit.core.domain.MessageValidationCommand;
@@ -28,6 +27,7 @@ import gov.nist.hit.core.domain.MessageValidationResult;
 import gov.nist.hit.core.domain.TestContext;
 import gov.nist.hit.core.hl7v2.domain.HL7V2TestContext;
 import gov.nist.hit.core.service.MessageValidator;
+import gov.nist.hit.core.service.ValidationLogService;
 import gov.nist.hit.core.service.exception.MessageException;
 import gov.nist.hit.core.service.exception.MessageValidationException;
 import hl7.v2.validation.content.ConformanceContext;
@@ -36,6 +36,9 @@ import hl7.v2.validation.vs.ValueSetLibrary;
 import hl7.v2.validation.vs.ValueSetLibraryImpl;
 
 public abstract class HL7V2MessageValidator implements MessageValidator {
+
+	@Autowired
+	private ValidationLogService validationLogService;
 
 	@Override
 	public MessageValidationResult validate(TestContext testContext, MessageValidationCommand command)
@@ -92,6 +95,8 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
 								nav.get("testStep"));
 					}
 				}
+
+				validationLogService.generateAndSave(command.getUserId(), testContext, report);
 				return report;
 			}
 			throw new MessageValidationException();
@@ -144,36 +149,12 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
 		this.organizationName = organizationName;
 	}
 
-	@Override
-	public MessageValidationResult validateErrorsOnly(TestContext testContext, MessageValidationCommand command)
-			throws MessageValidationException {
-		try {
-			EnhancedReport report = generateReport(testContext, command);
-			
-			for (Iterator<Classification> iterator = report.getDetections().cl.iterator(); iterator.hasNext();) {
-				Classification c = iterator.next();
-			    if (!c.getName().equalsIgnoreCase("Error")) {			        
-			        iterator.remove();
-			    }
-			}
-			
-			if (report != null) {
-				Map<String, String> nav = command.getNav();
-				if (nav != null && !nav.isEmpty()) {
-					report.setTestCase(nav.get("testPlan"), nav.get("testGroup"), nav.get("testCase"),
-							nav.get("testStep"));
-				}
-				return new MessageValidationResult(report.to("json").toString(), report.render("report", null));
-			}
-			throw new MessageValidationException();
-		} catch (MessageException e) {
-			throw new MessageValidationException(e.getLocalizedMessage());
-		} catch (RuntimeException e) {
-			throw new MessageValidationException(e.getLocalizedMessage());
-		} catch (Exception e) {
-			throw new MessageValidationException(e.getLocalizedMessage());
-		}
+	public ValidationLogService getValidationLogService() {
+		return validationLogService;
 	}
 
+	public void setValidationLogService(ValidationLogService validationLogService) {
+		this.validationLogService = validationLogService;
+	}
 
 }

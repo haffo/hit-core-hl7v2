@@ -400,7 +400,7 @@ public class HL7V2CFManagementController {
       consumes = {"multipart/form-data"})
   @ResponseBody
   public Map<String, Object> uploadZip(ServletRequest request,
-      @RequestPart("file") MultipartFile part, Principal p) throws Exception {
+      @RequestPart("file") MultipartFile part,@RequestParam("domain") String domain, Principal p) throws Exception {
     checkManagementSupport();
 
     Map<String, Object> resultMap = new HashMap<String, Object>();
@@ -427,6 +427,7 @@ public class HL7V2CFManagementController {
             resultMap.put("success", true);
             resultMap.put("report", report.generateHTML());  
             resultMap.put("token", token);
+            resultMap.put("domain", domain);
 
             logger.info("Uploaded valid zip File file " + part.getName());
           }

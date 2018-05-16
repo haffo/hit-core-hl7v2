@@ -644,7 +644,7 @@ public class CBManagementController {
       consumes = {"multipart/form-data"})
   @ResponseBody
   public ResourceUploadStatus uploadZip(ServletRequest request,
-      @RequestPart("file") MultipartFile part, Principal p, @RequestPart("domain") String domain,
+      @RequestPart("file") MultipartFile part, Principal p, @RequestParam("domain") String domain,
       Authentication u) throws MessageUploadException {
     try {
       checkManagementSupport();

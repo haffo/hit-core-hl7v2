@@ -31,6 +31,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -56,6 +57,7 @@ import gov.nist.hit.core.domain.TestScope;
 import gov.nist.hit.core.domain.TestStep;
 import gov.nist.hit.core.domain.TestStepValidationReport;
 import gov.nist.hit.core.domain.TestingStage;
+import gov.nist.hit.core.hl7v2.service.FileValidationHandler;
 import gov.nist.hit.core.service.AccountService;
 import gov.nist.hit.core.service.AppInfoService;
 import gov.nist.hit.core.service.BundleHandler;
@@ -135,6 +137,9 @@ public class CBManagementController {
 
   @Autowired
   private AppInfoService appInfoService;
+  
+  @Autowired
+  private FileValidationHandler fileValidationHandler;
 
   @PostConstruct
   public void init() {
@@ -643,6 +648,7 @@ public class CBManagementController {
   @RequestMapping(value = "/uploadZip", method = RequestMethod.POST,
       consumes = {"multipart/form-data"})
   @ResponseBody
+  @Transactional(value = "transactionManager")
   public ResourceUploadStatus uploadZip(ServletRequest request,
       @RequestPart("file") MultipartFile part, Principal p, @RequestParam("domain") String domain,
       Authentication u) throws MessageUploadException {
@@ -661,15 +667,37 @@ public class CBManagementController {
       String directory = bundleHandler.unzip(part.getBytes(),
           CB_RESOURCE_BUNDLE_DIR + "/" + token + "/" + filename);
 
+//      ProfileValidationReport report = fileValidationHandler.getHTMLValidatioReportForContextBased(directory);
+//      
+//      if (!report.isSuccess()) {
+//    	  		ResourceUploadStatus result = new ResourceUploadStatus();
+//    	  		result.setAction(ResourceUploadAction.ADD);
+//    	  		result.setStatus(ResourceUploadResult.FAILURE);
+//    	      	result.setMessage("Validation files are not valid!");
+//    	      	result.setReport(report.generateHTML());
+//    	      	return result;
+//      }else {
+//	    	  List<TestPlan> plans =
+//	    	          resourceLoader.createTP(directory.substring(0, directory.lastIndexOf("/")) + "/", domain,
+//	    	              TestScope.USER, u.getName(), false);
+      
+      
+      //ADD globals
+      resourceLoader.addOrReplaceIntegrationProfile(directory + "/Global/Profiles/",domain, TestScope.USER, u.getName(), false);
+      resourceLoader.addOrReplaceConstraints(directory + "/Global/Constraints/",domain, TestScope.USER, u.getName(), false);
+      resourceLoader.addOrReplaceValueSet(directory + "/Global/Tables/",domain, TestScope.USER, u.getName(), false);
+
+      
       List<TestPlan> plans =
-          resourceLoader.createTP(directory.substring(0, directory.lastIndexOf("/")) + "/", domain,
-              TestScope.USER, u.getName(), false);
-      TestPlan tp = plans.get(0);
-      updateToUser(tp, TestScope.USER, username);
-      ResourceUploadStatus result = resourceLoader.handleTP(tp);
-      result.setId(tp.getId());
-      FileUtils.deleteDirectory(new File(directory));
-      return result;
+	          resourceLoader.createTP(directory + "/Contextbased/", domain, TestScope.USER, u.getName(), false);
+	    	      TestPlan tp = plans.get(0);
+	    	      updateToUser(tp, TestScope.USER, username);
+	    	      ResourceUploadStatus result = resourceLoader.handleTP(tp);
+	    	      result.setId(tp.getId());
+	    	      FileUtils.deleteDirectory(new File(directory));
+	    	      return result;
+//      }
+ 
     } catch (NoUserFoundException e) {
       ResourceUploadStatus result = new ResourceUploadStatus();
       result.setAction(ResourceUploadAction.ADD);

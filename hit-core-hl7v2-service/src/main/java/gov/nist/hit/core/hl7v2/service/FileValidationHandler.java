@@ -17,6 +17,7 @@ public interface FileValidationHandler {
 	public Map<String, List<XMLError>> unbundleAndValidate(String dir) throws Exception;
 	
 	public ProfileValidationReport getHTMLValidatioReport(String dir) throws Exception;
+	public ProfileValidationReport getHTMLValidatioReportForContextBased(String dir) throws Exception;
 	
 	
 }

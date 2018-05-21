@@ -82,7 +82,7 @@ public class FileValidationHandlerImpl implements FileValidationHandler {
 	public Map<String, List<XMLError>> unbundleAndValidate(String dir) throws Exception {
 		XMLResourcesValidator v = XMLResourcesValidator.createValidatorFromClasspath("/xsd");
 		Map<String, List<XMLError>> errorsMap = new HashMap<String, List<XMLError>>();
-		String rootPath = findFileDirectory(dir, "Profile.xml") + "/";
+		String rootPath = findFileDirectory(dir, "Profile.xml",false) + "/";
 
 		// Profile
 		Resource profile = resourceLoader.getResource("Profile.xml", rootPath);
@@ -103,7 +103,7 @@ public class FileValidationHandlerImpl implements FileValidationHandler {
 	public ProfileValidationReport getHTMLValidatioReport(String dir) throws Exception {		
 		ValidationServiceImpl vsi = new ValidationServiceImpl();
 		
-		String rootPath = findFileDirectory(dir, "Profile.xml") + "/";
+		String rootPath = findFileDirectory(dir, "Profile.xml",false) + "/";
 
 		// Profile
 		Resource profile = resourceLoader.getResource("Profile.xml", rootPath);
@@ -158,15 +158,47 @@ public class FileValidationHandlerImpl implements FileValidationHandler {
 		return report;
 	}
 	
+	@Override
+	public ProfileValidationReport getHTMLValidatioReportForContextBased(String dir) throws Exception {		
+		ValidationServiceImpl vsi = new ValidationServiceImpl();
+		
+		String rootPath = findFileDirectory(dir+"/Global/", "Profile.xml",true) + "/";
+
+		// Profile
+		Resource profile = resourceLoader.getResource("Profile.xml", rootPath);
+		
+		// Constraints
+		Resource constraints = resourceLoader.getResource("Constraints.xml", rootPath);
+		
+		// VS
+		Resource vs = resourceLoader.getResource("ValueSets.xml", rootPath);
+		
+		
+		
+		ProfileValidationReport report = null;
+		if (profile != null && profile.exists() && constraints != null && constraints.exists() && vs != null &&  vs.exists()) {
+			report = vsi.validationXMLs(profile.getInputStream(),constraints.getInputStream(),vs.getInputStream());
+		}
+
+		return report;
+	}
+	
 
 	// finds folder where file is found (first occurence)
-	private String findFileDirectory(String dir, String fileName) {
+	private String findFileDirectory(String dir, String fileName, boolean reg) {
 		Collection files = FileUtils.listFiles(new File(dir), null, true);
 		for (Iterator iterator = files.iterator(); iterator.hasNext();) {
 			File file = (File) iterator.next();
-			if (file.getName().equals(fileName)) {
-				return file.getParentFile().getAbsolutePath();
+			if (reg) {
+				if (file.getName().matches(fileName)) {
+					return file.getParentFile().getAbsolutePath();
+				}
+			}else {
+				if (file.getName().equals(fileName)) {
+					return file.getParentFile().getAbsolutePath();
+				}
 			}
+			
 		}
 		return null;
 	}

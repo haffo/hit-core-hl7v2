@@ -55,6 +55,8 @@ public class BundleHandlerImpl implements BundleHandler {
 			while ((ze = zip.getNextEntry()) != null) {
 				String filePath = tmpDir.getAbsolutePath() + File.separator + ze.getName();
 				if (!ze.isDirectory()) {
+					File tmpDir_bis = new File(filePath).getParentFile();
+					tmpDir_bis.mkdirs();
 					BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filePath));
 					byte[] bytesIn = new byte[1024];
 					int read = 0;

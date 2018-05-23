@@ -445,40 +445,8 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		return elmCode.getAttribute("ID");
 	}
 
-	private String getConformanceProfileContent(String integrationProfileXml, String messageId) throws Exception {
-		Document doc = this.stringToDom(integrationProfileXml);
-		IntegrationProfile integrationProfile = new IntegrationProfile();
-		Element profileElement = (Element) doc.getElementsByTagName("ConformanceProfile").item(0);
-		integrationProfile.setSourceId(profileElement.getAttribute("ID"));
-		Element conformanceProfilElementRoot = (Element) profileElement.getElementsByTagName("Messages").item(0);
-		NodeList messages = conformanceProfilElementRoot.getElementsByTagName("Message");
-		List<Node> toRemove = new ArrayList<Node>();
-		for (int index = 0; index < messages.getLength(); index++) {
-			Node node = messages.item(index);
-			Element messagesElm = (Element) node;
-			String id = messagesElm.getAttribute("ID");
-			if (!id.equals(messageId)) {
-				toRemove.add(node);
-			}
-		}
 
-		if (!toRemove.isEmpty()) {
-			for (int index = 0; index < toRemove.size(); index++) {
-				conformanceProfilElementRoot.removeChild(toRemove.get(index));
-			}
-		}
-		doc.normalize();
-		return prettyPrint(doc);
-	}
 
-	public static final String prettyPrint(Document xml) throws Exception {
-		Transformer tf = TransformerFactory.newInstance().newTransformer();
-		tf.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-		tf.setOutputProperty(OutputKeys.INDENT, "yes");
-		Writer out = new StringWriter();
-		tf.transform(new DOMSource(xml), new StreamResult(out));
-		return out.toString();
-	}
 
 	@Override
 	public ProfileModel parseProfile(String integrationProfileXml, String conformanceProfileId, String constraintsXml,

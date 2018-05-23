@@ -5,18 +5,38 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -244,8 +264,8 @@ public class BundleHandlerImpl implements BundleHandler {
 
 			// ---
 			ConformanceProfile conformanceProfile = new ConformanceProfile();
-			conformanceProfile.setJson(resourceLoader.jsonConformanceProfile(p.getXml(), messageId, c.getXml(), null));
-
+			conformanceProfile.setJson(resourceLoader	.jsonConformanceProfile(p.getXml(), messageId, c.getXml(), null));
+			conformanceProfile.setXml(resourceLoader.getConformanceProfileContent(p.getXml(), messageId));
 			conformanceProfile.setIntegrationProfile(p);
 			conformanceProfile.setSourceId(messageId);
 			conformanceProfile.setDomain(tp.getDomain());
@@ -301,7 +321,7 @@ public class BundleHandlerImpl implements BundleHandler {
 			tp.setTestSteps(testSteps);
 		}
 		save.tcg = tp;
-		setSaveInstanceValues(dir, save, tp.getTestSteps(), tp);
+		setSaveInstanceValues(dir, save, tp.getTestSteps(), tp);	
 		return save;
 	}
 
@@ -315,7 +335,7 @@ public class BundleHandlerImpl implements BundleHandler {
 			tp.setTestSteps(testSteps);
 		}
 		save.tcg = tp;
-		setSaveInstanceValues(dir, save, tp.getTestSteps(), tp);
+			setSaveInstanceValues(dir, save, tp.getTestSteps(), tp);
 		return save;
 	}
 
@@ -345,5 +365,10 @@ public class BundleHandlerImpl implements BundleHandler {
 		}
 		return null;
 	}
+	
+	
+	
+	
+	
 
 }

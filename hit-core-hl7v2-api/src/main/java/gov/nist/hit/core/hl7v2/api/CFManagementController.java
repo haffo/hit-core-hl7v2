@@ -146,7 +146,6 @@ public class CFManagementController {
       HttpServletRequest request, HttpServletResponse response,
       @RequestParam(required = true) String domain) throws Exception {
     checkManagementSupport();
-    scope = scope == null ? TestScope.GLOBAL : scope;
     String username = null;
     Long userId = SessionContext.getCurrentUserId(request.getSession(false));
     if (userId != null) {

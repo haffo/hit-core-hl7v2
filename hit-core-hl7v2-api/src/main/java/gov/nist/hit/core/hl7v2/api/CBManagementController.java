@@ -13,6 +13,8 @@
 package gov.nist.hit.core.hl7v2.api;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.List;
 import java.util.Set;
@@ -654,38 +656,41 @@ public class CBManagementController {
       Authentication u) throws MessageUploadException {
     try {
       checkManagementSupport();
-      if (!part.getContentType().equalsIgnoreCase("application/zip"))
-        throw new MessageUploadException(
-            "Unsupported content type. Supported content types are: '.zip' ");
+      	String filename = part.getOriginalFilename();
+		String extension = filename.substring(filename.lastIndexOf(".") + 1);
+		if (!extension.equalsIgnoreCase("zip")) {
+			throw new MessageUploadException(
+		            "Unsupported content type. Supported content types are: '.zip' ");
+		}
+      
+      
+      
+      
       String username = userIdService.getCurrentUserName(p);
       if (username == null)
         throw new NoUserFoundException("User could not be found");
       String token = UUID.randomUUID().toString();
-      String filename =
-          part.getOriginalFilename().substring(0, part.getOriginalFilename().lastIndexOf(".zip"));
+       filename =
+          part.getOriginalFilename().substring(0, part.getOriginalFilename().lastIndexOf("."));
 
       String directory = bundleHandler.unzip(part.getBytes(),
           CB_RESOURCE_BUNDLE_DIR + "/" + token + "/" + filename);
-
-//      ProfileValidationReport report = fileValidationHandler.getHTMLValidatioReportForContextBased(directory);
-//      
-//      if (!report.isSuccess()) {
-//    	  		ResourceUploadStatus result = new ResourceUploadStatus();
-//    	  		result.setAction(ResourceUploadAction.ADD);
-//    	  		result.setStatus(ResourceUploadResult.FAILURE);
-//    	      	result.setMessage("Validation files are not valid!");
-//    	      	result.setReport(report.generateHTML());
-//    	      	return result;
-//      }else {
-//	    	  List<TestPlan> plans =
-//	    	          resourceLoader.createTP(directory.substring(0, directory.lastIndexOf("/")) + "/", domain,
-//	    	              TestScope.USER, u.getName(), false);
-      
+            
+      //check domain
       
       //ADD globals
-      resourceLoader.addOrReplaceIntegrationProfile(directory + "/Global/Profiles/",domain, TestScope.USER, u.getName(), false);
-      resourceLoader.addOrReplaceConstraints(directory + "/Global/Constraints/",domain, TestScope.USER, u.getName(), false);
-      resourceLoader.addOrReplaceValueSet(directory + "/Global/Tables/",domain, TestScope.USER, u.getName(), false);
+      if(Files.exists(Paths.get(directory + "/Global/Profiles"))) {    	  	
+          resourceLoader.addOrReplaceIntegrationProfile(directory + "/Global/Profiles/",domain, TestScope.USER, u.getName(), false);
+      }
+      if(Files.exists(Paths.get(directory + "/Global/Constraints/"))) {    	  	
+          resourceLoader.addOrReplaceConstraints(directory + "/Global/Constraints/",domain, TestScope.USER, u.getName(), false);
+      }
+      if(Files.exists(Paths.get(directory + "/Global/Tables/"))) {    	  	
+          resourceLoader.addOrReplaceValueSet(directory + "/Global/Tables/",domain, TestScope.USER, u.getName(), false);
+      }
+        
+      
+      
 
       
       List<TestPlan> plans =

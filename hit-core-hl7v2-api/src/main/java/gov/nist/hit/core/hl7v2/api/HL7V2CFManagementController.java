@@ -232,8 +232,12 @@ public class HL7V2CFManagementController {
 		checkManagementSupport();
 		Map<String, Object> resultMap = new HashMap<String, Object>();
 		try {
-			if (!part.getContentType().equalsIgnoreCase("text/xml"))
-				throw new MessageUploadException("Unsupported content type. Supported content types are: '.xml' ");
+			String filename = part.getOriginalFilename();
+			String extension = filename.substring(filename.lastIndexOf(".") + 1);
+			if (!extension.equalsIgnoreCase("xml")) {
+				throw new MessageUploadException(
+			            "Unsupported content type. Supported content types are: '.xml' ");
+			}			
 
 			String userName = userIdService.getCurrentUserName(p);
 			if (userName == null)
@@ -292,9 +296,12 @@ public class HL7V2CFManagementController {
     checkManagementSupport();
     Map<String, Object> resultMap = new HashMap<String, Object>();
     try {
-      if (!part.getContentType().equalsIgnoreCase("text/xml"))
-        throw new MessageUploadException(
-            "Unsupported content type. Supported content types are: '.xml' ");
+    		String filename = part.getOriginalFilename();
+		String extension = filename.substring(filename.lastIndexOf(".") + 1);
+		if (!extension.equalsIgnoreCase("xml")) {
+			throw new MessageUploadException(
+		            "Unsupported content type. Supported content types are: '.xml' ");
+		}
 
       String userName = userIdService.getCurrentUserName(p);
       if (userName == null)
@@ -350,8 +357,12 @@ public class HL7V2CFManagementController {
 
 		Map<String, Object> resultMap = new HashMap<String, Object>();
 		try {
-			if (!part.getContentType().equalsIgnoreCase("text/xml"))
-				throw new MessageUploadException("Unsupported content type. Supported content types are: '.xml' ");
+			String filename = part.getOriginalFilename();
+			String extension = filename.substring(filename.lastIndexOf(".") + 1);
+			if (!extension.equalsIgnoreCase("xml")) {
+				throw new MessageUploadException(
+			            "Unsupported content type. Supported content types are: '.xml' ");
+			}
 
 			String userName = userIdService.getCurrentUserName(p);
 			if (userName == null)
@@ -405,9 +416,13 @@ public class HL7V2CFManagementController {
 
     Map<String, Object> resultMap = new HashMap<String, Object>();
     try {
-      if (!part.getContentType().equalsIgnoreCase("application/zip"))
-        throw new MessageUploadException(
-            "Unsupported content type. Supported content types are: '.zip' ");
+    		String filename = part.getOriginalFilename();
+		String extension = filename.substring(filename.lastIndexOf(".") + 1);
+		if (!extension.equalsIgnoreCase("zip")) {
+			throw new MessageUploadException(
+		            "Unsupported content type. Supported content types are: '.zip' ");
+		}
+    	     
 
       String userName = userIdService.getCurrentUserName(p);
       if (userName == null)

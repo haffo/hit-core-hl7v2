@@ -2,8 +2,6 @@ package gov.nist.hit.core.hl7v2.service.impl;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -12,11 +10,6 @@ import java.util.UUID;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -25,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
@@ -88,8 +80,12 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	}
 
 	@Override
-	protected IntegrationProfile getIntegrationProfile(String id) throws IOException {
-		return this.integrationProfileRepository.findByMessageId(id);
+	protected IntegrationProfile getIntegrationProfile(String messageId) throws IOException {
+		String sourceId = this.getProfileMap().get(messageId);
+		if (sourceId != null) {
+			return this.integrationProfileRepository.findBySourceId(sourceId);
+		}
+		return null;
 	}
 
 	// ----- Global -> ValueSet, Constraints, IntegrationProfile
@@ -360,8 +356,8 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 								? testContext.getAddditionalConstraints().getXml() : null));
 				conformanceProfile
 						.setXml(getConformanceProfileContent(integrationProfile.getXml(), messageId.textValue()));
-				conformanceProfile.setIntegrationProfile(integrationProfile);
-				conformanceProfile.setSourceId(messageId.textValue());
+				// conformanceProfile.setIntegrationProfileId(integrationProfile.getId());
+				// conformanceProfile.setSourceId(messageId.textValue());
 				conformanceProfile.setDomain(domain);
 				conformanceProfile.setScope(scope);
 				conformanceProfile.setAuthorUsername(authorUsername);
@@ -379,17 +375,12 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 						new HashSet<UploadedProfileModel>(Arrays.asList(list.get(0))));
 				content = packagingHandler.changeProfileId(content);
 				String messageID = getMessageId(content);
-				IntegrationProfile integrationProfile = createIntegrationProfile(content, domain, scope, authorUsername,
-						preloaded);
-				integrationProfileRepository.save(integrationProfile);
 				ConformanceProfile conformanceProfile = new ConformanceProfile();
 				conformanceProfile.setJson(
 						jsonConformanceProfile(content, messageID, null, testContext.getAddditionalConstraints() != null
 								? testContext.getAddditionalConstraints().getXml() : null));
-				conformanceProfile.setXml(getConformanceProfileContent(integrationProfile.getXml(), messageID));
-				conformanceProfile.setIntegrationProfile(integrationProfile);
+				conformanceProfile.setXml(getConformanceProfileContent(content, messageID));
 				conformanceProfile.setDomain(domain);
-				conformanceProfile.setSourceId(messageID);
 				conformanceProfile.setScope(scope);
 				conformanceProfile.setAuthorUsername(authorUsername);
 				conformanceProfile.setPreloaded(preloaded);
@@ -402,33 +393,37 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		return testContext;
 	}
 
-	private IntegrationProfile createIntegrationProfile(String content, String domain, TestScope scope,
-			String authorUsername, boolean preloaded) {
-		Document doc = this.stringToDom(content);
-		IntegrationProfile integrationProfile = new IntegrationProfile();
-		Element profileElement = (Element) doc.getElementsByTagName("ConformanceProfile").item(0);
-		integrationProfile.setSourceId(profileElement.getAttribute("ID"));
-		Element metaDataElement = (Element) profileElement.getElementsByTagName("MetaData").item(0);
-		integrationProfile.setName(metaDataElement.getAttribute("Name"));
-		integrationProfile.setXml(content);
-		Element conformanceProfilElementRoot = (Element) profileElement.getElementsByTagName("Messages").item(0);
-		NodeList messages = conformanceProfilElementRoot.getElementsByTagName("Message");
-
-		// Message IDs
-		List<String> ids = new ArrayList<String>();
-
-		for (int j = 0; j < messages.getLength(); j++) {
-			Element elmCode = (Element) messages.item(j);
-			String id = elmCode.getAttribute("ID");
-			ids.add(id);
-		}
-		integrationProfile.setMessages(ids);
-		integrationProfile.setDomain(domain);
-		integrationProfile.setScope(scope);
-		integrationProfile.setAuthorUsername(authorUsername);
-		integrationProfile.setPreloaded(preloaded);
-		return integrationProfile;
-	}
+	// private IntegrationProfile createIntegrationProfile(String content,
+	// String domain, TestScope scope,
+	// String authorUsername, boolean preloaded) {
+	// Document doc = this.stringToDom(content);
+	// IntegrationProfile integrationProfile = new IntegrationProfile();
+	// Element profileElement = (Element)
+	// doc.getElementsByTagName("ConformanceProfile").item(0);
+	// integrationProfile.setSourceId(profileElement.getAttribute("ID"));
+	// Element metaDataElement = (Element)
+	// profileElement.getElementsByTagName("MetaData").item(0);
+	// integrationProfile.setName(metaDataElement.getAttribute("Name"));
+	// integrationProfile.setXml(content);
+	// Element conformanceProfilElementRoot = (Element)
+	// profileElement.getElementsByTagName("Messages").item(0);
+	// NodeList messages =
+	// conformanceProfilElementRoot.getElementsByTagName("Message");
+	//
+	// // Message IDs
+	// List<String> ids = new ArrayList<String>();
+	//
+	// for (int j = 0; j < messages.getLength(); j++) {
+	// Element elmCode = (Element) messages.item(j);
+	// String id = elmCode.getAttribute("ID");
+	// ids.add(id);
+	// }
+	// integrationProfile.setDomain(domain);
+	// integrationProfile.setScope(scope);
+	// integrationProfile.setAuthorUsername(authorUsername);
+	// integrationProfile.setPreloaded(preloaded);
+	// return integrationProfile;
+	// }
 
 	private String getMessageId(String content) {
 		Document doc = this.stringToDom(content);
@@ -444,9 +439,6 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		Element elmCode = (Element) messages.item(0);
 		return elmCode.getAttribute("ID");
 	}
-
-
-
 
 	@Override
 	public ProfileModel parseProfile(String integrationProfileXml, String conformanceProfileId, String constraintsXml,

@@ -155,6 +155,8 @@ public class BundleHandlerImpl implements BundleHandler {
 			conformanceProfile.setScope(gtcg.getScope());
 			conformanceProfile.setAuthorUsername(authorUsername);
 			conformanceProfile.setPreloaded(preloaded);
+			conformanceProfile.setSourceId(messageId);
+
 			// ---
 			HL7V2TestContext testContext = new HL7V2TestContext();
 			testContext.setVocabularyLibrary(v);
@@ -245,6 +247,7 @@ public class BundleHandlerImpl implements BundleHandler {
 			conformanceProfile.setXml(resourceLoader.getConformanceProfileContent(p.getXml(), messageId));
 			conformanceProfile.setDomain(tp.getDomain());
 			conformanceProfile.setScope(tp.getScope());
+			conformanceProfile.setSourceId(messageId);
 			conformanceProfile.setAuthorUsername(tp.getAuthorUsername());
 			// ---
 			HL7V2TestContext testContext = new HL7V2TestContext();

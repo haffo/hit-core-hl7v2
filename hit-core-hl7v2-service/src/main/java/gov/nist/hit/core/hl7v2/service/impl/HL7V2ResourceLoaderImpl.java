@@ -81,7 +81,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 
 	@Override
 	protected IntegrationProfile getIntegrationProfile(String messageId) throws IOException {
-		String sourceId = this.getProfileMap().get(messageId);
+		String sourceId = this.getProfilesMap().get(messageId);
 		if (sourceId != null) {
 			return this.integrationProfileRepository.findBySourceId(sourceId);
 		}
@@ -356,6 +356,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 								? testContext.getAddditionalConstraints().getXml() : null));
 				conformanceProfile
 						.setXml(getConformanceProfileContent(integrationProfile.getXml(), messageId.textValue()));
+				conformanceProfile.setSourceId(messageId.textValue());
 				// conformanceProfile.setIntegrationProfileId(integrationProfile.getId());
 				// conformanceProfile.setSourceId(messageId.textValue());
 				conformanceProfile.setDomain(domain);
@@ -384,6 +385,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 				conformanceProfile.setScope(scope);
 				conformanceProfile.setAuthorUsername(authorUsername);
 				conformanceProfile.setPreloaded(preloaded);
+				conformanceProfile.setSourceId(messageID);
 				testContext.setConformanceProfile(conformanceProfile);
 
 			} catch (Exception e) {

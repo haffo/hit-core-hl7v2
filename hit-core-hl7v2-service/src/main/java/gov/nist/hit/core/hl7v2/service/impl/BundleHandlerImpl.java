@@ -6,8 +6,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -19,8 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gov.nist.hit.core.domain.AbstractTestCase;
 import gov.nist.hit.core.domain.CFTestPlan;
 import gov.nist.hit.core.domain.CFTestStep;
+import gov.nist.hit.core.domain.CFTestStepGroup;
 import gov.nist.hit.core.domain.ConformanceProfile;
 import gov.nist.hit.core.domain.Constraints;
 import gov.nist.hit.core.domain.GVTSaveInstance;
@@ -51,6 +55,8 @@ public class BundleHandlerImpl implements BundleHandler {
 			while ((ze = zip.getNextEntry()) != null) {
 				String filePath = tmpDir.getAbsolutePath() + File.separator + ze.getName();
 				if (!ze.isDirectory()) {
+					File tmpDir_bis = new File(filePath).getParentFile();
+					tmpDir_bis.mkdirs();
 					BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filePath));
 					byte[] bytesIn = new byte[1024];
 					int read = 0;
@@ -73,7 +79,8 @@ public class BundleHandlerImpl implements BundleHandler {
 	}
 
 	@Override
-	public GVTSaveInstance createGVTSaveInstance(String dir) throws IOException, ProfileParserException {
+	public GVTSaveInstance createSaveInstance(String dir, String domain, String authorUsername, boolean preloaded)
+			throws IOException, ProfileParserException {
 		GVTSaveInstance save = new GVTSaveInstance();
 		File testCasesFile = new File(dir + "/TestCases.json");
 		if (!testCasesFile.exists()) {
@@ -85,12 +92,14 @@ public class BundleHandlerImpl implements BundleHandler {
 		String descriptorContent = FileUtils.readFileToString(testCasesFile);
 		ObjectMapper mapper = new ObjectMapper();
 		JsonNode testCasesObj = mapper.readTree(descriptorContent);
-
+		gtcg.setDomain(domain);
 		gtcg.setName(testCasesObj.get("name").asText());
 		gtcg.setDescription(testCasesObj.get("description").asText());
 		gtcg.setPreloaded(false);
 		gtcg.setScope(testCasesObj.get("scope") != null && testCasesObj.get("scope").asText() != null
 				? TestScope.valueOf(testCasesObj.get("scope").asText()) : TestScope.USER);
+		gtcg.setAuthorUsername(authorUsername);
+		gtcg.setPreloaded(preloaded);
 		save.tcg = gtcg;
 
 		// Profile
@@ -99,8 +108,8 @@ public class BundleHandlerImpl implements BundleHandler {
 		if (!profileFile.exists()) {
 			throw new IllegalArgumentException("Profile " + profileName + " not found");
 		}
-		IntegrationProfile p = resourceLoader.integrationProfile(FileUtils.readFileToString(profileFile));
-		p.setPreloaded(false);
+		IntegrationProfile p = resourceLoader.integrationProfile(FileUtils.readFileToString(profileFile), domain,
+				gtcg.getScope(), authorUsername, preloaded);
 		save.ip = p;
 
 		// Constraints
@@ -109,8 +118,8 @@ public class BundleHandlerImpl implements BundleHandler {
 		if (!constraintsFile.exists()) {
 			throw new IllegalArgumentException("Constraints " + constraintName + " not found");
 		}
-		Constraints c = resourceLoader.constraint(FileUtils.readFileToString(constraintsFile));
-		c.setPreloaded(false);
+		Constraints c = resourceLoader.constraint(FileUtils.readFileToString(constraintsFile), domain, gtcg.getScope(),
+				authorUsername, preloaded);
 		save.ct = c;
 
 		// VS
@@ -119,8 +128,8 @@ public class BundleHandlerImpl implements BundleHandler {
 		if (!vsFile.exists()) {
 			throw new IllegalArgumentException("VocabularyLibrary " + vocabName + " not found");
 		}
-		VocabularyLibrary v = resourceLoader.vocabLibrary(FileUtils.readFileToString(vsFile));
-		v.setPreloaded(false);
+		VocabularyLibrary v = resourceLoader.vocabLibrary(FileUtils.readFileToString(vsFile), domain, gtcg.getScope(),
+				authorUsername, preloaded);
 
 		save.vs = v;
 
@@ -137,13 +146,17 @@ public class BundleHandlerImpl implements BundleHandler {
 			String name = tcO.findValue("name").asText();
 			String description = tcO.findValue("description").asText();
 			Long id = new Random().nextLong();
-
+			cfti.setDomain(domain);
+			cfti.setScope(gtcg.getScope());
 			// ---
 			ConformanceProfile conformanceProfile = new ConformanceProfile();
 			conformanceProfile.setJson(resourceLoader.jsonConformanceProfile(p.getXml(), messageId, c.getXml(), null));
-
-			conformanceProfile.setIntegrationProfile(p);
+			conformanceProfile.setDomain(domain);
+			conformanceProfile.setScope(gtcg.getScope());
+			conformanceProfile.setAuthorUsername(authorUsername);
+			conformanceProfile.setPreloaded(preloaded);
 			conformanceProfile.setSourceId(messageId);
+
 			// ---
 			HL7V2TestContext testContext = new HL7V2TestContext();
 			testContext.setVocabularyLibrary(v);
@@ -151,6 +164,9 @@ public class BundleHandlerImpl implements BundleHandler {
 			testContext.setConformanceProfile(conformanceProfile);
 			testContext.setDqa(false);
 			testContext.setStage(TestingStage.CF);
+			testContext.setDomain(domain);
+			testContext.setScope(gtcg.getScope());
+			testContext.setAuthorUsername(authorUsername);
 
 			// ---
 			cfti.setName(name);
@@ -165,16 +181,12 @@ public class BundleHandlerImpl implements BundleHandler {
 		return save;
 	}
 
-	@Override
-	@Transactional(value = "transactionManager")
-	public GVTSaveInstance createGVTSaveInstance(String dir, CFTestPlan tp) throws IOException, ProfileParserException {
-		GVTSaveInstance save = new GVTSaveInstance();
+	private GVTSaveInstance setSaveInstanceValues(String dir, GVTSaveInstance save, Set<CFTestStep> testSteps,
+			AbstractTestCase tp) throws IOException, ProfileParserException {
 		File testCasesFile = new File(dir + "/TestCases.json");
 		if (!testCasesFile.exists()) {
 			throw new IllegalArgumentException("No TestCases.json found");
 		}
-
-		save.tcg = tp;
 
 		String descriptorContent = FileUtils.readFileToString(testCasesFile);
 		ObjectMapper mapper = new ObjectMapper();
@@ -186,8 +198,9 @@ public class BundleHandlerImpl implements BundleHandler {
 		if (!profileFile.exists()) {
 			throw new IllegalArgumentException("Profile " + profileName + " not found");
 		}
-		IntegrationProfile p = resourceLoader.integrationProfile(FileUtils.readFileToString(profileFile));
-		p.setPreloaded(false);
+		IntegrationProfile p = resourceLoader.integrationProfile(FileUtils.readFileToString(profileFile),
+				tp.getDomain(), tp.getScope(), tp.getAuthorUsername(), tp.isPreloaded());
+		p.setDomain(tp.getDomain());
 		save.ip = p;
 
 		// Constraints
@@ -196,8 +209,8 @@ public class BundleHandlerImpl implements BundleHandler {
 		if (!constraintsFile.exists()) {
 			throw new IllegalArgumentException("Constraints " + constraintName + " not found");
 		}
-		Constraints c = resourceLoader.constraint(FileUtils.readFileToString(constraintsFile));
-		c.setPreloaded(false);
+		Constraints c = resourceLoader.constraint(FileUtils.readFileToString(constraintsFile), tp.getDomain(),
+				tp.getScope(), tp.getAuthorUsername(), tp.isPreloaded());
 		save.ct = c;
 
 		// VS
@@ -206,30 +219,36 @@ public class BundleHandlerImpl implements BundleHandler {
 		if (!vsFile.exists()) {
 			throw new IllegalArgumentException("VocabularyLibrary " + vocabName + " not found");
 		}
-		VocabularyLibrary v = resourceLoader.vocabLibrary(FileUtils.readFileToString(vsFile));
-		v.setPreloaded(false);
+		VocabularyLibrary v = resourceLoader.vocabLibrary(FileUtils.readFileToString(vsFile), tp.getDomain(),
+				tp.getScope(), tp.getAuthorUsername(), tp.isPreloaded());
 
 		save.vs = v;
 
 		Iterator<JsonNode> testCasesIter = testCasesObj.findValue("testCases").elements();
-		int size = tp.getTestSteps().size();
+		int size = testSteps.size();
 		while (testCasesIter.hasNext()) {
 			JsonNode tcO = testCasesIter.next();
 			CFTestStep cfti = new CFTestStep();
-			cfti.setPreloaded(false);
+			cfti.setPreloaded(tp.isPreloaded());
 			cfti.setScope(tcO.get("scope") != null && tcO.get("scope").asText() != null
 					? TestScope.valueOf(tcO.get("scope").asText()) : TestScope.USER);
 			String messageId = tcO.findValue("messageId").asText();
 			String name = tcO.findValue("name").asText();
 			String description = tcO.findValue("description").asText();
 			Long id = new Random().nextLong();
+			cfti.setDomain(tp.getDomain());
+			cfti.setScope(tp.getScope());
+			cfti.setAuthorUsername(tp.getAuthorUsername());
+			cfti.setPreloaded(tp.isPreloaded());
 
 			// ---
 			ConformanceProfile conformanceProfile = new ConformanceProfile();
 			conformanceProfile.setJson(resourceLoader.jsonConformanceProfile(p.getXml(), messageId, c.getXml(), null));
-
-			conformanceProfile.setIntegrationProfile(p);
+			conformanceProfile.setXml(resourceLoader.getConformanceProfileContent(p.getXml(), messageId));
+			conformanceProfile.setDomain(tp.getDomain());
+			conformanceProfile.setScope(tp.getScope());
 			conformanceProfile.setSourceId(messageId);
+			conformanceProfile.setAuthorUsername(tp.getAuthorUsername());
 			// ---
 			HL7V2TestContext testContext = new HL7V2TestContext();
 			testContext.setVocabularyLibrary(v);
@@ -237,12 +256,19 @@ public class BundleHandlerImpl implements BundleHandler {
 			testContext.setConformanceProfile(conformanceProfile);
 			testContext.setDqa(false);
 			testContext.setStage(TestingStage.CF);
+			testContext.setDomain(tp.getDomain());
+			testContext.setScope(tp.getScope());
+			testContext.setAuthorUsername(tp.getAuthorUsername());
 
 			Message message = testContext.getMessage();
 			if (tcO.findValue("exampleMessage") != null) {
 				if (message == null) {
 					message = new Message();
 					message.setName(name);
+					message.setDomain(tp.getDomain());
+					message.setScope(tp.getScope());
+					message.setAuthorUsername(tp.getAuthorUsername());
+					message.setPreloaded(tp.isPreloaded());
 					message.setDescription(description);
 					testContext.setMessage(message);
 				}
@@ -256,9 +282,38 @@ public class BundleHandlerImpl implements BundleHandler {
 			cfti.setPersistentId(id);
 			cfti.setPosition(size + tcO.findValue("position").asInt());
 			// ---
-			tp.getTestSteps().add(cfti);
+			testSteps.add(cfti);
 		}
+		return save;
 
+	}
+
+	@Override
+	@Transactional(value = "transactionManager")
+	public GVTSaveInstance createSaveInstance(String dir, CFTestStepGroup tp)
+			throws IOException, ProfileParserException {
+		GVTSaveInstance save = new GVTSaveInstance();
+		Set<CFTestStep> testSteps = tp.getTestSteps();
+		if (testSteps == null) {
+			testSteps = new HashSet<CFTestStep>();
+			tp.setTestSteps(testSteps);
+		}
+		save.tcg = tp;
+		setSaveInstanceValues(dir, save, tp.getTestSteps(), tp);
+		return save;
+	}
+
+	@Override
+	@Transactional(value = "transactionManager")
+	public GVTSaveInstance createSaveInstance(String dir, CFTestPlan tp) throws IOException, ProfileParserException {
+		GVTSaveInstance save = new GVTSaveInstance();
+		Set<CFTestStep> testSteps = tp.getTestSteps();
+		if (testSteps == null) {
+			testSteps = new HashSet<CFTestStep>();
+			tp.setTestSteps(testSteps);
+		}
+		save.tcg = tp;
+		setSaveInstanceValues(dir, save, tp.getTestSteps(), tp);
 		return save;
 	}
 

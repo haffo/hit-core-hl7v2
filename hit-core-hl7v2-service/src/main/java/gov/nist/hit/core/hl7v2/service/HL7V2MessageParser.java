@@ -81,7 +81,7 @@ public abstract class HL7V2MessageParser implements MessageParser {
 			if (context instanceof HL7V2TestContext) {
 				HL7V2TestContext testContext = (HL7V2TestContext) context;
 				String er7Message = command.getContent();
-				String profileXml = testContext.getConformanceProfile().getIntegrationProfile().getXml();
+				String profileXml = testContext.getConformanceProfile().getXml();
 				if (profileXml == null) {
 					throw new MessageParserException("No Conformance Profile Provided to Parse the Message");
 				}

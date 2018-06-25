@@ -71,7 +71,6 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
 				String contextType = command.getContextType();
 				String message = getMessageContent(command);
 				String conformanceProfielId = v2TestContext.getConformanceProfile().getSourceId();
-				String integrationProfileXml = v2TestContext.getConformanceProfile().getIntegrationProfile().getXml();
 				String valueSets = v2TestContext.getVocabularyLibrary().getXml();
 				String c1 = v2TestContext.getConstraints() != null ? v2TestContext.getConstraints().getXml() : null;
 				String c2 = v2TestContext.getAddditionalConstraints() != null
@@ -86,8 +85,8 @@ public abstract class HL7V2MessageValidator implements MessageValidator {
 				ConformanceContext c = getConformanceContext(cStreams);
 				ValueSetLibrary vsLib = valueSets != null ? getValueSetLibrary(IOUtils.toInputStream(valueSets)) : null;
 				ValidationProxy vp = new ValidationProxy(getValidationServiceName(), getProviderName());
-				EnhancedReport report = vp.validate(message, integrationProfileXml, c, vsLib, conformanceProfielId,
-						Context.valueOf(contextType));
+				EnhancedReport report = vp.validate(message, v2TestContext.getConformanceProfile().getXml(), c, vsLib,
+						conformanceProfielId, Context.valueOf(contextType));
 				if (report != null) {
 					Map<String, String> nav = command.getNav();
 					if (nav != null && !nav.isEmpty()) {

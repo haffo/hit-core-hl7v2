@@ -34,6 +34,7 @@ import gov.nist.hit.core.domain.ResourceUploadResult;
 import gov.nist.hit.core.domain.ResourceUploadStatus;
 import gov.nist.hit.core.domain.TestCaseDocument;
 import gov.nist.hit.core.domain.TestContext;
+import gov.nist.hit.core.domain.TestScope;
 import gov.nist.hit.core.domain.TestingStage;
 import gov.nist.hit.core.domain.UploadedProfileModel;
 import gov.nist.hit.core.domain.VocabularyLibrary;
@@ -79,14 +80,19 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	}
 
 	@Override
-	protected IntegrationProfile getIntegrationProfile(String id) throws IOException {
-		return this.integrationProfileRepository.findByMessageId(id);
+	protected IntegrationProfile getIntegrationProfile(String messageId) throws IOException {
+		String sourceId = this.getProfilesMap().get(messageId);
+		if (sourceId != null) {
+			return this.integrationProfileRepository.findBySourceId(sourceId);
+		}
+		return null;
 	}
 
 	// ----- Global -> ValueSet, Constraints, IntegrationProfile
 
 	@Override
-	public List<ResourceUploadStatus> addOrReplaceValueSet(String rootPath) {
+	public List<ResourceUploadStatus> addOrReplaceValueSet(String rootPath, String domain, TestScope scope,
+			String authorUsername, boolean preloaded) {
 		System.out.println("AddOrReplace VS");
 
 		List<Resource> resources;
@@ -114,8 +120,9 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			result.setType(ResourceType.VALUESETLIBRARY);
 			String content = FileUtil.getContent(resource);
 			try {
-				VocabularyLibrary vocabLibrary = vocabLibrary(content);
+				VocabularyLibrary vocabLibrary = vocabLibrary(content, domain, scope, authorUsername, preloaded);
 				result.setId(vocabLibrary.getSourceId());
+				vocabLibrary.setDomain(domain);
 				VocabularyLibrary exist = this.getVocabularyLibrary(vocabLibrary.getSourceId());
 				if (exist != null) {
 					System.out.println("Replace");
@@ -139,7 +146,8 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	}
 
 	@Override
-	public List<ResourceUploadStatus> addOrReplaceConstraints(String rootPath) {
+	public List<ResourceUploadStatus> addOrReplaceConstraints(String rootPath, String domain, TestScope scope,
+			String authorUsername, boolean preloaded) {
 		System.out.println("AddOrReplace Constraints");
 
 		List<Resource> resources;
@@ -167,7 +175,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			result.setType(ResourceType.CONSTRAINTS);
 			String content = FileUtil.getContent(resource);
 			try {
-				Constraints constraint = constraint(content);
+				Constraints constraint = constraint(content, domain, scope, authorUsername, preloaded);
 				result.setId(constraint.getSourceId());
 				Constraints exist = this.getConstraints(constraint.getSourceId());
 				if (exist != null) {
@@ -193,7 +201,8 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	}
 
 	@Override
-	public List<ResourceUploadStatus> addOrReplaceIntegrationProfile(String rootPath) {
+	public List<ResourceUploadStatus> addOrReplaceIntegrationProfile(String rootPath, String domain, TestScope scope,
+			String authorUsername, boolean preloaded) {
 		System.out.println("AddOrReplace integration profile");
 
 		List<Resource> resources;
@@ -220,7 +229,7 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			result.setType(ResourceType.PROFILE);
 			String content = FileUtil.getContent(resource);
 			try {
-				IntegrationProfile integrationP = integrationProfile(content);
+				IntegrationProfile integrationP = integrationProfile(content, domain, scope, authorUsername, preloaded);
 				result.setId(integrationP.getSourceId());
 				IntegrationProfile exist = this.integrationProfileRepository.findBySourceId(integrationP.getSourceId());
 				if (exist != null) {
@@ -232,7 +241,6 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 					result.setAction(ResourceUploadAction.ADD);
 					System.out.println("Add");
 				}
-
 				this.integrationProfileRepository.save(integrationP);
 				result.setStatus(ResourceUploadResult.SUCCESS);
 			} catch (Exception e) {
@@ -255,31 +263,24 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 					context.getConformanceProfile() != null && context.getConformanceProfile().getJson() != null);
 			doc.setXmlValueSetLibraryPresent(
 					context.getVocabularyLibrary() != null && context.getVocabularyLibrary().getJson() != null);
-			doc.setXmlConstraintsPresent(context.getAddditionalConstraints() != null
-					&& context.getAddditionalConstraints().getXml() != null);
+			doc.setXmlConstraintsPresent((context.getAddditionalConstraints() != null
+					&& context.getAddditionalConstraints().getXml() != null)
+					|| (context.getConstraints() != null && context.getConstraints().getXml() != null));
 		}
 		return doc;
 	}
 
-	private Constraints createAdditionalConstraint(String content) throws IOException {
-		Constraints constraint = additionalConstraints(content);
-		// if (constraint != null) {
-		// Constraints existing =
-		// this.constraintsRepository.findOneBySourceId(constraint.getSourceId());
-		// if (existing != null) {
-		// constraint.setId(existing.getId());
-		// }
-		// }
-
+	private Constraints createAdditionalConstraint(String content, String domain, TestScope scope,
+			String authorUsername, boolean preloaded) throws IOException {
+		Constraints constraint = additionalConstraints(content, domain, scope, authorUsername, preloaded);
 		if (constraint != null)
 			constraint.setSourceId(UUID.randomUUID().toString());
 		return constraint;
 	}
 
-	@SuppressWarnings("unused")
 	@Override
-	public TestContext testContext(String path, JsonNode formatObj, TestingStage stage, String rootPath)
-			throws IOException {
+	public TestContext testContext(String path, JsonNode formatObj, TestingStage stage, String rootPath, String domain,
+			TestScope scope, String authorUsername, boolean preloaded) throws Exception {
 		// for backward compatibility
 		formatObj = formatObj.findValue(FORMAT) != null ? formatObj.findValue(FORMAT) : formatObj;
 
@@ -290,16 +291,20 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		HL7V2TestContext testContext = new HL7V2TestContext();
 		testContext.setFormat(FORMAT);
 		testContext.setStage(stage);
+		testContext.setDomain(domain);
+		testContext.setScope(scope);
+		testContext.setAuthorUsername(authorUsername);
+		testContext.setPreloaded(preloaded);
 
 		if (valueSetLibraryId != null && !"".equals(valueSetLibraryId.textValue())) {
 			testContext.setVocabularyLibrary((getVocabularyLibrary(valueSetLibraryId.textValue())));
 		} else {
 			try {
-				Resource resource = this.getResource(path + "ValueSets.xml", rootPath);
+				Resource resource = this.getResource(path + VALUESETS_FILE_PATTERN, rootPath);
 				if (resource != null) {
 					String content = IOUtils.toString(resource.getInputStream());
 					content = packagingHandler.changeVsId(content);
-					VocabularyLibrary vocabLibrary = vocabLibrary(content);
+					VocabularyLibrary vocabLibrary = vocabLibrary(content, domain, scope, authorUsername, preloaded);
 					this.vocabularyLibraryRepository.save(vocabLibrary);
 					testContext.setVocabularyLibrary(vocabLibrary);
 				}
@@ -310,7 +315,12 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		}
 
 		if (constraintId != null && !"".equals(constraintId.textValue())) {
-			testContext.setConstraints(getConstraints(constraintId.textValue()));
+			Constraints co = getConstraints(constraintId.textValue());
+			co.setDomain(domain);
+			co.setScope(scope);
+			co.setAuthorUsername(authorUsername);
+			co.setPreloaded(preloaded);
+			testContext.setConstraints(co);
 		}
 
 		try {
@@ -318,16 +328,18 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 			if (resource != null) {
 				String content = IOUtils.toString(resource.getInputStream());
 				content = packagingHandler.changeConstraintId(content);
-				Constraints co = createAdditionalConstraint(content);
+				Constraints co = createAdditionalConstraint(content, domain, scope, authorUsername, preloaded);
 				testContext.setAddditionalConstraints(co);
 			}
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to parse the constraints at " + path);
 		}
 
-		testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.txt", rootPath))));
+		testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.txt", rootPath)), domain, scope,
+				authorUsername, preloaded));
 		if (testContext.getMessage() == null) {
-			testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.text", rootPath))));
+			testContext.setMessage(message(FileUtil.getContent(getResource(path + "Message.text", rootPath)), domain,
+					scope, authorUsername, preloaded));
 		}
 
 		if (dqa != null && !"".equals(dqa.textValue())) {
@@ -342,29 +354,37 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 						testContext.getConstraints() != null ? testContext.getConstraints().getXml() : null,
 						testContext.getAddditionalConstraints() != null
 								? testContext.getAddditionalConstraints().getXml() : null));
-				conformanceProfile.setIntegrationProfile(integrationProfile);
+				conformanceProfile
+						.setXml(getConformanceProfileContent(integrationProfile.getXml(), messageId.textValue()));
 				conformanceProfile.setSourceId(messageId.textValue());
+				// conformanceProfile.setIntegrationProfileId(integrationProfile.getId());
+				// conformanceProfile.setSourceId(messageId.textValue());
+				conformanceProfile.setDomain(domain);
+				conformanceProfile.setScope(scope);
+				conformanceProfile.setAuthorUsername(authorUsername);
+				conformanceProfile.setPreloaded(preloaded);
 				testContext.setConformanceProfile(conformanceProfile);
 			} catch (ProfileParserException e) {
 				throw new RuntimeException("Failed to parse integrationProfile at " + path);
 			}
 		} else {
 			try {
-				Resource resource = this.getResource(path + "Profile.xml", rootPath);
+				Resource resource = this.getResource(path + PROFILE_FILE_PATTERN, rootPath);
 				String content = IOUtils.toString(resource.getInputStream());
 				List<UploadedProfileModel> list = packagingHandler.getUploadedProfiles(content);
 				content = packagingHandler.removeUnusedAndDuplicateMessages(content,
 						new HashSet<UploadedProfileModel>(Arrays.asList(list.get(0))));
 				content = packagingHandler.changeProfileId(content);
 				String messageID = getMessageId(content);
-				IntegrationProfile integrationProfile = createIntegrationProfile(content);
-				integrationProfile.setPreloaded(false);
-				integrationProfileRepository.save(integrationProfile);
 				ConformanceProfile conformanceProfile = new ConformanceProfile();
 				conformanceProfile.setJson(
 						jsonConformanceProfile(content, messageID, null, testContext.getAddditionalConstraints() != null
 								? testContext.getAddditionalConstraints().getXml() : null));
-				conformanceProfile.setIntegrationProfile(integrationProfile);
+				conformanceProfile.setXml(getConformanceProfileContent(content, messageID));
+				conformanceProfile.setDomain(domain);
+				conformanceProfile.setScope(scope);
+				conformanceProfile.setAuthorUsername(authorUsername);
+				conformanceProfile.setPreloaded(preloaded);
 				conformanceProfile.setSourceId(messageID);
 				testContext.setConformanceProfile(conformanceProfile);
 
@@ -375,28 +395,37 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		return testContext;
 	}
 
-	private IntegrationProfile createIntegrationProfile(String content) {
-		Document doc = this.stringToDom(content);
-		IntegrationProfile integrationProfile = new IntegrationProfile();
-		Element profileElement = (Element) doc.getElementsByTagName("ConformanceProfile").item(0);
-		integrationProfile.setSourceId(profileElement.getAttribute("ID"));
-		Element metaDataElement = (Element) profileElement.getElementsByTagName("MetaData").item(0);
-		integrationProfile.setName(metaDataElement.getAttribute("Name"));
-		integrationProfile.setXml(content);
-		Element conformanceProfilElementRoot = (Element) profileElement.getElementsByTagName("Messages").item(0);
-		NodeList messages = conformanceProfilElementRoot.getElementsByTagName("Message");
-
-		// Message IDs
-		List<String> ids = new ArrayList<String>();
-
-		for (int j = 0; j < messages.getLength(); j++) {
-			Element elmCode = (Element) messages.item(j);
-			String id = elmCode.getAttribute("ID");
-			ids.add(id);
-		}
-		integrationProfile.setMessages(ids);
-		return integrationProfile;
-	}
+	// private IntegrationProfile createIntegrationProfile(String content,
+	// String domain, TestScope scope,
+	// String authorUsername, boolean preloaded) {
+	// Document doc = this.stringToDom(content);
+	// IntegrationProfile integrationProfile = new IntegrationProfile();
+	// Element profileElement = (Element)
+	// doc.getElementsByTagName("ConformanceProfile").item(0);
+	// integrationProfile.setSourceId(profileElement.getAttribute("ID"));
+	// Element metaDataElement = (Element)
+	// profileElement.getElementsByTagName("MetaData").item(0);
+	// integrationProfile.setName(metaDataElement.getAttribute("Name"));
+	// integrationProfile.setXml(content);
+	// Element conformanceProfilElementRoot = (Element)
+	// profileElement.getElementsByTagName("Messages").item(0);
+	// NodeList messages =
+	// conformanceProfilElementRoot.getElementsByTagName("Message");
+	//
+	// // Message IDs
+	// List<String> ids = new ArrayList<String>();
+	//
+	// for (int j = 0; j < messages.getLength(); j++) {
+	// Element elmCode = (Element) messages.item(j);
+	// String id = elmCode.getAttribute("ID");
+	// ids.add(id);
+	// }
+	// integrationProfile.setDomain(domain);
+	// integrationProfile.setScope(scope);
+	// integrationProfile.setAuthorUsername(authorUsername);
+	// integrationProfile.setPreloaded(preloaded);
+	// return integrationProfile;
+	// }
 
 	private String getMessageId(String content) {
 		Document doc = this.stringToDom(content);
@@ -421,8 +450,8 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 	}
 
 	@Override
-	public VocabularyLibrary vocabLibrary(String content)
-			throws JsonGenerationException, JsonMappingException, IOException {
+	public VocabularyLibrary vocabLibrary(String content, String domain, TestScope scope, String authorUsername,
+			boolean preloaded) throws JsonGenerationException, JsonMappingException, IOException {
 		Document doc = this.stringToDom(content);
 		VocabularyLibrary vocabLibrary = new VocabularyLibrary();
 		Element valueSetLibraryeElement = (Element) doc.getElementsByTagName("ValueSetLibrary").item(0);
@@ -430,6 +459,10 @@ public class HL7V2ResourceLoaderImpl extends HL7V2ResourceLoader {
 		vocabLibrary.setName(valueSetLibraryeElement.getAttribute("Name"));
 		vocabLibrary.setDescription(valueSetLibraryeElement.getAttribute("Description"));
 		vocabLibrary.setXml(content);
+		vocabLibrary.setDomain(domain);
+		vocabLibrary.setScope(scope);
+		vocabLibrary.setAuthorUsername(authorUsername);
+		vocabLibrary.setPreloaded(preloaded);
 		vocabLibrary.setJson(obm.writeValueAsString(valueSetLibrarySerializer.toObject(content)));
 		return vocabLibrary;
 	}

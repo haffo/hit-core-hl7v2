@@ -16,7 +16,9 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -652,9 +654,12 @@ public class CBManagementController {
   @ResponseBody
   @Transactional(value = "transactionManager")
   public ResourceUploadStatus uploadZip(ServletRequest request,
-      @RequestPart("file") MultipartFile part, Principal p, @RequestParam("domain") String domain,
+      @RequestPart("file") MultipartFile part, Principal p,
       Authentication u) throws MessageUploadException {
     try {
+    	Map<String, Object> resultMap = new HashMap<String, Object>();
+    	
+    	
       checkManagementSupport();
       	String filename = part.getOriginalFilename();
 		String extension = filename.substring(filename.lastIndexOf(".") + 1);
@@ -674,10 +679,89 @@ public class CBManagementController {
           part.getOriginalFilename().substring(0, part.getOriginalFilename().lastIndexOf("."));
 
       String directory = bundleHandler.unzip(part.getBytes(),
-          CB_RESOURCE_BUNDLE_DIR + "/" + token + "/" + filename);
+          CB_RESOURCE_BUNDLE_DIR + "/" + token);
             
+      
+      ResourceUploadStatus result = new ResourceUploadStatus();
+      result.setAction(ResourceUploadAction.UPLOAD);
+      result.setStatus(ResourceUploadResult.SUCCESS);
+      result.setToken(token);
+      return result;
+      
       //check domain
       
+      //ADD globals
+//      if(Files.exists(Paths.get(directory + "/Global/Profiles"))) {    	  	
+//          resourceLoader.addOrReplaceIntegrationProfile(directory + "/Global/Profiles/",domain, TestScope.USER, u.getName(), false);
+//      }
+//      if(Files.exists(Paths.get(directory + "/Global/Constraints/"))) {    	  	
+//          resourceLoader.addOrReplaceConstraints(directory + "/Global/Constraints/",domain, TestScope.USER, u.getName(), false);
+//      }
+//      if(Files.exists(Paths.get(directory + "/Global/Tables/"))) {    	  	
+//          resourceLoader.addOrReplaceValueSet(directory + "/Global/Tables/",domain, TestScope.USER, u.getName(), false);
+//      }
+//        
+//          
+//      List<TestPlan> plans =
+//	          resourceLoader.createTP(directory + "/Contextbased/", domain, TestScope.USER, u.getName(), false);
+//	    	      TestPlan tp = plans.get(0);
+//	    	      updateToUser(tp, TestScope.USER, username);
+//	    	      ResourceUploadStatus result = resourceLoader.handleTP(tp);
+//	    	      result.setId(tp.getId());
+//	    	      FileUtils.deleteDirectory(new File(directory));
+//	    	      return result;
+//      }
+    } catch (NoUserFoundException e) {
+      ResourceUploadStatus result = new ResourceUploadStatus();
+      result.setAction(ResourceUploadAction.UPLOAD);
+      result.setStatus(ResourceUploadResult.FAILURE);
+      result.setMessage(e.getMessage());
+      return result;
+
+    } catch (MessageUploadException e) {
+      ResourceUploadStatus result = new ResourceUploadStatus();
+      result.setAction(ResourceUploadAction.UPLOAD);
+      result.setStatus(ResourceUploadResult.FAILURE);
+      result.setMessage(e.getMessage());
+      return result;
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      ResourceUploadStatus result = new ResourceUploadStatus();
+      result.setAction(ResourceUploadAction.UPLOAD);
+      result.setStatus(ResourceUploadResult.FAILURE);
+      result.setMessage(e.getMessage());
+      return result;
+    }
+    
+    
+  }
+  
+  
+  /**
+   * Uploads zip file and stores it in a temporary directory
+   * 
+   * @param request Client request
+   * @param part Zip file
+   * @param p Principal
+   * @return a token or some errors
+   * @throws MessageUploadException
+   */
+  @PreAuthorize("hasRole('tester')")
+  @RequestMapping(value = "/saveZip", method = RequestMethod.POST, produces = "application/json")
+  @ResponseBody
+  @Transactional(value = "transactionManager")
+  public ResourceUploadStatus saveZip(ServletRequest request, Principal p, @RequestBody Map<String,Object> params,
+      Authentication u) throws MessageUploadException {
+    try {
+      
+    	String token = params.get("token").toString();
+    	String domain = params.get("domain").toString();
+    	  //TODO: Check nullity
+    	
+    	  String username = userIdService.getCurrentUserName(p);    	
+    	  String directory =  CB_RESOURCE_BUNDLE_DIR + "/" + token ;
+    	
       //ADD globals
       if(Files.exists(Paths.get(directory + "/Global/Profiles"))) {    	  	
           resourceLoader.addOrReplaceIntegrationProfile(directory + "/Global/Profiles/",domain, TestScope.USER, u.getName(), false);
@@ -689,9 +773,6 @@ public class CBManagementController {
           resourceLoader.addOrReplaceValueSet(directory + "/Global/Tables/",domain, TestScope.USER, u.getName(), false);
       }
         
-      
-      
-
       
       List<TestPlan> plans =
 	          resourceLoader.createTP(directory + "/Contextbased/", domain, TestScope.USER, u.getName(), false);
@@ -726,6 +807,7 @@ public class CBManagementController {
       return result;
     }
   }
+  
 
   private void checkPermission(Long id, AbstractTestCase testObject, Principal p) throws Exception {
     String username = userIdService.getCurrentUserName(p);

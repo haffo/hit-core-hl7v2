@@ -343,5 +343,19 @@ public class BundleHandlerImpl implements BundleHandler {
 		}
 		return null;
 	}
+	
+	public Set<File> findFiles(String dir,String fileName){
+		Set<File> resfiles = new HashSet<File>();	
+		
+		Collection<File> files = FileUtils.listFiles(new File(dir), null, true);
+		for (Iterator<File> iterator = files.iterator(); iterator.hasNext();) {
+			File file = iterator.next();
+			if (file.getName().equals(fileName)) {
+				resfiles.add(file);
+			}
+		}
+		return resfiles;
+	}
+	
 
 }

@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +46,9 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.nist.auth.hit.core.domain.Account;
 import gov.nist.hit.core.api.SessionContext;
@@ -681,6 +685,27 @@ public class CBManagementController {
       String directory = bundleHandler.unzip(part.getBytes(),
           CB_RESOURCE_BUNDLE_DIR + "/" + token);
             
+      
+      	Set<File> files = bundleHandler.findFiles(directory, "TestPlan.json");      	
+      	for (File f : files) {
+      		String testplanContent = FileUtils.readFileToString(f);
+	    		ObjectMapper mapper = new ObjectMapper();
+	    		JsonNode testCasesObj = mapper.readTree(testplanContent);	    		
+	    		Long id = testCasesObj.get("id").asLong();
+	    		TestPlan tp = testPlanService.findByPersistentId(id);
+	    		if (tp != null && !tp.getAuthorUsername().equalsIgnoreCase(username)) {
+	    			  FileUtils.deleteDirectory(new File(directory));
+	    			  ResourceUploadStatus result = new ResourceUploadStatus();
+	    		      result.setAction(ResourceUploadAction.UPLOAD);
+	    		      result.setStatus(ResourceUploadResult.FAILURE);
+	    		      result.setMessage("A different test plan with the same identifier already exists and belongs to a different user");
+	    		      return result;
+	    		}
+      		
+      	}
+//      testPlanService.findOne()
+      
+      
       
       ResourceUploadStatus result = new ResourceUploadStatus();
       result.setAction(ResourceUploadAction.UPLOAD);

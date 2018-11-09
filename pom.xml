@@ -19,6 +19,7 @@
 		<additionalparam>-Xdoclint:none</additionalparam>
 		<java.version>1.8</java.version>
 		<resourcesValidation.version>1.0.1</resourcesValidation.version>
+		<hl7v2Validation.version>1.4.2</hl7v2Validation.version>
 	</properties>
 
 	<dependencies>
@@ -52,7 +53,7 @@
 		<dependency>
             <groupId>gov.nist</groupId>
             <artifactId>hl7-v2-validation</artifactId>
-            <version>1.2.3</version>
+            <version>${hl7v2Validation.version}</version>
         </dependency>
         <dependency>
             <groupId>gov.nist.healthcare.hl7.v2.unifiedreport</groupId>
